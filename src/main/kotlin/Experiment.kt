@@ -15,7 +15,6 @@ object Experiment {
      * same instance, regardless of api key or config. However, It is advised to inject the client
      * inside your application rather than re-initializing
      *
-     * @param application The Android Application context
      * @param apiKey  The API key. This can be found in the Experiment settings and should not be null or empty.
      * @param config see [ExperimentConfig] for configuration options
      */
