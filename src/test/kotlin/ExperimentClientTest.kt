@@ -82,13 +82,12 @@ class ExperimentClientTest {
     fun `test fetch, timeout no retries, failure`() {
         try {
             noRetriesTimeoutFailureClient.fetch(testUser).get()
-        } catch(t: Throwable) {
+        } catch (t: Throwable) {
             // Success
             return
         }
         fail("fetch should fail due to timeout")
     }
-
 
     @Test
     fun `test fetch, timeout with retries, success`() {
@@ -102,7 +101,7 @@ class ExperimentClientTest {
         val start = Date()
         try {
             timeoutRetriesFailureClient.fetch(testUser).get()
-        } catch(t: Throwable) {
+        } catch (t: Throwable) {
             // Success
             val fail = Date()
             val duration = fail.time - start.time
@@ -120,7 +119,7 @@ class ExperimentClientTest {
             }
             future.get()
             fail("future should be failed with cancellation")
-        } catch(t: Throwable) {
+        } catch (t: Throwable) {
             val fail = Date()
             assert(t is CancellationException)
             val duration = fail.time - start.time

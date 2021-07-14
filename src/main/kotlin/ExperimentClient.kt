@@ -1,14 +1,19 @@
 package com.amplitude.experiment
 
-import com.amplitude.experiment.util.*
 import com.amplitude.experiment.util.BackoffConfig
 import com.amplitude.experiment.util.Logger
+import com.amplitude.experiment.util.backoff
 import com.amplitude.experiment.util.toJson
 import com.amplitude.experiment.util.toVariant
-import okhttp3.*
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import org.json.JSONObject
 import java.io.IOException
 import java.util.concurrent.CompletableFuture
