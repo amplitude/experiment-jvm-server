@@ -49,7 +49,7 @@ afterEvaluate {
                 pom {
                     name.set("Experiment JVM Server SDK")
                     description.set("Amplitude Experiment server-side SDK for JVM (Java, Kotlin)")
-                    url.set("https://github.com/amplitude/experiment-jvm-server")
+                    url.set("https://github.com/amplitude/experiment-java-server")
 
                     licenses {
                         license {
@@ -66,7 +66,7 @@ afterEvaluate {
                         }
                     }
                     scm {
-                        url.set("https://github.com/amplitude/experiment-jvm-server")
+                        url.set("https://github.com/amplitude/experiment-java-server")
                     }
                 }
             }

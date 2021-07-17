@@ -1,11 +1,11 @@
-# experiment-jvm-server
+# experiment-java-server
 
-Amplitude Experiment Server-side SDK for the Java and Kotlin
+Amplitude Experiment Server-side SDK for Java and Kotlin
 
 ## Install
 
 ```gradle
-implementation "com.amplitude:experiment-jvm-server:0.0.1"
+implementation "com.amplitude:experiment-java-server:0.0.1"
 ```
 
 ## Quick Start

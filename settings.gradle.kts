@@ -1,2 +1,2 @@
-rootProject.name = "experiment-jvm-server"
+rootProject.name = "experiment-java-server"
 
