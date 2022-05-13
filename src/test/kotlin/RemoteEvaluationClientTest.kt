@@ -2,6 +2,10 @@ package com.amplitude.experiment
 
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.SystemLogger
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.future.asCompletableFuture
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert
 import org.junit.Test
 import java.util.Date
@@ -67,7 +71,7 @@ class RemoteEvaluationClientTest {
         val start = Date()
         try {
             val future = client.fetchAsync(testUser)
-            async(2500) {
+            asyncFuture(2500) {
                 future.cancel(true)
             }
             future.get()
@@ -82,18 +86,12 @@ class RemoteEvaluationClientTest {
 }
 
 @Suppress("SameParameterValue")
-private fun <T> async(delayMillis: Long = 0L, block: () -> T): CompletableFuture<T> {
-    return if (delayMillis == 0L) {
-        CompletableFuture.supplyAsync(block)
-    } else {
-        val future = CompletableFuture<T>()
-        CompletableFuture.delayedExecutor(delayMillis, TimeUnit.MILLISECONDS).execute {
-            try {
-                future.complete(block.invoke())
-            } catch (t: Throwable) {
-                future.completeExceptionally(t)
-            }
-        }
-        future
-    }
+private fun <T> asyncFuture(
+    delayMillis: Long = 0L,
+    block: () -> T
+): CompletableFuture<T> = runBlocking {
+    async {
+        delay(delayMillis)
+        block()
+    }.asCompletableFuture()
 }
