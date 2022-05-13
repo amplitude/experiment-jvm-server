@@ -129,7 +129,7 @@ class RemoteEvaluationConfig internal constructor(
                 fetchRetries = fetchRetries,
                 fetchRetryBackoffMinMillis = fetchRetryBackoffMinMillis,
                 fetchRetryBackoffMaxMillis = fetchRetryBackoffMaxMillis,
-                fetchRetryBackoffScalar = fetchRetryBackoffScalar,
+                fetchRetryBackoffScalar = fetchRetryBackoffScalar
 //                fetchRetryTimeoutMillis = fetchRetryTimeoutMillis,
             )
         }

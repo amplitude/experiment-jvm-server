@@ -1,8 +1,8 @@
 package com.amplitude.experiment
 
+import com.amplitude.experiment.util.JvmSerialVariant
 import com.amplitude.experiment.util.Logger
-import com.amplitude.experiment.util.SerializableVariant
-import com.amplitude.experiment.util.toSerializableUser
+import com.amplitude.experiment.util.toSerialExperimentUser
 import com.amplitude.experiment.util.toVariant
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
@@ -20,9 +20,9 @@ import java.util.concurrent.CompletableFuture
 import kotlin.math.min
 import kotlin.math.pow
 
-class ExperimentClient internal constructor(
+class RemoteEvaluationClient internal constructor(
     private val apiKey: String,
-    private val config: ExperimentConfig,
+    private val config: RemoteEvaluationConfig = RemoteEvaluationConfig(),
 ) {
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(4)
     private val supervisor = SupervisorJob()
@@ -37,10 +37,8 @@ class ExperimentClient internal constructor(
             level = LogLevel.ALL
             logger = io.ktor.client.plugins.logging.Logger.SIMPLE
         }
-        install(HttpTimeout) {
-            requestTimeoutMillis = config.fetchTimeoutMillis
-        }
         install(HttpRequestRetry)
+        install(HttpTimeout)
     }
 
     @Throws(Exception::class)
@@ -71,7 +69,10 @@ class ExperimentClient internal constructor(
                 append(HttpHeaders.Authorization, "Api-Key $apiKey")
             }
             contentType(ContentType.Application.Json)
-            setBody(json.encodeToString(user.toSerializableUser()))
+            setBody(json.encodeToString(user.toSerialExperimentUser()))
+            timeout{
+                requestTimeoutMillis = config.fetchTimeoutMillis
+            }
             retry {
                 maxRetries = config.fetchRetries
                 retryIf { _, response ->
@@ -88,7 +89,7 @@ class ExperimentClient internal constructor(
                 }
             }
         }
-        return json.decodeFromString<HashMap<String, SerializableVariant>>(
+        return json.decodeFromString<HashMap<String, JvmSerialVariant>>(
             response.bodyAsText()
         ).mapValues { it.value.toVariant() }
     }

@@ -1,9 +1,10 @@
 plugins {
     kotlin("jvm")
+    kotlin("plugin.serialization") version Versions.serializationPlugin
     `maven-publish`
     signing
     id("io.github.gradle-nexus.publish-plugin") version Versions.gradleNexusPublishPlugin
-    id("org.jlleitschuh.gradle.ktlint") version Versions.ktlintVersion
+    id("org.jlleitschuh.gradle.ktlint") version Versions.kotlinLint
     id("org.jetbrains.dokka") version Versions.dokkaVersion
 }
 
@@ -14,20 +15,19 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib"))
     testImplementation(kotlin("test"))
-
-    implementation("com.squareup.okhttp3:okhttp:${Versions.okhttpVersion}")
-    implementation("org.json:json:${Versions.jsonVersion}")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serializationRuntime}")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
+    implementation("io.ktor:ktor-client-core:${Versions.ktor}")
+    implementation("io.ktor:ktor-client-cio:${Versions.ktor}")
+    implementation("io.ktor:ktor-client-logging:${Versions.ktor}")
+    implementation("com.amplitude:evaluation-core:${Versions.evaluationCore}")
+    implementation("com.amplitude:evaluation-serialization:${Versions.evaluationSerialization}")
 }
 
 // Publishing
 
 group = "com.amplitude"
 version = "0.0.1"
-
-java {
-    withSourcesJar()
-    withJavadocJar()
-}
 
 nexusPublishing {
     repositories {
@@ -39,52 +39,51 @@ nexusPublishing {
     }
 }
 
-afterEvaluate {
-    publishing {
-        publications {
-            create<MavenPublication>("release") {
+val javadocJar by tasks.registering(Jar::class) {
+    archiveClassifier.set("javadoc")
+}
 
-                from(components["java"])
+publishing {
+    @Suppress("LocalVariableName")
+    publications.withType<MavenPublication> {
+        artifact(javadocJar)
+        pom {
+            name.set("Experiment JVM Server SDK")
+            description.set("Amplitude Experiment server-side SDK for JVM (Java, Kotlin)")
+            url.set("https://github.com/amplitude/experiment-jvm-server")
 
-                pom {
-                    name.set("Experiment JVM Server SDK")
-                    description.set("Amplitude Experiment server-side SDK for JVM (Java, Kotlin)")
-                    url.set("https://github.com/amplitude/experiment-java-server")
-
-                    licenses {
-                        license {
-                            name.set("MIT")
-                            url.set("https://opensource.org/licenses/MIT")
-                            distribution.set("repo")
-                        }
-                    }
-                    developers {
-                        developer {
-                            id.set("amplitude")
-                            name.set("Amplitude")
-                            email.set("dev@amplitude.com")
-                        }
-                    }
-                    scm {
-                        url.set("https://github.com/amplitude/experiment-java-server")
-                    }
+            licenses {
+                license {
+                    name.set("MIT")
+                    url.set("https://opensource.org/licenses/MIT")
+                    distribution.set("repo")
                 }
+            }
+            developers {
+                developer {
+                    id.set("amplitude")
+                    name.set("Amplitude")
+                    email.set("dev@amplitude.com")
+                }
+            }
+            scm {
+                url.set("https://github.com/amplitude/experiment-jvm-server")
             }
         }
     }
+}
 
-    signing {
-        val publishing = extensions.findByType<PublishingExtension>()
-        val signingKeyId = properties["signingKeyId"]?.toString()
-        val signingKey = properties["signingKey"]?.toString()
-        val signingPassword = properties["signingPassword"]?.toString()
-        useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
-        sign(publishing?.publications)
-    }
+signing {
+    val publishing = extensions.findByType<PublishingExtension>()
+    val signingKeyId = properties["signingKeyId"]?.toString()
+    val signingKey = properties["signingKey"]?.toString()
+    val signingPassword = properties["signingPassword"]?.toString()
+    useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+    sign(publishing?.publications)
+}
 
-    tasks.withType<Sign>().configureEach {
-        onlyIf { isReleaseBuild }
-    }
+tasks.withType<Sign>().configureEach {
+    onlyIf { isReleaseBuild }
 }
 
 val isReleaseBuild: Boolean

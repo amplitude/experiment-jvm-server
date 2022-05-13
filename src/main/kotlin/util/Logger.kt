@@ -1,7 +1,8 @@
 package com.amplitude.experiment.util
 
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 internal interface ILogger {
     fun v(msg: String)
@@ -79,4 +80,3 @@ internal class SystemLogger(private val debug: Boolean) : ILogger {
         }
     }
 }
-

@@ -25,4 +25,4 @@ jobs:
           key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle', '**/*.gradle.kts') }}
 
       - name: Build
-        run: ./gradlew build
+        run: ./gradlew assemble

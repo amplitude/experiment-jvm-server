@@ -12,7 +12,7 @@ import kotlin.test.fail
 
 private const val API_KEY = "server-qz35UwzJ5akieoAdIgzM4m9MIiOLXLoz"
 
-class ExperimentClientTest {
+class RemoteEvaluationClientTest {
 
     init {
         Logger.implementation = SystemLogger(true)

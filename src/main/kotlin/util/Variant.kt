@@ -1,46 +1,39 @@
 package com.amplitude.experiment.util
 
 import com.amplitude.experiment.Variant
-import org.json.JSONException
-import org.json.JSONObject
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.json.*
 
-internal fun Variant.toJson(): String {
-    val jsonObject = JSONObject()
-    try {
-        jsonObject.put("value", value)
-        if (payload != null) {
-            jsonObject.put("payload", payload)
+@Serializable
+internal data class JvmSerialVariant(
+    @JsonNames("value", "key") val value: String,
+    @SerialName("payload") val payload: JsonElement,
+)
+
+internal fun JvmSerialVariant.toVariant() = Variant(
+    value = value,
+    payload = payload.toAny(),
+)
+
+internal fun JsonElement.toAny(): Any? {
+    return when (this) {
+        is JsonNull -> null
+        is JsonObject -> this.toMap().mapValues { it.value.toAny() }
+        is JsonArray -> this.toList().map { it.toAny() }
+        is JsonPrimitive -> {
+            if (this.isString) {
+                return this.contentOrNull
+            }
+            this.intOrNull ?: this.longOrNull ?: this.floatOrNull ?: this.doubleOrNull ?: this.booleanOrNull
         }
-    } catch (e: JSONException) {
-        Logger.w("Error converting Variant to json string", e)
     }
-    return jsonObject.toString()
 }
 
-internal fun String?.toVariant(): Variant? {
-    return if (this == null) {
-        return null
-    } else {
-        JSONObject(this).toVariant()
-    }
-}
-
-internal fun JSONObject?.toVariant(): Variant? {
-    return if (this == null) {
-        return null
-    } else try {
-        val value = when {
-            has("value") -> getString("value")
-            has("key") -> getString("key")
-            else -> return null
-        }
-        val payload = when {
-            has("payload") -> get("payload")
-            else -> null
-        }
-        Variant(value, payload)
-    } catch (e: JSONException) {
-        Logger.w("Error parsing Variant from json string $this")
-        return null
-    }
+internal fun com.amplitude.experiment.evaluation.Variant.toJvmSerialVariant(): JvmSerialVariant? {
+    val value = this.key ?: return null
+    return JvmSerialVariant(
+        value = value,
+        payload = this.payload as JsonElement
+    )
 }

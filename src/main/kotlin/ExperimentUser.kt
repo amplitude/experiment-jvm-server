@@ -19,7 +19,7 @@ package com.amplitude.experiment
  *     .build()
  * ```
  */
-class ExperimentUser internal constructor(
+data class ExperimentUser internal constructor(
     @JvmField val userId: String? = null,
     @JvmField val deviceId: String? = null,
     @JvmField val country: String? = null,
@@ -61,60 +61,6 @@ class ExperimentUser internal constructor(
             .carrier(this.carrier)
             .library(this.library)
             .userProperties(this.userProperties)
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as ExperimentUser
-
-        if (userId != other.userId) return false
-        if (deviceId != other.deviceId) return false
-        if (country != other.country) return false
-        if (region != other.region) return false
-        if (dma != other.dma) return false
-        if (city != other.city) return false
-        if (language != other.language) return false
-        if (platform != other.platform) return false
-        if (version != other.version) return false
-        if (os != other.os) return false
-        if (deviceManufacturer != other.deviceManufacturer) return false
-        if (deviceBrand != other.deviceBrand) return false
-        if (deviceModel != other.deviceModel) return false
-        if (carrier != other.carrier) return false
-        if (library != other.library) return false
-        if (userProperties != other.userProperties) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = userId?.hashCode() ?: 0
-        result = 31 * result + (deviceId?.hashCode() ?: 0)
-        result = 31 * result + (country?.hashCode() ?: 0)
-        result = 31 * result + (region?.hashCode() ?: 0)
-        result = 31 * result + (dma?.hashCode() ?: 0)
-        result = 31 * result + (city?.hashCode() ?: 0)
-        result = 31 * result + (language?.hashCode() ?: 0)
-        result = 31 * result + (platform?.hashCode() ?: 0)
-        result = 31 * result + (version?.hashCode() ?: 0)
-        result = 31 * result + (os?.hashCode() ?: 0)
-        result = 31 * result + (deviceManufacturer?.hashCode() ?: 0)
-        result = 31 * result + (deviceBrand?.hashCode() ?: 0)
-        result = 31 * result + (deviceModel?.hashCode() ?: 0)
-        result = 31 * result + (carrier?.hashCode() ?: 0)
-        result = 31 * result + (library?.hashCode() ?: 0)
-        result = 31 * result + (userProperties?.hashCode() ?: 0)
-        return result
-    }
-
-    override fun toString(): String {
-        return "ExperimentUser(userId=$userId, deviceId=$deviceId, country=$country, " +
-            "region=$region, dma=$dma, city=$city, language=$language, platform=$platform, " +
-            "version=$version, os=$os, deviceManufacturer=$deviceManufacturer, " +
-            "deviceBrand=$deviceBrand, deviceModel=$deviceModel, carrier=$carrier, " +
-            "library=$library, userProperties=$userProperties)"
     }
 
     companion object {
