@@ -2,11 +2,11 @@ package com.amplitude.experiment
 
 /**
  * Configuration options. This is an immutable object that can be created using
- * a [ExperimentConfig.Builder]. Example usage:
+ * a [RemoteEvaluationConfig.Builder]. Example usage:
  *
  *`ExperimentConfig.builder().setServerUrl("https://api.lab.amplitude.com/").build()`
  */
-class ExperimentConfig internal constructor(
+class RemoteEvaluationConfig internal constructor(
     @JvmField
     val debug: Boolean = Defaults.DEBUG,
     @JvmField
@@ -21,17 +21,17 @@ class ExperimentConfig internal constructor(
     val fetchRetryBackoffMaxMillis: Long = Defaults.FETCH_RETRY_BACKOFF_MAX_MILLIS,
     @JvmField
     val fetchRetryBackoffScalar: Double = Defaults.FETCH_RETRY_BACKOFF_SCALAR,
-    @JvmField
-    val fetchRetryTimeoutMillis: Long = Defaults.FETCH_RETRY_TIMEOUT_MILLIS,
+//    @JvmField
+//    val fetchRetryTimeoutMillis: Long = Defaults.FETCH_RETRY_TIMEOUT_MILLIS,
 ) {
 
     /**
-     * Construct the default [ExperimentConfig].
+     * Construct the default [RemoteEvaluationConfig].
      */
     constructor() : this(debug = Defaults.DEBUG)
 
     /**
-     * Defaults for [ExperimentConfig]
+     * Defaults for [RemoteEvaluationConfig]
      */
     object Defaults {
 
@@ -46,29 +46,29 @@ class ExperimentConfig internal constructor(
         const val SERVER_URL = "https://api.lab.amplitude.com/"
 
         /**
-         * 10000
-         */
-        const val FETCH_TIMEOUT_MILLIS = 10000L
-        /**
-         * 8
-         */
-        const val FETCH_RETRIES = 8
-        /**
          * 500
          */
-        const val FETCH_RETRY_BACKOFF_MIN_MILLIS = 500L
+        const val FETCH_TIMEOUT_MILLIS = 500L
+        /**
+         * 1
+         */
+        const val FETCH_RETRIES = 1
+        /**
+         * 0
+         */
+        const val FETCH_RETRY_BACKOFF_MIN_MILLIS = 0L
         /**
          * 10000
          */
         const val FETCH_RETRY_BACKOFF_MAX_MILLIS = 10000L
         /**
-         * 1.5
+         * 1
          */
-        const val FETCH_RETRY_BACKOFF_SCALAR= 1.5
-        /**
-         * 10000
-         */
-        const val FETCH_RETRY_TIMEOUT_MILLIS = 10000L
+        const val FETCH_RETRY_BACKOFF_SCALAR = 1.0
+//        /**
+//         * 500
+//         */
+//        const val FETCH_RETRY_TIMEOUT_MILLIS = 500L
     }
 
     companion object {
@@ -87,7 +87,7 @@ class ExperimentConfig internal constructor(
         private var fetchRetryBackoffMinMillis = Defaults.FETCH_RETRY_BACKOFF_MIN_MILLIS
         private var fetchRetryBackoffMaxMillis = Defaults.FETCH_RETRY_BACKOFF_MAX_MILLIS
         private var fetchRetryBackoffScalar = Defaults.FETCH_RETRY_BACKOFF_SCALAR
-        private var fetchRetryTimeoutMillis = Defaults.FETCH_RETRY_TIMEOUT_MILLIS
+//        private var fetchRetryTimeoutMillis = Defaults.FETCH_RETRY_TIMEOUT_MILLIS
 
         fun debug(debug: Boolean) = apply {
             this.debug = debug
@@ -117,12 +117,12 @@ class ExperimentConfig internal constructor(
             this.fetchRetryBackoffScalar = fetchRetryBackoffScalar
         }
 
-        fun fetchRetryTimeoutMillis(fetchRetryTimeoutMillis: Long) = apply {
-            this.fetchRetryTimeoutMillis = fetchRetryTimeoutMillis
-        }
+//        fun fetchRetryTimeoutMillis(fetchRetryTimeoutMillis: Long) = apply {
+//            this.fetchRetryTimeoutMillis = fetchRetryTimeoutMillis
+//        }
 
-        fun build(): ExperimentConfig {
-            return ExperimentConfig(
+        fun build(): RemoteEvaluationConfig {
+            return RemoteEvaluationConfig(
                 debug = debug,
                 serverUrl = serverUrl,
                 fetchTimeoutMillis = fetchTimeoutMillis,
@@ -130,7 +130,7 @@ class ExperimentConfig internal constructor(
                 fetchRetryBackoffMinMillis = fetchRetryBackoffMinMillis,
                 fetchRetryBackoffMaxMillis = fetchRetryBackoffMaxMillis,
                 fetchRetryBackoffScalar = fetchRetryBackoffScalar,
-                fetchRetryTimeoutMillis = fetchRetryTimeoutMillis,
+//                fetchRetryTimeoutMillis = fetchRetryTimeoutMillis,
             )
         }
     }
@@ -139,6 +139,6 @@ class ExperimentConfig internal constructor(
         return "ExperimentConfig(debug=$debug, serverUrl='$serverUrl', fetchTimeoutMillis=$fetchTimeoutMillis, " +
                 "fetchRetries=$fetchRetries, fetchRetryBackoffMinMillis=$fetchRetryBackoffMinMillis, " +
                 "fetchRetryBackoffMaxMillis=$fetchRetryBackoffMaxMillis, " +
-                "fetchRetryBackoffScalar=$fetchRetryBackoffScalar, fetchRetryTimeoutMillis=$fetchRetryTimeoutMillis)"
+                "fetchRetryBackoffScalar=$fetchRetryBackoffScalar)"
     }
 }
