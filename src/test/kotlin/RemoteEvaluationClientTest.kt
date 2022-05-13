@@ -11,7 +11,6 @@ import org.junit.Test
 import java.util.Date
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 import kotlin.test.fail
 
 private const val API_KEY = "server-qz35UwzJ5akieoAdIgzM4m9MIiOLXLoz"
