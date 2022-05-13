@@ -4,21 +4,38 @@ import com.amplitude.experiment.util.JvmSerialVariant
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.toSerialExperimentUser
 import com.amplitude.experiment.util.toVariant
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.*
-import io.ktor.client.plugins.logging.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.future.asCompletableFuture
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.logging.SIMPLE
+import io.ktor.client.plugins.retry
+import io.ktor.client.plugins.timeout
+import io.ktor.client.request.headers
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.URLBuilder
+import io.ktor.http.contentType
+import io.ktor.http.encodedPath
+import io.ktor.http.isSuccess
 import java.util.concurrent.CompletableFuture
 import kotlin.math.min
 import kotlin.math.pow
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.future.asCompletableFuture
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 class RemoteEvaluationClient internal constructor(
     private val apiKey: String,
@@ -70,7 +87,7 @@ class RemoteEvaluationClient internal constructor(
             }
             contentType(ContentType.Application.Json)
             setBody(json.encodeToString(user.toSerialExperimentUser()))
-            timeout{
+            timeout {
                 requestTimeoutMillis = config.fetchTimeoutMillis
             }
             retry {

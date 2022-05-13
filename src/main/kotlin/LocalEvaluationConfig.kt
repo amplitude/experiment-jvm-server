@@ -90,7 +90,7 @@ class LocalEvaluationConfig internal constructor(
 
     override fun toString(): String {
         return "ExperimentConfig(debug=$debug, serverUrl='$serverUrl', " +
-                "flagConfigPollerIntervalMillis=$flagConfigPollerIntervalMillis, " +
-                "flagConfigPollerRequestTimeoutMillis=$flagConfigPollerRequestTimeoutMillis)"
+            "flagConfigPollerIntervalMillis=$flagConfigPollerIntervalMillis, " +
+            "flagConfigPollerRequestTimeoutMillis=$flagConfigPollerRequestTimeoutMillis)"
     }
 }
