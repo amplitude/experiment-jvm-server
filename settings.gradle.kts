@@ -1,1 +1,1 @@
-rootProject.name = "experiment-java-server"
+rootProject.name = "experiment-jvm-server"

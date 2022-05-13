@@ -23,9 +23,6 @@ import io.ktor.http.URLBuilder
 import io.ktor.http.contentType
 import io.ktor.http.encodedPath
 import io.ktor.http.isSuccess
-import java.util.concurrent.CompletableFuture
-import kotlin.math.min
-import kotlin.math.pow
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -36,6 +33,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.util.concurrent.CompletableFuture
+import kotlin.math.min
+import kotlin.math.pow
 
 class RemoteEvaluationClient internal constructor(
     private val apiKey: String,
