@@ -47,7 +47,11 @@ class LocalEvaluationClient @JvmOverloads constructor(
     private val httpClient = HttpClient(CIO) {
         expectSuccess = true
         install(Logging) {
-            level = LogLevel.ALL
+            level = if (config.debug) {
+                LogLevel.ALL
+            } else {
+                LogLevel.NONE
+            }
             logger = Logger.SIMPLE
         }
         install(HttpTimeout)
