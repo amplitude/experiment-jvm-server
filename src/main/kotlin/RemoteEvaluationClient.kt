@@ -37,16 +37,17 @@ import java.util.concurrent.CompletableFuture
 import kotlin.math.min
 import kotlin.math.pow
 
+private val json = Json {
+    explicitNulls = false
+    ignoreUnknownKeys = true
+}
+
 class RemoteEvaluationClient internal constructor(
     private val apiKey: String,
     private val config: RemoteEvaluationConfig = RemoteEvaluationConfig(),
 ) {
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(4)
     private val supervisor = SupervisorJob()
-    private val json = Json {
-        explicitNulls = false
-        ignoreUnknownKeys = true
-    }
 
     private val httpClient = HttpClient(CIO) {
         expectSuccess = true
@@ -106,8 +107,11 @@ class RemoteEvaluationClient internal constructor(
                 }
             }
         }
-        return json.decodeFromString<HashMap<String, JvmSerialVariant>>(
-            response.bodyAsText()
-        ).mapValues { it.value.toVariant() }
+        return parseRemoteResponse(response.bodyAsText())
     }
 }
+
+internal fun parseRemoteResponse(jsonString: String): Map<String, Variant> =
+    json.decodeFromString<HashMap<String, JvmSerialVariant>>(
+        jsonString
+    ).mapValues { it.value.toVariant() }

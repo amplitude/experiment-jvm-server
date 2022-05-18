@@ -19,6 +19,7 @@ internal fun ExperimentUser?.toSerialExperimentUser(): SerialExperimentUser {
         os = this?.os,
         deviceManufacturer = this?.deviceManufacturer,
         deviceBrand = this?.deviceBrand,
+        deviceModel = this?.deviceModel,
         carrier = this?.carrier,
         library = this?.library,
         userProperties = this?.userProperties?.mapValues {

@@ -1,7 +1,13 @@
 package com.amplitude.experiment
 
+import com.amplitude.experiment.evaluation.serialization.SerialVariant
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.SystemLogger
+import com.amplitude.experiment.util.toJvmSerialVariant
+import com.amplitude.experiment.util.toVariant
+import kotlinx.serialization.decodeFromString
+import org.junit.Assert
+import kotlin.test.Test
 
 class VariantTest {
 
@@ -9,42 +15,131 @@ class VariantTest {
         Logger.implementation = SystemLogger(true)
     }
 
-    // TODO test variant conversions with payloads in particular
-//    @Test
-//    fun `empty json object to variant`() {
-//        val jsonObject = JSONObject()
-//        val variant = jsonObject.toVariant()
-//        Assert.assertNull(variant)
-//    }
-//
-//    @Test
-//    fun `json object to variant`() {
-//        val jsonObject = JSONObject()
-//        jsonObject.put("value", "value")
-//        jsonObject.put("payload", "payload")
-//        val variant = jsonObject.toVariant()
-//        Assert.assertNotNull(variant)
-//        Assert.assertEquals("value", variant!!.value)
-//        Assert.assertEquals("payload", variant.payload)
-//    }
-//
-//    @Test
-//    fun `json object to variant deprecated field`() {
-//        val jsonObject = JSONObject()
-//        jsonObject.put("key", "value")
-//        val variant = jsonObject.toVariant()
-//        Assert.assertNotNull(variant)
-//        Assert.assertEquals("value", variant!!.value)
-//        Assert.assertNull(variant.payload)
-//    }
-//
-//    @Test
-//    fun `variant to json object`() {
-//        run {
-//            val variant = Variant("value", null)
-//            val jsonObject = JSONObject()
-//            jsonObject.put("value", "value")
-//            Assert.assertEquals(jsonObject.toString(), variant.toJson())
-//        }
-//    }
+    // Test Remote
+
+   @Test
+   fun `empty json object, decode success`() {
+        val jsonString = "{}"
+        val variantResponse = parseRemoteResponse(jsonString)
+        Assert.assertEquals(mapOf<String, Variant>(), variantResponse)
+    }
+
+    @Test
+    fun `one flag, with key, payload missing, decode success`() {
+        val jsonString = """{"flag":{"key":"key"}}"""
+        val variantResponse = parseRemoteResponse(jsonString)
+        Assert.assertEquals(mapOf("flag" to Variant("key")), variantResponse)
+    }
+
+    @Test
+    fun `one flag, with value, payload missing, decode success`() {
+        val jsonString = """{"flag":{"value":"value"}}"""
+        val variantResponse = parseRemoteResponse(jsonString)
+        Assert.assertEquals(mapOf("flag" to Variant("value")), variantResponse)
+    }
+
+    @Test
+    fun `one flag, with value, null payload, decode success`() {
+        val jsonString = """{"flag":{"key":"key","payload":null}}"""
+        val variantResponse = parseRemoteResponse(jsonString)
+        Assert.assertEquals(mapOf("flag" to Variant("key")), variantResponse)
+    }
+
+    @Test
+    fun `one flag, with key, string payload, decode success`() {
+        val jsonString = """{"flag":{"key":"key","payload":"payload"}}"""
+        val variantResponse = parseRemoteResponse(jsonString)
+        Assert.assertEquals(mapOf("flag" to Variant("key", "payload")), variantResponse)
+    }
+
+    @Test
+    fun `one flag, with key, int payload, decode success`() {
+        val jsonString = """{"flag":{"key":"key","payload":13121}}"""
+        val variantResponse = parseRemoteResponse(jsonString)
+        Assert.assertEquals(mapOf("flag" to Variant("key", 13121)), variantResponse)
+    }
+
+    @Test
+    fun `one flag, with key, boolean payload, decode success`() {
+        val jsonString = """{"flag":{"key":"key","payload":true}}"""
+        val variantResponse = parseRemoteResponse(jsonString)
+        Assert.assertEquals(mapOf("flag" to Variant("key", true)), variantResponse)
+    }
+
+    @Test
+    fun `one flag, with key, object payload, decode success`() {
+        val jsonString = """{"flag":{"key":"key","payload":{"k":"v"}}}"""
+        val variantResponse = parseRemoteResponse(jsonString)
+        Assert.assertEquals(mapOf("flag" to Variant("key", mapOf("k" to "v"))), variantResponse)
+    }
+
+    @Test
+    fun `one flag, with key, array payload, decode success`() {
+        val jsonString = """{"flag":{"key":"key","payload":["e1","e2"]}}"""
+        val variantResponse = parseRemoteResponse(jsonString)
+        Assert.assertEquals(mapOf("flag" to Variant("key", listOf("e1","e2"))), variantResponse)
+    }
+
+    // Test Local
+
+    @Test
+    fun `core variant decode, missing payload, success`() {
+        val jsonString = """{"key":"key"}"""
+        val original = json.decodeFromString<SerialVariant>(jsonString)
+        val core = original.convert()
+        val actual = core.toJvmSerialVariant()?.toVariant()
+        val expected = Variant("key")
+        Assert.assertEquals(expected, actual)
+    }
+
+    @Test
+    fun `core variant decode, string payload, success`() {
+        val jsonString = """{"key":"key","payload":"payload"}"""
+        val original = json.decodeFromString<SerialVariant>(jsonString)
+        val core = original.convert()
+        val actual = core.toJvmSerialVariant()?.toVariant()
+        val expected = Variant("key", "payload")
+        Assert.assertEquals(expected, actual)
+    }
+
+    @Test
+    fun `core variant decode, int payload, success`() {
+        val jsonString = """{"key":"key","payload":13121}"""
+        val original = json.decodeFromString<SerialVariant>(jsonString)
+        val core = original.convert()
+        val actual = core.toJvmSerialVariant()?.toVariant()
+        val expected = Variant("key", 13121)
+        Assert.assertEquals(expected, actual)
+    }
+
+    @Test
+    fun `core variant decode, boolean payload, success`() {
+        val jsonString = """{"key":"key","payload":true}"""
+        val original = json.decodeFromString<SerialVariant>(jsonString)
+        val core = original.convert()
+        val actual = core.toJvmSerialVariant()?.toVariant()
+        val expected = Variant("key", true)
+        Assert.assertEquals(expected, actual)
+    }
+
+
+    @Test
+    fun `core variant decode, object payload, success`() {
+        val jsonString = """{"key":"key","payload":{"k":"v"}}"""
+        val original = json.decodeFromString<SerialVariant>(jsonString)
+        val core = original.convert()
+        val actual = core.toJvmSerialVariant()?.toVariant()
+        val expected = Variant("key", mapOf("k" to "v"))
+        Assert.assertEquals(expected, actual)
+    }
+
+    @Test
+    fun `core variant decode, array payload, success`() {
+        val jsonString = """{"key":"key","payload":["e1","e2"]}"""
+        val original = json.decodeFromString<SerialVariant>(jsonString)
+        val core = original.convert()
+        val actual = core.toJvmSerialVariant()?.toVariant()
+        val expected = Variant("key", listOf("e1", "e2"))
+        Assert.assertEquals(expected, actual)
+    }
 }

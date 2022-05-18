@@ -19,12 +19,12 @@ import kotlinx.serialization.json.longOrNull
 @Serializable
 internal data class JvmSerialVariant(
     @JsonNames("value", "key") val value: String,
-    @SerialName("payload") val payload: JsonElement,
+    @SerialName("payload") val payload: JsonElement?,
 )
 
 internal fun JvmSerialVariant.toVariant() = Variant(
     value = value,
-    payload = payload.toAny(),
+    payload = payload?.toAny(),
 )
 
 internal fun JsonElement.toAny(): Any? {
@@ -45,6 +45,6 @@ internal fun com.amplitude.experiment.evaluation.Variant.toJvmSerialVariant(): J
     val value = this.key ?: return null
     return JvmSerialVariant(
         value = value,
-        payload = this.payload as JsonElement
+        payload = this.payload as JsonElement?
     )
 }

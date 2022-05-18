@@ -32,16 +32,17 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
+private val json = Json {
+    explicitNulls = false
+    ignoreUnknownKeys = true
+}
+
 class LocalEvaluationClient @JvmOverloads constructor(
     private val apiKey: String,
     private val config: LocalEvaluationConfig = LocalEvaluationConfig(),
 ) {
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(1)
     private val supervisor = SupervisorJob()
-    private val json = Json {
-        explicitNulls = false
-        ignoreUnknownKeys = true
-    }
 
     private val httpClient = HttpClient(CIO) {
         expectSuccess = true
@@ -111,10 +112,13 @@ class LocalEvaluationClient @JvmOverloads constructor(
                 requestTimeoutMillis = config.flagConfigPollerRequestTimeoutMillis
             }
         }
-        return json.decodeFromString<List<SerialFlagConfig>>(
-            response.bodyAsText()
-        ).associate {
-            it.flagKey to it.convert()
-        }
+        return parseFlagConfigsResponse(response.bodyAsText())
     }
 }
+
+internal fun parseFlagConfigsResponse(jsonString: String) =
+    json.decodeFromString<List<SerialFlagConfig>>(
+        jsonString
+    ).associate {
+        it.flagKey to it.convert()
+    }
