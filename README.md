@@ -2,8 +2,6 @@
 
 Amplitude Experiment Server-side SDK for Java and Kotlin
 
-## Install
+## Getting started
 
-```gradle
-implementation "com.amplitude:experiment-jvm-server:0.0.1"
-```
+See the [Documentation](https://www.docs.developers.amplitude.com/experiment/sdks/jvm-sdk) for getting started.
