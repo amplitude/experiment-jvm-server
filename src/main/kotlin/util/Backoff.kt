@@ -1,5 +1,6 @@
 package com.amplitude.experiment.util
 
+import com.amplitude.experiment.Experiment
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import kotlin.math.min
@@ -34,9 +35,9 @@ private class Backoff<T>(
         delay: Long,
         function: () -> CompletableFuture<T>
     ) {
-        CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS).execute {
+        Experiment.scheduler.schedule({
             if (completableFuture.isCancelled) {
-                return@execute
+                return@schedule
             }
             function.invoke().whenComplete { variants, t ->
                 if (t != null || variants == null) {
@@ -52,6 +53,6 @@ private class Backoff<T>(
                     completableFuture.complete(variants)
                 }
             }
-        }
+        }, delay, TimeUnit.MILLISECONDS)
     }
 }

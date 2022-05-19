@@ -49,7 +49,9 @@ class RemoteEvaluationClient internal constructor(
                         doFetch(user, config.fetchTimeoutMillis)
                     }
                 } else {
-                    CompletableFuture.failedFuture(t)
+                    CompletableFuture<Map<String, Variant>>().apply {
+                        completeExceptionally(t)
+                    }
                 }
             } else {
                 CompletableFuture.completedFuture(variants)
