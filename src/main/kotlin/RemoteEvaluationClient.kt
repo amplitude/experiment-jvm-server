@@ -24,8 +24,8 @@ import io.ktor.http.contentType
 import io.ktor.http.encodedPath
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.future.asCompletableFuture
 import kotlinx.coroutines.runBlocking
@@ -34,11 +34,11 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executors
 import kotlin.math.min
 import kotlin.math.pow
 
 private val json = Json {
-    explicitNulls = false
     ignoreUnknownKeys = true
 }
 
@@ -46,13 +46,17 @@ class RemoteEvaluationClient internal constructor(
     private val apiKey: String,
     private val config: RemoteEvaluationConfig = RemoteEvaluationConfig(),
 ) {
-    private val dispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(4)
+    private val dispatcher: CoroutineDispatcher = Executors.newFixedThreadPool(4).asCoroutineDispatcher()
     private val supervisor = SupervisorJob()
 
     private val httpClient = HttpClient(CIO) {
         expectSuccess = true
         install(Logging) {
-            level = LogLevel.ALL
+            level = if (config.debug) {
+                LogLevel.ALL
+            } else {
+                LogLevel.NONE
+            }
             logger = io.ktor.client.plugins.logging.Logger.SIMPLE
         }
         install(HttpRequestRetry)

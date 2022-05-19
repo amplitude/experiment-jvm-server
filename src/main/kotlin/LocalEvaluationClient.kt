@@ -22,26 +22,28 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.URLBuilder
 import io.ktor.http.encodedPath
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.future.asCompletableFuture
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executors
 
 private val json = Json {
-    explicitNulls = false
     ignoreUnknownKeys = true
 }
 
-class LocalEvaluationClient @JvmOverloads constructor(
+class LocalEvaluationClient internal constructor(
     private val apiKey: String,
     private val config: LocalEvaluationConfig = LocalEvaluationConfig(),
 ) {
-    private val dispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(1)
+    private val dispatcher: CoroutineDispatcher = Executors.newFixedThreadPool(4).asCoroutineDispatcher()
     private val supervisor = SupervisorJob()
 
     private val httpClient = HttpClient(CIO) {
@@ -62,21 +64,27 @@ class LocalEvaluationClient @JvmOverloads constructor(
     private var rules: Map<String, FlagConfig> = mapOf()
 
     fun start() {
-        runBlocking {
+        startAsync().join()
+    }
+
+    fun startAsync(): CompletableFuture<*> = runBlocking {
+        // Poller
+        async(supervisor + dispatcher) {
+            while (true) {
+                delay(config.flagConfigPollerIntervalMillis)
+                val newRules = doRules()
+                rulesMutex.withLock {
+                    rules = newRules
+                }
+            }
+        }
+        // Initial fetch
+        async(supervisor + dispatcher) {
             val newRules = doRules()
             rulesMutex.withLock {
                 rules = newRules
             }
-            async(supervisor + dispatcher) {
-                while (true) {
-                    delay(config.flagConfigPollerIntervalMillis)
-                    val newRules = doRules()
-                    rulesMutex.withLock {
-                        rules = newRules
-                    }
-                }
-            }
-        }
+        }.asCompletableFuture()
     }
 
     @JvmOverloads

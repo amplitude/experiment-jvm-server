@@ -7,7 +7,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.asCompletableFuture
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert
-import org.junit.Test
+import kotlin.test.Test
 import java.util.Date
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
@@ -18,7 +18,7 @@ private const val API_KEY = "server-qz35UwzJ5akieoAdIgzM4m9MIiOLXLoz"
 class RemoteEvaluationClientTest {
 
     init {
-        Logger.implementation = SystemLogger(true)
+        Logger.implementation = SystemLogger(false)
     }
 
     private val testFlagKey = "sdk-ci-test"
@@ -32,7 +32,10 @@ class RemoteEvaluationClientTest {
             API_KEY,
             RemoteEvaluationConfig(),
         )
+        val start = System.nanoTime()
         val variants = client.fetchAsync(testUser).get()
+        val end = System.nanoTime()
+        val dur = (end - start) / 1000.0 / 1000.0
         Assert.assertNotNull(variants)
         val variant = variants[testFlagKey]
         Assert.assertEquals(testVariant, variant)

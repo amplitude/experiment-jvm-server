@@ -5,11 +5,18 @@ import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.SystemLogger
 import com.amplitude.experiment.util.toSerialExperimentUser
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import org.junit.Assert
 import kotlin.test.Test
+
+private val json = Json {
+    ignoreUnknownKeys = true
+    isLenient = true
+    coerceInputValues = true
+}
 
 class ExperimentUserTest {
 

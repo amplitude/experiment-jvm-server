@@ -6,8 +6,15 @@ import com.amplitude.experiment.util.SystemLogger
 import com.amplitude.experiment.util.toJvmSerialVariant
 import com.amplitude.experiment.util.toVariant
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import org.junit.Assert
 import kotlin.test.Test
+
+private val json = Json {
+    ignoreUnknownKeys = true
+    isLenient = true
+    coerceInputValues = true
+}
 
 class VariantTest {
 
@@ -17,8 +24,8 @@ class VariantTest {
 
     // Test Remote
 
-   @Test
-   fun `empty json object, decode success`() {
+    @Test
+    fun `empty json object, decode success`() {
         val jsonString = "{}"
         val variantResponse = parseRemoteResponse(jsonString)
         Assert.assertEquals(mapOf<String, Variant>(), variantResponse)
@@ -77,7 +84,7 @@ class VariantTest {
     fun `one flag, with key, array payload, decode success`() {
         val jsonString = """{"flag":{"key":"key","payload":["e1","e2"]}}"""
         val variantResponse = parseRemoteResponse(jsonString)
-        Assert.assertEquals(mapOf("flag" to Variant("key", listOf("e1","e2"))), variantResponse)
+        Assert.assertEquals(mapOf("flag" to Variant("key", listOf("e1", "e2"))), variantResponse)
     }
 
     // Test Local
@@ -121,7 +128,6 @@ class VariantTest {
         val expected = Variant("key", true)
         Assert.assertEquals(expected, actual)
     }
-
 
     @Test
     fun `core variant decode, object payload, success`() {

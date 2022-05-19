@@ -5,32 +5,30 @@ import com.amplitude.experiment.util.SystemLogger
 
 object Experiment {
 
-    private const val DEFAULT_INSTANCE = "\$default_instance"
     private val remoteInstances = mutableMapOf<String, RemoteEvaluationClient>()
     private val localInstances = mutableMapOf<String, LocalEvaluationClient>()
 
     /**
      * Initializes a singleton [RemoteEvaluationClient] instance. Subsequent calls will return the
-     * same instance, regardless of api key or config. However, It is advised to inject the client
-     * inside your application rather than re-initializing
+     * same instance, regardless of api key or config.
      *
      * @param apiKey  The API key. This can be found in the Experiment settings and should not be null or empty.
      * @param config see [RemoteEvaluationConfig] for configuration options
      */
     @JvmStatic
+    @JvmOverloads
     fun initializeRemote(
         apiKey: String,
-        config: RemoteEvaluationConfig
+        config: RemoteEvaluationConfig = RemoteEvaluationConfig()
     ): RemoteEvaluationClient = synchronized(remoteInstances) {
-        val instanceName = DEFAULT_INSTANCE
-        return when (val instance = remoteInstances[instanceName]) {
+        return when (val instance = remoteInstances[apiKey]) {
             null -> {
                 Logger.implementation = SystemLogger(config.debug)
                 val newInstance = RemoteEvaluationClient(
                     apiKey,
                     config,
                 )
-                remoteInstances[instanceName] = newInstance
+                remoteInstances[apiKey] = newInstance
                 newInstance
             }
             else -> instance
@@ -38,26 +36,25 @@ object Experiment {
     }
     /**
      * Initializes a singleton [LocalEvaluationClient] instance. Subsequent calls will return the
-     * same instance, regardless of api key or config. However, It is advised to inject the client
-     * inside your application rather than re-initializing
+     * same instance, regardless of api key or config.
      *
      * @param apiKey  The API key. This can be found in the Experiment settings and should not be null or empty.
      * @param config see [LocalEvaluationConfig] for configuration options
      */
     @JvmStatic
+    @JvmOverloads
     fun initializeLocal(
         apiKey: String,
-        config: LocalEvaluationConfig,
+        config: LocalEvaluationConfig = LocalEvaluationConfig(),
     ): LocalEvaluationClient = synchronized(localInstances) {
-        val instanceName = DEFAULT_INSTANCE
-        return when (val instance = localInstances[instanceName]) {
+        return when (val instance = localInstances[apiKey]) {
             null -> {
                 Logger.implementation = SystemLogger(config.debug)
                 val newInstance = LocalEvaluationClient(
                     apiKey,
                     config,
                 )
-                localInstances[instanceName] = newInstance
+                localInstances[apiKey] = newInstance
                 newInstance
             }
             else -> instance
