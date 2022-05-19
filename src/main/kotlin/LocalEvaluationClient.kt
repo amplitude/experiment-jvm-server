@@ -45,17 +45,14 @@ class LocalEvaluationClient internal constructor(
     private var rules: Map<String, FlagConfig> = mapOf()
 
     fun start() {
-        startAsync().join()
-    }
-
-    fun startAsync(): CompletableFuture<*> {
         synchronized(startLock) {
             if (started) {
-                return CompletableFuture.completedFuture(Any())
+                return
             } else {
                 started = true
             }
         }
+
         // Poller
         poller.scheduleAtFixedRate(
             { updateRules() },
@@ -63,8 +60,9 @@ class LocalEvaluationClient internal constructor(
             config.flagConfigPollerIntervalMillis,
             TimeUnit.MILLISECONDS
         )
+
         // Initial rules
-        return updateRules()
+        updateRules().join()
     }
 
     @JvmOverloads
