@@ -108,13 +108,13 @@ private fun <T> async(delayMillis: Long = 0L, block: () -> T): CompletableFuture
         CompletableFuture.supplyAsync(block)
     } else {
         val future = CompletableFuture<T>()
-        CompletableFuture.delayedExecutor(delayMillis, TimeUnit.MILLISECONDS).execute {
+        Experiment.scheduler.schedule({
             try {
                 future.complete(block.invoke())
             } catch (t: Throwable) {
                 future.completeExceptionally(t)
             }
-        }
+        }, delayMillis, TimeUnit.MILLISECONDS)
         future
     }
 }
