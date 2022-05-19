@@ -3,7 +3,6 @@ package com.amplitude.experiment
 import com.amplitude.experiment.evaluation.serialization.SerialVariant
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.SystemLogger
-import com.amplitude.experiment.util.toJvmSerialVariant
 import com.amplitude.experiment.util.toVariant
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
@@ -36,13 +35,6 @@ class VariantTest {
         val jsonString = """{"flag":{"key":"key"}}"""
         val variantResponse = parseRemoteResponse(jsonString)
         Assert.assertEquals(mapOf("flag" to Variant("key")), variantResponse)
-    }
-
-    @Test
-    fun `one flag, with value, payload missing, decode success`() {
-        val jsonString = """{"flag":{"value":"value"}}"""
-        val variantResponse = parseRemoteResponse(jsonString)
-        Assert.assertEquals(mapOf("flag" to Variant("value")), variantResponse)
     }
 
     @Test
@@ -94,7 +86,7 @@ class VariantTest {
         val jsonString = """{"key":"key"}"""
         val original = json.decodeFromString<SerialVariant>(jsonString)
         val core = original.convert()
-        val actual = core.toJvmSerialVariant()?.toVariant()
+        val actual = SerialVariant(core).toVariant()
         val expected = Variant("key")
         Assert.assertEquals(expected, actual)
     }
@@ -104,7 +96,7 @@ class VariantTest {
         val jsonString = """{"key":"key","payload":"payload"}"""
         val original = json.decodeFromString<SerialVariant>(jsonString)
         val core = original.convert()
-        val actual = core.toJvmSerialVariant()?.toVariant()
+        val actual = SerialVariant(core).toVariant()
         val expected = Variant("key", "payload")
         Assert.assertEquals(expected, actual)
     }
@@ -114,7 +106,7 @@ class VariantTest {
         val jsonString = """{"key":"key","payload":13121}"""
         val original = json.decodeFromString<SerialVariant>(jsonString)
         val core = original.convert()
-        val actual = core.toJvmSerialVariant()?.toVariant()
+        val actual = SerialVariant(core).toVariant()
         val expected = Variant("key", 13121)
         Assert.assertEquals(expected, actual)
     }
@@ -124,7 +116,7 @@ class VariantTest {
         val jsonString = """{"key":"key","payload":true}"""
         val original = json.decodeFromString<SerialVariant>(jsonString)
         val core = original.convert()
-        val actual = core.toJvmSerialVariant()?.toVariant()
+        val actual = SerialVariant(core).toVariant()
         val expected = Variant("key", true)
         Assert.assertEquals(expected, actual)
     }
@@ -134,7 +126,7 @@ class VariantTest {
         val jsonString = """{"key":"key","payload":{"k":"v"}}"""
         val original = json.decodeFromString<SerialVariant>(jsonString)
         val core = original.convert()
-        val actual = core.toJvmSerialVariant()?.toVariant()
+        val actual = SerialVariant(core).toVariant()
         val expected = Variant("key", mapOf("k" to "v"))
         Assert.assertEquals(expected, actual)
     }
@@ -144,7 +136,7 @@ class VariantTest {
         val jsonString = """{"key":"key","payload":["e1","e2"]}"""
         val original = json.decodeFromString<SerialVariant>(jsonString)
         val core = original.convert()
-        val actual = core.toJvmSerialVariant()?.toVariant()
+        val actual = SerialVariant(core).toVariant()
         val expected = Variant("key", listOf("e1", "e2"))
         Assert.assertEquals(expected, actual)
     }

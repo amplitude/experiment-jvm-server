@@ -2,15 +2,12 @@ package com.amplitude.experiment
 
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.SystemLogger
-import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.future.asCompletableFuture
-import kotlinx.coroutines.runBlocking
 import org.junit.Assert
-import kotlin.test.Test
 import java.util.Date
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
+import kotlin.test.Test
 import kotlin.test.fail
 
 private const val API_KEY = "server-qz35UwzJ5akieoAdIgzM4m9MIiOLXLoz"
@@ -30,12 +27,13 @@ class RemoteEvaluationClientTest {
     fun `test fetch`() {
         val client = RemoteEvaluationClient(
             API_KEY,
-            RemoteEvaluationConfig(),
+            RemoteEvaluationConfig(debug = true),
         )
         val start = System.nanoTime()
-        val variants = client.fetchAsync(testUser).get()
+        val variants = client.fetch(testUser).get()
         val end = System.nanoTime()
         val dur = (end - start) / 1000.0 / 1000.0
+        println(dur)
         Assert.assertNotNull(variants)
         val variant = variants[testFlagKey]
         Assert.assertEquals(testVariant, variant)
@@ -51,7 +49,7 @@ class RemoteEvaluationClientTest {
                 .build(),
         )
         try {
-            client.fetchAsync(testUser).get()
+            client.fetch(testUser).get()
         } catch (t: Throwable) {
             // Success
             return
@@ -72,8 +70,8 @@ class RemoteEvaluationClientTest {
         )
         val start = Date()
         try {
-            val future = client.fetchAsync(testUser)
-            asyncFuture(2500) {
+            val future = client.fetch(testUser)
+            async(2500) {
                 future.cancel(true)
             }
             future.get()
@@ -85,15 +83,38 @@ class RemoteEvaluationClientTest {
             Assert.assertTrue(duration in 2500..2599)
         }
     }
+
+    // @Test
+    // fun test() {
+    //     val client = RemoteEvaluationClient(API_KEY, RemoteEvaluationConfig())
+    //     val sem = Semaphore(2)
+    //     while(true) {
+    //         sem.acquire()
+    //         val start = System.nanoTime()
+    //         client.fetch(testUser).handle { _, throwable ->
+    //             throwable?.printStackTrace()
+    //             sem.release()
+    //             val end = System.nanoTime()
+    //             val dur = (end - start) / 1000.0 / 1000.0
+    //             println(String.format("%.2fms", dur))
+    //         }
+    //     }
+    // }
 }
 
 @Suppress("SameParameterValue")
-private fun <T> asyncFuture(
-    delayMillis: Long = 0L,
-    block: () -> T
-): CompletableFuture<T> = runBlocking {
-    async {
-        delay(delayMillis)
-        block()
-    }.asCompletableFuture()
+private fun <T> async(delayMillis: Long = 0L, block: () -> T): CompletableFuture<T> {
+    return if (delayMillis == 0L) {
+        CompletableFuture.supplyAsync(block)
+    } else {
+        val future = CompletableFuture<T>()
+        CompletableFuture.delayedExecutor(delayMillis, TimeUnit.MILLISECONDS).execute {
+            try {
+                future.complete(block.invoke())
+            } catch (t: Throwable) {
+                future.completeExceptionally(t)
+            }
+        }
+        future
+    }
 }

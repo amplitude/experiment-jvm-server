@@ -16,10 +16,7 @@ dependencies {
     implementation(kotlin("stdlib"))
     testImplementation(kotlin("test"))
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serializationRuntime}")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
-    implementation("io.ktor:ktor-client-core:${Versions.ktor}")
-    implementation("io.ktor:ktor-client-cio:${Versions.ktor}")
-    implementation("io.ktor:ktor-client-logging:${Versions.ktor}")
+    implementation("com.squareup.okhttp3:okhttp:${Versions.okhttp}")
     implementation("com.amplitude:evaluation-core:${Versions.evaluationCore}")
     implementation("com.amplitude:evaluation-serialization:${Versions.evaluationSerialization}")
 }
