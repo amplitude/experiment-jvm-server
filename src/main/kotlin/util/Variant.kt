@@ -2,8 +2,6 @@ package com.amplitude.experiment.util
 
 import com.amplitude.experiment.Variant
 import com.amplitude.experiment.evaluation.serialization.SerialVariant
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
