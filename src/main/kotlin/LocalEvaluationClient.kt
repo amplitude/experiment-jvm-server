@@ -33,12 +33,11 @@ class LocalEvaluationClient internal constructor(
     private val apiKey: String,
     private val config: LocalEvaluationConfig = LocalEvaluationConfig(),
 ) {
+
     private val startLock = Any()
     private var started = false
-
     private val httpClient = OkHttpClient()
     private val serverUrl: HttpUrl = config.serverUrl.toHttpUrl()
-
     private val poller = Executors.newSingleThreadScheduledExecutor()
     private val evaluation: EvaluationEngine = EvaluationEngineImpl()
     private val rulesLock = ReentrantReadWriteLock()
