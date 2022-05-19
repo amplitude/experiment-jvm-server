@@ -3,6 +3,8 @@ package com.amplitude.experiment
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.SystemLogger
 
+internal const val LIBRARY_VERSION = "0.0.1"
+
 object Experiment {
 
     private val remoteInstances = mutableMapOf<String, RemoteEvaluationClient>()

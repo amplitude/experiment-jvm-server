@@ -64,9 +64,10 @@ class RemoteEvaluationClient internal constructor(
         if (user.userId == null && user.deviceId == null) {
             Logger.w("user id and device id are null; amplitude may not resolve identity")
         }
-        Logger.d("Fetch variants for user: $user")
+        val libraryUser = user.copyToBuilder().library("experiment-jvm-server/$LIBRARY_VERSION").build()
+        Logger.d("Fetch variants for user: $libraryUser")
         // Build request to fetch variants for the user
-        val body = json.encodeToString(user.toSerialExperimentUser())
+        val body = json.encodeToString(libraryUser.toSerialExperimentUser())
             .toByteArray(Charsets.UTF_8)
             .toRequestBody("application/json".toMediaType())
         val url = serverUrl.newBuilder()
