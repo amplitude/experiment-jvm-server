@@ -36,15 +36,16 @@ nexusPublishing {
     }
 }
 
-val javadocJar by tasks.registering(Jar::class) {
-    archiveClassifier.set("javadoc")
+java {
+    withSourcesJar()
+    withJavadocJar()
 }
 
 publishing {
     @Suppress("LocalVariableName")
     publications {
         create<MavenPublication>("sdk") {
-            artifact(javadocJar)
+            from(components["java"])
             pom {
                 name.set("Experiment JVM Server SDK")
                 description.set("Amplitude Experiment server-side SDK for JVM (Java, Kotlin)")
