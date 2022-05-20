@@ -42,29 +42,31 @@ val javadocJar by tasks.registering(Jar::class) {
 
 publishing {
     @Suppress("LocalVariableName")
-    publications.withType<MavenPublication> {
-        artifact(javadocJar)
-        pom {
-            name.set("Experiment JVM Server SDK")
-            description.set("Amplitude Experiment server-side SDK for JVM (Java, Kotlin)")
-            url.set("https://github.com/amplitude/experiment-jvm-server")
-
-            licenses {
-                license {
-                    name.set("MIT")
-                    url.set("https://opensource.org/licenses/MIT")
-                    distribution.set("repo")
-                }
-            }
-            developers {
-                developer {
-                    id.set("amplitude")
-                    name.set("Amplitude")
-                    email.set("dev@amplitude.com")
-                }
-            }
-            scm {
+    publications {
+        create<MavenPublication>("sdk") {
+            artifact(javadocJar)
+            pom {
+                name.set("Experiment JVM Server SDK")
+                description.set("Amplitude Experiment server-side SDK for JVM (Java, Kotlin)")
                 url.set("https://github.com/amplitude/experiment-jvm-server")
+
+                licenses {
+                    license {
+                        name.set("MIT")
+                        url.set("https://opensource.org/licenses/MIT")
+                        distribution.set("repo")
+                    }
+                }
+                developers {
+                    developer {
+                        id.set("amplitude")
+                        name.set("Amplitude")
+                        email.set("dev@amplitude.com")
+                    }
+                }
+                scm {
+                    url.set("https://github.com/amplitude/experiment-jvm-server")
+                }
             }
         }
     }
