@@ -1,3 +1,10 @@
+## [0.0.3](https://github.com/amplitude/experiment-jvm-server/compare/0.0.2...0.0.3) (2022-05-20)
+
+
+### Bug Fixes
+
+* fix publish command ([696f4c3](https://github.com/amplitude/experiment-jvm-server/commit/696f4c38374471708943992a18dd19ecb33276d6))
+
 ## [0.0.2](https://github.com/amplitude/experiment-jvm-server/compare/0.0.1...0.0.2) (2022-05-19)
 
 
