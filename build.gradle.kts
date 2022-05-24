@@ -12,6 +12,10 @@ repositories {
     mavenCentral()
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+}
+
 dependencies {
     implementation(kotlin("stdlib"))
     testImplementation(kotlin("test"))
@@ -24,7 +28,7 @@ dependencies {
 // Publishing
 
 group = "com.amplitude"
-version = "1.0.0-beta.1"
+version = "1.0.0-beta.2"
 
 nexusPublishing {
     repositories {
