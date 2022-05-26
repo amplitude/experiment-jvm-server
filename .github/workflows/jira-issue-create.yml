@@ -25,7 +25,7 @@ jobs:
           project: ${{ secrets.JIRA_PROJECT }}
           issuetype: Task
           summary: |
-            [SDK - Experiment JVM Server] ${{ github.event.issue.title }}
+            [SDK - experiment-jvm-server] ${{ github.event.issue.title }}
           description: |
             ${{ github.event.issue.html_url }}
           fields: '{
