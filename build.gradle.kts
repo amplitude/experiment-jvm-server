@@ -33,9 +33,9 @@ version = "1.0.0-beta.2"
 nexusPublishing {
     repositories {
         sonatype {
-            stagingProfileId.set(properties["sonatypeStagingProfileId"].toString())
-            username.set(properties["sonatypeUsername"].toString())
-            password.set(properties["sonatypePassword"].toString())
+            stagingProfileId.set(System.getenv("SONATYPE_STAGING_PROFILE_ID"))
+            username.set(System.getenv("SONATYPE_USERNAME"))
+            password.set(System.getenv("SONATYPE_PASSWORD"))
         }
     }
 }
@@ -79,9 +79,9 @@ publishing {
 
 signing {
     val publishing = extensions.findByType<PublishingExtension>()
-    val signingKeyId = properties["signingKeyId"]?.toString()
-    val signingKey = properties["signingKey"]?.toString()
-    val signingPassword = properties["signingPassword"]?.toString()
+    val signingKeyId = System.getenv("SIGNING_KEY_ID")
+    val signingKey = System.getenv("SIGNING_KEY")
+    val signingPassword = System.getenv("SIGNING_PASSWORD")
     useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
     sign(publishing?.publications)
 }
@@ -91,4 +91,4 @@ tasks.withType<Sign>().configureEach {
 }
 
 val isReleaseBuild: Boolean
-    get() = properties.containsKey("signingKey")
+    get() = System.getenv("SIGNING_KEY") != null
