@@ -4,7 +4,7 @@ import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.SystemLogger
 import java.util.concurrent.Executors
 
-internal const val LIBRARY_VERSION = "1.0.0-beta.2"
+internal const val LIBRARY_VERSION = "1.0.0-beta.3"
 
 object Experiment {
 
