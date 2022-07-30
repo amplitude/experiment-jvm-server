@@ -78,7 +78,11 @@ class LocalEvaluationClient internal constructor(
 
         val flagResults = evaluation.evaluate(flagConfigs, user.toSerialExperimentUser().convert())
         return flagResults.mapNotNull { entry ->
-            entry.key to SerialVariant(entry.value.variant).toVariant()
+            if (!entry.value.isDefaultVariant) {
+                entry.key to SerialVariant(entry.value.variant).toVariant()
+            } else {
+                null
+            }
         }.toMap()
     }
 
