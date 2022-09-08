@@ -103,6 +103,7 @@ class LocalEvaluationClient internal constructor(
             .get()
             .url(url)
             .addHeader("Authorization", "Api-Key $apiKey")
+            .addHeader("X-Amp-Exp-Library", "experiment-jvm-server/$LIBRARY_VERSION")
             .build()
         val future = CompletableFuture<Map<String, FlagConfig>>()
         val call = httpClient.newCall(request)
