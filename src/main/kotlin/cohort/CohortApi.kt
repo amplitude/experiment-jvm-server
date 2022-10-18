@@ -5,8 +5,6 @@ package com.amplitude.experiment.cohort
  * https://www.docs.developers.amplitude.com/analytics/apis/behavioral-cohorts-api/
  */
 
-// Objects
-
 internal data class CohortDescription(
     val lastComputed: Long,
     val published: Boolean,
@@ -18,15 +16,11 @@ internal data class CohortDescription(
     val size: Int,
 )
 
-// Get Cohorts
-
 internal object GetCohortsRequest
 
 internal data class GetCohortsResponse(
     val cohorts: List<CohortDescription>,
 )
-
-// Request Cohort
 
 internal data class GetCohortRequest(
     val id: String,
@@ -39,8 +33,6 @@ internal data class GetCohortResponse(
     val cohortId: String,
 )
 
-// Request Cohort Status
-
 internal data class GetCohortStatusRequest(
     val requestId: String,
 )
@@ -50,8 +42,6 @@ internal data class GetCohortStatusResponse(
     val cohortId: String,
     val asyncStatus: String,
 )
-
-// Download Cohort
 
 internal data class DownloadCohortRequest(
     val requestId: String,
