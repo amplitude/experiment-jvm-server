@@ -1,57 +1,115 @@
 package com.amplitude.experiment.cohort
 
+import com.amplitude.experiment.LIBRARY_VERSION
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okio.IOException
+import java.util.Base64
+import java.util.concurrent.CompletableFuture
+
 /*
  * Based on the Behavioral Cohort API:
  * https://www.docs.developers.amplitude.com/analytics/apis/behavioral-cohorts-api/
  */
 
+private val json = Json {
+    ignoreUnknownKeys = true
+}
+
+@Serializable
 internal data class CohortDescription(
-    val lastComputed: Long,
-    val published: Boolean,
-    val archived: Boolean,
-    val appId: String,
-    val lastMod: Long,
-    val type: String,
-    val id: String,
-    val size: Int,
+    @SerialName("lastComputed") val lastComputed: Long,
+    @SerialName("published") val published: Boolean,
+    @SerialName("archived") val archived: Boolean,
+    @SerialName("appId") val appId: String,
+    @SerialName("lastMod") val lastMod: Long,
+    @SerialName("type") val type: String,
+    @SerialName("id") val id: String,
+    @SerialName("size") val size: Int,
 )
 
 internal object GetCohortsRequest
 
+@Serializable
 internal data class GetCohortsResponse(
-    val cohorts: List<CohortDescription>,
+    @SerialName("cohorts") val cohorts: List<CohortDescription>,
 )
 
 internal data class GetCohortRequest(
-    val id: String,
-    val props: Boolean,
-    val propKeys: List<String>
+    val cohortId: String,
 )
 
+@Serializable
 internal data class GetCohortResponse(
-    val requestId: String,
-    val cohortId: String,
+    @SerialName("cohort") val cohort: CohortDescription,
+    @SerialName("user_ids") val userIds: List<String?>,
 )
-
-internal data class GetCohortStatusRequest(
-    val requestId: String,
-)
-
-internal data class GetCohortStatusResponse(
-    val requestId: String,
-    val cohortId: String,
-    val asyncStatus: String,
-)
-
-internal data class DownloadCohortRequest(
-    val requestId: String,
-)
-
-internal typealias DownloadCohortResponse = List<Any> // TODO What is the format?
 
 internal interface CohortApi {
-    fun getCohorts(request: GetCohortsRequest): GetCohortsResponse
-    fun getCohort(request: GetCohortRequest): GetCohortResponse
-    fun getCohortStatus(request: GetCohortStatusRequest): GetCohortStatusResponse
-    fun downloadCohort(request: DownloadCohortRequest): DownloadCohortResponse
+    fun getCohorts(request: GetCohortsRequest): CompletableFuture<GetCohortsResponse>
+    fun getCohort(request: GetCohortRequest): CompletableFuture<GetCohortResponse>
+}
+
+internal class CohortApiImpl(
+    private val apiKey: String,
+    private val secretKey: String,
+    private val serverUrl: HttpUrl,
+    private val httpClient: OkHttpClient,
+): CohortApi {
+
+    override fun getCohorts(request: GetCohortsRequest): CompletableFuture<GetCohortsResponse> {
+        return getRequest("api/3/cohorts") {
+            json.decodeFromString(it)
+        }
+    }
+
+    override fun getCohort(request: GetCohortRequest): CompletableFuture<GetCohortResponse> {
+        return getRequest("api/3/cohorts/${request.cohortId}") {
+            json.decodeFromString(it)
+        }
+    }
+
+    private fun <T> getRequest(path: String, deserializer: (String) -> T): CompletableFuture<T> {
+        val url = serverUrl.newBuilder()
+            .addPathSegments(path)
+            .build()
+        val basicAuth = Base64.getEncoder().encodeToString("$apiKey:$secretKey".toByteArray(Charsets.UTF_8))
+        val okRequest = Request.Builder()
+            .get()
+            .url(url)
+            .addHeader("Authorization", "Basic $basicAuth")
+            .addHeader("X-Amp-Exp-Library", "experiment-jvm-server/$LIBRARY_VERSION")
+            .build()
+        val future = CompletableFuture<T>()
+        val call = httpClient.newCall(okRequest)
+        // Execute request and handle response
+        call.enqueue(object : Callback {
+            override fun onResponse(call: Call, response: Response) {
+                try {
+                    val result = response.use {
+                        if (!response.isSuccessful) {
+                            throw IOException("$path - error response: $response")
+                        }
+                        deserializer.invoke(response.body?.string() ?: throw IOException("$path - null response body"))
+                    }
+                    future.complete(result)
+                } catch (e: IOException) {
+                    onFailure(call, e)
+                }
+            }
+
+            override fun onFailure(call: Call, e: IOException) {
+                future.completeExceptionally(e)
+            }
+        })
+        return future
+    }
 }
