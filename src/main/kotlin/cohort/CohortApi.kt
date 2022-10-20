@@ -29,7 +29,7 @@ internal data class CohortDescription(
     @SerialName("lastComputed") val lastComputed: Long,
     @SerialName("published") val published: Boolean,
     @SerialName("archived") val archived: Boolean,
-    @SerialName("appId") val appId: String,
+    @SerialName("appId") val appId: Int,
     @SerialName("lastMod") val lastMod: Long,
     @SerialName("type") val type: String,
     @SerialName("id") val id: String,
@@ -98,15 +98,20 @@ internal class CohortApiImpl(
                         if (!response.isSuccessful) {
                             throw IOException("$path - error response: $response")
                         }
-                        deserializer.invoke(response.body?.string() ?: throw IOException("$path - null response body"))
+                        val body = response.body?.string()
+                        deserializer.invoke(body ?: throw IOException("$path - null response body"))
                     }
                     future.complete(result)
-                } catch (e: IOException) {
-                    onFailure(call, e)
+                } catch (e: Exception) {
+                    fail(e)
                 }
             }
 
             override fun onFailure(call: Call, e: IOException) {
+                fail(e)
+            }
+
+            private fun fail(e: Exception) {
                 future.completeExceptionally(e)
             }
         })

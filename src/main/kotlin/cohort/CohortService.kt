@@ -23,6 +23,7 @@ internal class CohortServiceImpl(
     private val poller = Executors.newSingleThreadScheduledExecutor()
 
     internal fun refresh() {
+        Logger.d("Refreshing cohorts.")
         getCohortDescriptions()
             .filterInvalid()
             .download()
@@ -30,9 +31,10 @@ internal class CohortServiceImpl(
     }
 
     override fun start() {
+        refresh()
         poller.scheduleWithFixedDelay({
             refresh()
-        }, 0, SYNC_INTERVAL, SYNC_INTERVAL_UNIT)
+        }, SYNC_INTERVAL, SYNC_INTERVAL, SYNC_INTERVAL_UNIT)
     }
 
     override fun stop() {
@@ -44,7 +46,10 @@ internal class CohortServiceImpl(
     }
 
     internal fun getCohortDescriptions(): List<CohortDescription> {
-        return api.getCohorts(GetCohortsRequest).get().cohorts
+        Logger.d("Getting cohort descriptions.")
+        return api.getCohorts(GetCohortsRequest).get().cohorts.apply {
+            Logger.d("Got cohort descriptions: $this")
+        }
     }
 
     private fun List<CohortDescription>.filterInvalid(): List<CohortDescription> =
@@ -52,12 +57,15 @@ internal class CohortServiceImpl(
 
     internal fun filterInvalid(cohortDescriptions: List<CohortDescription>): List<CohortDescription> {
         val cohortIds = idProvider.invoke()
+        Logger.d("Filtering out invalid cohort descriptions.")
         // Filter out cohorts which are (1) not being targeted (2) too large (3) not updated
         return cohortDescriptions.filter { description ->
             val storageCohortDescription = storage.getCohortDescription(description.id)
             cohortIds.contains(description.id) &&
                 description.size < MAX_COHORT_SIZE &&
                 description.lastComputed != storageCohortDescription?.lastComputed
+        }.apply {
+            Logger.d("Cohorts filtered: $this")
         }
     }
 
@@ -65,6 +73,7 @@ internal class CohortServiceImpl(
         download(this)
 
     internal fun download(cohortDescriptions: List<CohortDescription>): List<GetCohortResponse> {
+        Logger.d("Downloading cohorts.")
         // Make a request to download each cohort
         return cohortDescriptions.map { description ->
             api.getCohort(GetCohortRequest(cohortId = description.id))
@@ -79,6 +88,8 @@ internal class CohortServiceImpl(
                     response
                 }
             }.join()
+        }.apply {
+            Logger.d("Downloaded cohorts: $this")
         }
     }
 
@@ -86,9 +97,12 @@ internal class CohortServiceImpl(
         store(this)
 
     internal fun store(getCohortResponses: List<GetCohortResponse>) {
+        Logger.d("Storing cohorts.")
         // Store the cohort included in the response
         getCohortResponses.forEach {
             storage.putCohort(it.cohort, it.userIds)
+        }.apply {
+            Logger.d("Cohorts stored.")
         }
     }
 }
