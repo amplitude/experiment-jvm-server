@@ -9,6 +9,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.Base64
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 
 /*
  * Based on the Behavioral Cohort API:
@@ -55,8 +56,16 @@ internal class CohortApiImpl(
     private val apiKey: String,
     private val secretKey: String,
     private val serverUrl: HttpUrl,
-    private val httpClient: OkHttpClient,
+    httpClient: OkHttpClient,
 ) : CohortApi {
+
+    private val httpClient: OkHttpClient
+
+    init {
+        this.httpClient = httpClient.newBuilder()
+            .readTimeout(5, TimeUnit.MINUTES)
+            .build()
+    }
 
     override fun getCohorts(request: GetCohortsRequest): CompletableFuture<GetCohortsResponse> {
         return get("api/3/cohorts")

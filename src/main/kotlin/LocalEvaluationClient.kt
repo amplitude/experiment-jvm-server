@@ -15,6 +15,7 @@ import com.amplitude.experiment.flag.FlagConfigService
 import com.amplitude.experiment.flag.FlagConfigServiceConfig
 import com.amplitude.experiment.flag.FlagConfigServiceImpl
 import com.amplitude.experiment.flag.InMemoryFlagConfigStorage
+import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.Once
 import com.amplitude.experiment.util.toSerialExperimentUser
 import com.amplitude.experiment.util.toVariant
@@ -76,6 +77,10 @@ class LocalEvaluationClient internal constructor(
                 httpClient,
             ),
             InMemoryCohortStorage()
-        ) { flagConfigStorage.getAll().values.getCohortIds() }
+        ) {
+            flagConfigStorage.getAll().values.getCohortIds().apply {
+                Logger.d("managing cohorts: $this")
+            }
+        }
     }
 }
