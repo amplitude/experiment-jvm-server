@@ -2,8 +2,6 @@ package com.amplitude.experiment.cohort
 
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.SystemLogger
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.OkHttpClient
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
 import java.util.concurrent.CompletableFuture
