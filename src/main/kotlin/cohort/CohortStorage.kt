@@ -1,37 +1,41 @@
 package com.amplitude.experiment.cohort
 
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
+
 internal interface CohortStorage {
     fun getCohortsForUser(userId: String): Set<String>
     fun getCohortDescription(cohortId: String): CohortDescription?
     fun putCohort(cohortDescription: CohortDescription, userIds: List<String?>)
 }
 
-internal class InMemoryCohortStorage: CohortStorage {
-    private val userStore = mutableMapOf<String, MutableSet<String>>()
+internal class InMemoryCohortStorage : CohortStorage {
+    private val lock = ReentrantReadWriteLock()
+    private val cohortStore = mutableMapOf<String, Set<String>>()
     private val descriptionStore = mutableMapOf<String, CohortDescription>()
 
     override fun getCohortsForUser(userId: String): Set<String> {
-        return synchronized(this) {
-            userStore[userId] ?: setOf()
+        val result = mutableSetOf<String>()
+        lock.read {
+            for (entry in cohortStore.entries) {
+                if (entry.value.contains(userId)) {
+                    result.add(entry.key)
+                }
+            }
         }
+        return result
     }
 
     override fun getCohortDescription(cohortId: String): CohortDescription? {
-        return synchronized(this) {
+        return lock.read {
             descriptionStore[cohortId]
         }
     }
 
     override fun putCohort(cohortDescription: CohortDescription, userIds: List<String?>) {
-        synchronized(this) {
-            userIds.forEach { userId ->
-                if (userId != null) {
-                    userStore.compute(userId) { _, v ->
-                        v?.apply { add(cohortDescription.id) } ?:
-                        mutableSetOf(cohortDescription.id)
-                    }
-                }
-            }
+        lock.write {
+            cohortStore[cohortDescription.id] = userIds.filterNotNullTo(mutableSetOf())
             descriptionStore[cohortDescription.id] = cohortDescription
         }
     }

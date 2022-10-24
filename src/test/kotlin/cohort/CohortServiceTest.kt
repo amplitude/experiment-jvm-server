@@ -1,37 +1,60 @@
 package com.amplitude.experiment.cohort
 
-import org.junit.Test
-import org.mockito.Mockito.*
-import org.junit.Assert.*
+import com.amplitude.experiment.util.Logger
+import com.amplitude.experiment.util.SystemLogger
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.OkHttpClient
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
 import java.util.concurrent.CompletableFuture
 import kotlin.system.measureTimeMillis
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class CohortServiceTest {
+
+    private val config = CohortServiceConfig()
+
+    init {
+        Logger.implementation = SystemLogger(debug = true)
+    }
 
     @Test
     fun `test refresh, success`() {
         val provider = { setOf("a", "b") }
         val api = mock(CohortApi::class.java)
         `when`(api.getCohorts(GetCohortsRequest))
-            .thenReturn(CompletableFuture.completedFuture(
-                GetCohortsResponse(listOf(
-                    cohortDescription("a"),
-                    cohortDescription("b"),
-                ))))
+            .thenReturn(
+                CompletableFuture.completedFuture(
+                    GetCohortsResponse(
+                        listOf(
+                            cohortDescription("a"),
+                            cohortDescription("b"),
+                        )
+                    )
+                )
+            )
         `when`(api.getCohort(GetCohortRequest("a")))
-            .thenReturn(CompletableFuture.completedFuture(
-                GetCohortResponse(
-                    cohortDescription("a"),
-                    listOf("1"),
-                )))
+            .thenReturn(
+                CompletableFuture.completedFuture(
+                    GetCohortResponse(
+                        cohortDescription("a"),
+                        listOf("1"),
+                    )
+                )
+            )
         `when`(api.getCohort(GetCohortRequest("b")))
-            .thenReturn(CompletableFuture.completedFuture(
-                GetCohortResponse(
-                    cohortDescription("b"),
-                    listOf("1", "2"),
-                )))
+            .thenReturn(
+                CompletableFuture.completedFuture(
+                    GetCohortResponse(
+                        cohortDescription("b"),
+                        listOf("1", "2"),
+                    )
+                )
+            )
         val storage = InMemoryCohortStorage()
-        val service = CohortServiceImpl(provider, api, storage)
+        val service = CohortServiceImpl(config, api, storage, provider)
         service.refresh()
 
         // Check storage description
@@ -48,136 +71,162 @@ class CohortServiceTest {
     }
 
     @Test
-    fun `test filterInvalid, cohorts not matching provider are filtered`() {
+    fun `test filter cohorts, cohorts not matching provider are filtered`() {
         val provider = { setOf("a", "b") }
         val api = mock(CohortApi::class.java)
         val storage = InMemoryCohortStorage()
-        val service = CohortServiceImpl(provider, api, storage)
-        val actual = service.filterInvalid(listOf(
-            cohortDescription("a"),
-            cohortDescription("b"),
-            cohortDescription("c"),
-        ))
+        val service = CohortServiceImpl(config, api, storage, provider)
+        val actual = service.filterCohorts(
+            listOf(
+                cohortDescription("a"),
+                cohortDescription("b"),
+                cohortDescription("c"),
+            )
+        )
         val expected = listOf(cohortDescription("a"), cohortDescription("b"))
         assertEquals(expected, actual)
     }
 
     @Test
-    fun `test filterInvalid, cohorts greater than max cohort size are filtered`() {
+    fun `test filter cohorts, cohorts greater than max cohort size are filtered`() {
         val provider = { setOf("a", "b") }
         val api = mock(CohortApi::class.java)
         val storage = InMemoryCohortStorage()
-        val service = CohortServiceImpl(provider, api, storage)
-        val actual = service.filterInvalid(listOf(
-            cohortDescription("a", size = Int.MAX_VALUE),
-            cohortDescription("b", size = 1),
-        ))
+        val service = CohortServiceImpl(config, api, storage, provider)
+        val actual = service.filterCohorts(
+            listOf(
+                cohortDescription("a", size = Int.MAX_VALUE),
+                cohortDescription("b", size = 1),
+            )
+        )
         val expected = listOf(cohortDescription("b", size = 1))
         assertEquals(expected, actual)
     }
 
     @Test
-    fun `test filterInvalid, already computed equivalent cohorts are filtered`() {
+    fun `test filter cohorts, already computed equivalent cohorts are filtered`() {
         val provider = { setOf("a", "b") }
         val api = mock(CohortApi::class.java)
         val storage = InMemoryCohortStorage()
         storage.putCohort(cohortDescription("a", lastComputed = 0L), listOf())
         storage.putCohort(cohortDescription("b", lastComputed = 0L), listOf())
-        val service = CohortServiceImpl(provider, api, storage)
-        val actual = service.filterInvalid(listOf(
-            cohortDescription("a", lastComputed = 0L),
-            cohortDescription("b", lastComputed = 1L),
-        ))
+        val service = CohortServiceImpl(config, api, storage, provider)
+        val actual = service.filterCohorts(
+            listOf(
+                cohortDescription("a", lastComputed = 0L),
+                cohortDescription("b", lastComputed = 1L),
+            )
+        )
         val expected = listOf(cohortDescription("b", lastComputed = 1L))
         assertEquals(expected, actual)
     }
 
     @Test
-    fun `test download, happens async`() {
+    fun `test download cohorts, happens async`() {
         val provider = { setOf("a", "b", "c") }
         val api = mock(CohortApi::class.java)
         `when`(api.getCohort(GetCohortRequest("a")))
-            .thenReturn(CompletableFuture.supplyAsync {
-                Thread.sleep(100)
-                GetCohortResponse(
-                    cohortDescription("a"),
-                    listOf("1"),
-                )
-            })
+            .thenReturn(
+                CompletableFuture.supplyAsync {
+                    Thread.sleep(100)
+                    GetCohortResponse(
+                        cohortDescription("a"),
+                        listOf("1"),
+                    )
+                }
+            )
         `when`(api.getCohort(GetCohortRequest("b")))
-            .thenReturn(CompletableFuture.supplyAsync {
-                Thread.sleep(100)
-                GetCohortResponse(
-                    cohortDescription("b"),
-                    listOf("1"),
-                )
-            })
+            .thenReturn(
+                CompletableFuture.supplyAsync {
+                    Thread.sleep(100)
+                    GetCohortResponse(
+                        cohortDescription("b"),
+                        listOf("1"),
+                    )
+                }
+            )
         `when`(api.getCohort(GetCohortRequest("c")))
-            .thenReturn(CompletableFuture.supplyAsync {
-                Thread.sleep(100)
-                GetCohortResponse(
-                    cohortDescription("c"),
-                    listOf("1"),
-                )
-            })
+            .thenReturn(
+                CompletableFuture.supplyAsync {
+                    Thread.sleep(100)
+                    GetCohortResponse(
+                        cohortDescription("c"),
+                        listOf("1"),
+                    )
+                }
+            )
         `when`(api.getCohort(GetCohortRequest("d")))
-            .thenReturn(CompletableFuture.supplyAsync {
-                Thread.sleep(100)
-                GetCohortResponse(
-                    cohortDescription("d"),
-                    listOf("1"),
-                )
-            })
+            .thenReturn(
+                CompletableFuture.supplyAsync {
+                    Thread.sleep(100)
+                    GetCohortResponse(
+                        cohortDescription("d"),
+                        listOf("1"),
+                    )
+                }
+            )
         val storage = InMemoryCohortStorage()
-        val service = CohortServiceImpl(provider, api, storage)
+        val service = CohortServiceImpl(config, api, storage, provider)
         val duration = measureTimeMillis {
-            service.download(listOf(
-                cohortDescription("a"),
-                cohortDescription("b"),
-                cohortDescription("c"),
-                cohortDescription("d"),
-            ))
+            service.downloadCohorts(
+                listOf(
+                    cohortDescription("a"),
+                    cohortDescription("b"),
+                    cohortDescription("c"),
+                    cohortDescription("d"),
+                )
+            )
         }
         assertTrue(duration < 200)
     }
 
     @Test
-    fun `test download, single failure`() {
+    fun `test download cohorts, single failure`() {
         val provider = { setOf("a", "b", "c") }
         val api = mock(CohortApi::class.java)
         `when`(api.getCohort(GetCohortRequest("a")))
-            .thenReturn(CompletableFuture.supplyAsync {
-                GetCohortResponse(
-                    cohortDescription("a"),
-                    listOf("1"),
-                )
-            })
+            .thenReturn(
+                CompletableFuture.supplyAsync {
+                    GetCohortResponse(
+                        cohortDescription("a"),
+                        listOf("1"),
+                    )
+                }
+            )
         `when`(api.getCohort(GetCohortRequest("b")))
-            .thenReturn(CompletableFuture.supplyAsync {
-                GetCohortResponse(
-                    cohortDescription("b"),
-                    listOf("1"),
-                )
-            })
+            .thenReturn(
+                CompletableFuture.supplyAsync {
+                    GetCohortResponse(
+                        cohortDescription("b"),
+                        listOf("1"),
+                    )
+                }
+            )
         `when`(api.getCohort(GetCohortRequest("c")))
-            .thenReturn(CompletableFuture.supplyAsync {
-                throw RuntimeException("Failure")
-            })
+            .thenReturn(
+                CompletableFuture.supplyAsync {
+                    throw RuntimeException("Failure")
+                }
+            )
         `when`(api.getCohort(GetCohortRequest("d")))
-            .thenReturn(CompletableFuture.supplyAsync {
-                GetCohortResponse(
-                    cohortDescription("d"),
-                    listOf("1"),
-                )
-            })
+            .thenReturn(
+                CompletableFuture.supplyAsync {
+                    GetCohortResponse(
+                        cohortDescription("d"),
+                        listOf("1"),
+                    )
+                }
+            )
         val storage = InMemoryCohortStorage()
-        val service = CohortServiceImpl(provider, api, storage)
-        val actual = service.download(listOf(
-            cohortDescription("a"),
-            cohortDescription("b"),
-            cohortDescription("c"),
-            cohortDescription("d"),
-        ))
+        val service = CohortServiceImpl(config, api, storage, provider)
+        val actual = service.downloadCohorts(
+            listOf(
+                cohortDescription("a"),
+                cohortDescription("b"),
+                cohortDescription("c"),
+                cohortDescription("d"),
+            )
+        )
         val expected = listOf(
             GetCohortResponse(
                 cohortDescription("a"),
@@ -196,21 +245,23 @@ class CohortServiceTest {
     }
 
     @Test
-    fun `test store, success`() {
+    fun `test store cohorts, success`() {
         val provider = { setOf("a", "b") }
         val api = mock(CohortApi::class.java)
         val storage = InMemoryCohortStorage()
-        val service = CohortServiceImpl(provider, api, storage)
-        service.store(listOf(
-            GetCohortResponse(
-                cohortDescription("a"),
-                listOf("1")
-            ),
-            GetCohortResponse(
-                cohortDescription("b"),
-                listOf("1", "2")
-            ),
-        ))
+        val service = CohortServiceImpl(config, api, storage, provider)
+        service.storeCohorts(
+            listOf(
+                GetCohortResponse(
+                    cohortDescription("a"),
+                    listOf("1")
+                ),
+                GetCohortResponse(
+                    cohortDescription("b"),
+                    listOf("1", "2")
+                ),
+            )
+        )
         // Check storage description
         val storageDescriptionA = storage.getCohortDescription("a")
         val storageDescriptionB = storage.getCohortDescription("b")
