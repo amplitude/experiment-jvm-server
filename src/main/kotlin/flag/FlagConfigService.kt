@@ -6,15 +6,21 @@ import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.Once
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 internal data class FlagConfigServiceConfig(
     val flagConfigPollerIntervalMillis: Long,
 )
 
+internal typealias FlagConfigInterceptor = (Map<String, FlagConfig>) -> Unit
+
 internal interface FlagConfigService {
     fun start()
     fun stop()
-    fun getFlags(keys: List<String> = listOf()): List<FlagConfig>
+    fun getFlagConfigs(keys: List<String> = listOf()): List<FlagConfig>
+    fun addFlagConfigInterceptor(listener: FlagConfigInterceptor)
 }
 
 internal class FlagConfigServiceImpl(
@@ -25,6 +31,9 @@ internal class FlagConfigServiceImpl(
 
     private val lock = Once()
     private val poller = Executors.newSingleThreadScheduledExecutor()
+
+    private val interceptorsLock = ReentrantReadWriteLock()
+    private val interceptors: MutableSet<FlagConfigInterceptor> = mutableSetOf()
 
     private fun refresh() {
         Logger.d("Refreshing flag configs.")
@@ -48,7 +57,7 @@ internal class FlagConfigServiceImpl(
         poller.shutdown()
     }
 
-    override fun getFlags(keys: List<String>): List<FlagConfig> {
+    override fun getFlagConfigs(keys: List<String>): List<FlagConfig> {
         return if (keys.isEmpty()) {
             flagConfigStorage.getAll().values.toList()
         } else {
@@ -56,8 +65,20 @@ internal class FlagConfigServiceImpl(
         }
     }
 
+    override fun addFlagConfigInterceptor(listener: FlagConfigInterceptor) {
+        interceptorsLock.write {
+            interceptors += listener
+        }
+    }
+
     private fun getFlagConfigs(): Map<String, FlagConfig> {
-        return flagConfigApi.getFlagConfigs(GetFlagConfigsRequest(EvaluationMode.LOCAL)).get()
+        return flagConfigApi.getFlagConfigs(GetFlagConfigsRequest(EvaluationMode.LOCAL)).get().apply {
+            interceptorsLock.read {
+                interceptors.forEach { interceptor ->
+                    interceptor.invoke(this)
+                }
+            }
+        }
     }
 
     private fun storeFlagConfigs(flagConfigs: Map<String, FlagConfig>) {

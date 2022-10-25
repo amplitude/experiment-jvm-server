@@ -120,6 +120,30 @@ class CohortServiceTest {
     }
 
     @Test
+    fun `test filter cohorts, explicit cohorts are included even if not provided`() {
+        val provider = { setOf("a", "b") }
+        val api = mock(CohortApi::class.java)
+        val storage = InMemoryCohortStorage()
+        val service = CohortServiceImpl(config, api, storage, provider)
+        val actual = service.filterCohorts(
+            listOf(
+                cohortDescription("a"),
+                cohortDescription("b"),
+                cohortDescription("c"),
+                cohortDescription("d"),
+                cohortDescription("e"),
+            ), setOf("d", "e")
+        )
+        val expected = listOf(
+            cohortDescription("a"),
+            cohortDescription("b"),
+            cohortDescription("d"),
+            cohortDescription("e"),
+        )
+        assertEquals(expected, actual)
+    }
+
+    @Test
     fun `test download cohorts, happens async`() {
         val provider = { setOf("a", "b", "c") }
         val api = mock(CohortApi::class.java)

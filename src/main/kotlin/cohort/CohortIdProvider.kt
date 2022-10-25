@@ -10,17 +10,23 @@ typealias CohortIdProvider = () -> Set<String>
 internal fun Collection<FlagConfig>.getCohortIds(): Set<String> {
     val cohortIds = mutableSetOf<String>()
     for (flag in this) {
-        for (filter in flag.allUsersTargetingConfig.conditions) {
+        cohortIds += flag.getCohortIds()
+    }
+    return cohortIds
+}
+
+internal fun FlagConfig.getCohortIds(): Set<String> {
+    val cohortIds = mutableSetOf<String>()
+    for (filter in this.allUsersTargetingConfig.conditions) {
+        if (filter.isCohortFilter()) {
+            cohortIds += filter.values
+        }
+    }
+    val customSegments = this.customSegmentTargetingConfigs ?: listOf()
+    for (segment in customSegments) {
+        for (filter in segment.conditions) {
             if (filter.isCohortFilter()) {
                 cohortIds += filter.values
-            }
-        }
-        val customSegments = flag.customSegmentTargetingConfigs ?: listOf()
-        for (segment in customSegments) {
-            for (filter in segment.conditions) {
-                if (filter.isCohortFilter()) {
-                    cohortIds += filter.values
-                }
             }
         }
     }

@@ -36,6 +36,7 @@ data class ExperimentUser internal constructor(
     @JvmField val carrier: String? = null,
     @JvmField val library: String? = null,
     @JvmField val userProperties: Map<String, Any?>? = null,
+    @JvmField val cohortIds: Set<String>? = null,
 ) {
 
     /**
@@ -61,6 +62,7 @@ data class ExperimentUser internal constructor(
             .carrier(this.carrier)
             .library(this.library)
             .userProperties(this.userProperties)
+            .cohortIds(this.cohortIds)
     }
 
     companion object {
@@ -87,6 +89,7 @@ data class ExperimentUser internal constructor(
         private var carrier: String? = null
         private var library: String? = null
         private var userProperties: MutableMap<String, Any?>? = null
+        private var cohortIds: Set<String>? = null
 
         fun userId(userId: String?) = apply { this.userId = userId }
         fun deviceId(deviceId: String?) = apply { this.deviceId = deviceId }
@@ -113,6 +116,9 @@ data class ExperimentUser internal constructor(
                 this[key] = value
             }
         }
+        fun cohortIds(cohortIds: Set<String>?) = apply {
+            this.cohortIds = cohortIds
+        }
 
         fun build(): ExperimentUser {
             return ExperimentUser(
@@ -132,6 +138,7 @@ data class ExperimentUser internal constructor(
                 carrier = carrier,
                 library = library,
                 userProperties = userProperties,
+                cohortIds = cohortIds,
             )
         }
     }

@@ -29,6 +29,7 @@ internal fun ExperimentUser?.toSerialExperimentUser(): SerialExperimentUser {
                 is Boolean -> JsonPrimitive(value)
                 else -> JsonNull
             }
-        }
+        },
+        cohortIds = this?.cohortIds,
     )
 }

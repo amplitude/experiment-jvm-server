@@ -1,6 +1,5 @@
 package com.amplitude.experiment.cohort
 
-import com.amplitude.experiment.LIBRARY_VERSION
 import com.amplitude.experiment.util.request
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -84,7 +83,6 @@ internal class CohortApiImpl(
             .get()
             .url(url)
             .addHeader("Authorization", "Basic $basicAuth")
-            .addHeader("X-Amp-Exp-Library", "experiment-jvm-server/$LIBRARY_VERSION")
             .build()
         return httpClient.request(request)
     }

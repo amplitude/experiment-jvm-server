@@ -48,8 +48,15 @@ class LocalEvaluationClient internal constructor(
 
     @JvmOverloads
     fun evaluate(user: ExperimentUser, flagKeys: List<String> = listOf()): Map<String, Variant> {
-        val flagConfigs = flagConfigService.getFlags(flagKeys)
-        val flagResults = evaluation.evaluate(flagConfigs, user.toSerialExperimentUser().convert())
+        val flagConfigs = flagConfigService.getFlagConfigs(flagKeys)
+        val enrichedUser = if (user.userId == null) {
+            user
+        } else {
+            user.copyToBuilder().apply {
+                cohortIds(cohortService?.getCohorts(user.userId))
+            }.build()
+        }
+        val flagResults = evaluation.evaluate(flagConfigs, enrichedUser.toSerialExperimentUser().convert())
         return flagResults.mapNotNull { entry ->
             if (!entry.value.isDefaultVariant) {
                 entry.key to SerialVariant(entry.value.variant).toVariant()
@@ -80,6 +87,19 @@ class LocalEvaluationClient internal constructor(
         ) {
             flagConfigStorage.getAll().values.getCohortIds().apply {
                 Logger.d("managing cohorts: $this")
+            }
+        }
+        flagConfigService.addFlagConfigInterceptor { incoming ->
+            val diff = mutableSetOf<String>()
+            val stored = flagConfigStorage.getAll()
+            incoming.forEach { (incomingFlagKey, incomingFlagConfig) ->
+                val storedFlagConfig = stored[incomingFlagKey]
+                if (storedFlagConfig == null || storedFlagConfig != incomingFlagConfig) {
+                    diff += (incomingFlagKey)
+                }
+            }
+            if (diff.isNotEmpty()) {
+                cohortService?.refresh(diff)
             }
         }
     }
