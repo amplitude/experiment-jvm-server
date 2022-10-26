@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit
  * https://www.docs.developers.amplitude.com/analytics/apis/behavioral-cohorts-api/
  */
 
-internal const val DEFAULT_COHORT_SYNC_URL = "https://amplitude.com/"
+internal const val DEFAULT_COHORT_SYNC_URL = "https://cohort.lab.amplitude.com/"
 
 @Serializable
 internal data class CohortDescription(
