@@ -132,7 +132,8 @@ class CohortServiceTest {
                 cohortDescription("c"),
                 cohortDescription("d"),
                 cohortDescription("e"),
-            ), setOf("d", "e")
+            ),
+            setOf("d", "e")
         )
         val expected = listOf(
             cohortDescription("a"),

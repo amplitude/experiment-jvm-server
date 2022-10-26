@@ -1,7 +1,6 @@
 package com.amplitude.experiment.cohort
 
 import com.amplitude.experiment.evaluation.Allocation
-import com.amplitude.experiment.evaluation.DEFAULT_BUCKETING_KEY
 import com.amplitude.experiment.evaluation.EvaluationMode
 import com.amplitude.experiment.evaluation.FlagConfig
 import com.amplitude.experiment.evaluation.SegmentTargetingConfig
