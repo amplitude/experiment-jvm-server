@@ -7,7 +7,6 @@ import com.amplitude.experiment.cohort.ExperimentalCohortApi
 
 @ExperimentalCohortApi
 data class CohortConfiguration(
-    val debug: Boolean = false,
     val cohortServerUrl: String = DEFAULT_COHORT_SYNC_URL,
     val cohortMaxSize: Int = DEFAULT_MAX_COHORT_SIZE,
     val cohortSyncIntervalSeconds: Long = DEFAULT_SYNC_INTERVAL_SECONDS

@@ -120,7 +120,7 @@ class CohortServiceTest {
     }
 
     @Test
-    fun `test filter cohorts, explicit cohorts are included even if not provided`() {
+    fun `test filter cohorts, only explicit cohorts are included`() {
         val provider = { setOf("a", "b") }
         val api = mock(CohortApi::class.java)
         val storage = InMemoryCohortStorage()
@@ -136,8 +136,6 @@ class CohortServiceTest {
             setOf("d", "e")
         )
         val expected = listOf(
-            cohortDescription("a"),
-            cohortDescription("b"),
             cohortDescription("d"),
             cohortDescription("e"),
         )

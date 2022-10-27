@@ -72,7 +72,8 @@ class LocalEvaluationClient internal constructor(
         secretKey: String,
         config: CohortConfiguration = CohortConfiguration()
     ) {
-        cohortService = CohortServiceImpl(
+        val cohortStorage = InMemoryCohortStorage()
+        val cohortService = CohortServiceImpl(
             CohortServiceConfig(
                 config.cohortMaxSize,
                 config.cohortSyncIntervalSeconds
@@ -83,24 +84,32 @@ class LocalEvaluationClient internal constructor(
                 config.cohortServerUrl.toHttpUrl(),
                 httpClient,
             ),
-            InMemoryCohortStorage()
+            cohortStorage
         ) {
             flagConfigStorage.getAll().values.getCohortIds().apply {
                 Logger.d("managing cohorts: $this")
             }
         }
+        // Intercept incoming flag configs. If the configs are new, and
+        // contain cohort ids, refresh
         flagConfigService.addFlagConfigInterceptor { incoming ->
-            val diff = mutableSetOf<String>()
+            val newCohortIds = mutableSetOf<String>()
             val stored = flagConfigStorage.getAll()
             incoming.forEach { (incomingFlagKey, incomingFlagConfig) ->
                 val storedFlagConfig = stored[incomingFlagKey]
                 if (storedFlagConfig == null || storedFlagConfig != incomingFlagConfig) {
-                    diff += (incomingFlagKey)
+                    // This is a new or updated flag config, check for new cohort Ids.
+                    newCohortIds += incomingFlagConfig.getCohortIds()
+                        .toMutableSet()
+                        .filter { cohortId ->
+                            cohortStorage.getCohortDescription(cohortId) == null
+                        }
                 }
             }
-            if (diff.isNotEmpty()) {
-                cohortService?.refresh(diff)
+            if (newCohortIds.isNotEmpty()) {
+                cohortService.refresh(newCohortIds)
             }
         }
+        this.cohortService = cohortService
     }
 }
