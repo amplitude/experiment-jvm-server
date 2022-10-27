@@ -6,7 +6,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 internal const val DEFAULT_MAX_COHORT_SIZE = 15_000
-internal const val DEFAULT_SYNC_INTERVAL_SECONDS = 3_600L
+internal const val DEFAULT_SYNC_INTERVAL_SECONDS = 60L
 
 internal data class CohortServiceConfig(
     val maxCohortSize: Int = DEFAULT_MAX_COHORT_SIZE,
