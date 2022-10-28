@@ -99,7 +99,7 @@ class LocalEvaluationClient internal constructor(
     // TODO feels too hacky. Design better interaction between cohort and flag config services
     private fun startCohortSync() {
         if (cohortService == null || cohortStorage == null) {
-            return;
+            return
         }
         // Intercept incoming flag configs. If the configs are new, and
         // contain cohort ids, refresh
