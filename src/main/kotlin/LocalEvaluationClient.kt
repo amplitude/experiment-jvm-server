@@ -4,6 +4,7 @@ import com.amplitude.experiment.cohort.CohortApiImpl
 import com.amplitude.experiment.cohort.CohortService
 import com.amplitude.experiment.cohort.CohortServiceConfig
 import com.amplitude.experiment.cohort.CohortServiceImpl
+import com.amplitude.experiment.cohort.CohortStorage
 import com.amplitude.experiment.cohort.ExperimentalCohortApi
 import com.amplitude.experiment.cohort.InMemoryCohortStorage
 import com.amplitude.experiment.cohort.getCohortIds
@@ -37,12 +38,13 @@ class LocalEvaluationClient internal constructor(
         FlagConfigApiImpl(apiKey, serverUrl, httpClient),
         flagConfigStorage
     )
+    private var cohortStorage: CohortStorage? = null
     private var cohortService: CohortService? = null
 
     fun start() {
         lock.once {
             flagConfigService.start()
-            cohortService?.start()
+            startCohortSync()
         }
     }
 
@@ -90,6 +92,15 @@ class LocalEvaluationClient internal constructor(
                 Logger.d("managing cohorts: $this")
             }
         }
+        this.cohortService = cohortService
+        this.cohortStorage = cohortStorage
+    }
+
+    // TODO feels too hacky. Design better interaction between cohort and flag config services
+    private fun startCohortSync() {
+        if (cohortService == null || cohortStorage == null) {
+            return;
+        }
         // Intercept incoming flag configs. If the configs are new, and
         // contain cohort ids, refresh
         flagConfigService.addFlagConfigInterceptor { incoming ->
@@ -102,14 +113,14 @@ class LocalEvaluationClient internal constructor(
                     newCohortIds += incomingFlagConfig.getCohortIds()
                         .toMutableSet()
                         .filter { cohortId ->
-                            cohortStorage.getCohortDescription(cohortId) == null
+                            cohortStorage?.getCohortDescription(cohortId) == null
                         }
                 }
             }
             if (newCohortIds.isNotEmpty()) {
-                cohortService.refresh(newCohortIds)
+                cohortService?.refresh(newCohortIds)
             }
         }
-        this.cohortService = cohortService
+        cohortService?.start()
     }
 }

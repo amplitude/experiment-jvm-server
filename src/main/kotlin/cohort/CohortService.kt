@@ -75,11 +75,12 @@ internal class CohortServiceImpl(
         }
         Logger.d("Filtering cohorts for download: $includedCohortIds")
         // Filter out cohorts which are (1) not being targeted (2) too large (3) not updated
-        return cohortDescriptions.filter { description ->
-            val storageCohortDescription = cohortStorage.getCohortDescription(description.id)
-            includedCohortIds.contains(description.id) &&
-                description.size < config.maxCohortSize &&
-                description.lastComputed != storageCohortDescription?.lastComputed
+        return cohortDescriptions.filter { inputDescription ->
+            val storageDescription = cohortStorage.getCohortDescription(inputDescription.id)
+            Logger.d("${inputDescription.id} storage last computed = ${storageDescription?.lastComputed}, network last computed = ${inputDescription.lastComputed}")
+            includedCohortIds.contains(inputDescription.id) &&
+                inputDescription.size < config.maxCohortSize &&
+                inputDescription.lastComputed > (storageDescription?.lastComputed ?: 0)
         }.apply {
             Logger.d("Cohorts filtered: $this")
         }
