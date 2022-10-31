@@ -77,10 +77,9 @@ internal class CohortServiceImpl(
         // Filter out cohorts which are (1) not being targeted (2) too large (3) not updated
         return cohortDescriptions.filter { inputDescription ->
             val storageDescription = cohortStorage.getCohortDescription(inputDescription.id)
-            Logger.d("${inputDescription.id} storage last computed = ${storageDescription?.lastComputed}, network last computed = ${inputDescription.lastComputed}")
             includedCohortIds.contains(inputDescription.id) &&
                 inputDescription.size < config.maxCohortSize &&
-                inputDescription.lastComputed > (storageDescription?.lastComputed ?: 0)
+                inputDescription.lastComputed > (storageDescription?.lastComputed ?: -1)
         }.apply {
             Logger.d("Cohorts filtered: $this")
         }
@@ -94,7 +93,12 @@ internal class CohortServiceImpl(
         // Make a request to download each cohort
         return cohortDescriptions.map { description ->
             Logger.d("Downloading cohort ${description.id}")
-            cohortApi.getCohort(GetCohortRequest(cohortId = description.id))
+            cohortApi.getCohort(
+                GetCohortRequest(
+                    cohortId = description.id,
+                    lastComputed = description.lastComputed
+                )
+            )
         }
             // Handle exceptions and get the response
             .mapNotNull {
@@ -108,7 +112,7 @@ internal class CohortServiceImpl(
                     }
                 }.join()
             }.apply {
-                Logger.d("Downloaded cohorts")
+                Logger.d("Downloaded cohorts.")
             }
     }
 

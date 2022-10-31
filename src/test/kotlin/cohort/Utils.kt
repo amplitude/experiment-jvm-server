@@ -9,7 +9,7 @@ import com.amplitude.experiment.evaluation.Variant
 
 internal fun cohortDescription(
     id: String,
-    lastComputed: Long = 1,
+    lastComputed: Long = 0,
     size: Int = 0
 ): CohortDescription = CohortDescription(
     lastComputed = lastComputed,

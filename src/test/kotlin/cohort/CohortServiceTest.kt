@@ -33,7 +33,7 @@ class CohortServiceTest {
                     )
                 )
             )
-        `when`(api.getCohort(GetCohortRequest("a")))
+        `when`(api.getCohort(GetCohortRequest("a", 0)))
             .thenReturn(
                 CompletableFuture.completedFuture(
                     GetCohortResponse(
@@ -42,7 +42,7 @@ class CohortServiceTest {
                     )
                 )
             )
-        `when`(api.getCohort(GetCohortRequest("b")))
+        `when`(api.getCohort(GetCohortRequest("b", 0)))
             .thenReturn(
                 CompletableFuture.completedFuture(
                     GetCohortResponse(
@@ -146,7 +146,7 @@ class CohortServiceTest {
     fun `test download cohorts, happens async`() {
         val provider = { setOf("a", "b", "c") }
         val api = mock(CohortApi::class.java)
-        `when`(api.getCohort(GetCohortRequest("a")))
+        `when`(api.getCohort(GetCohortRequest("a", 0)))
             .thenReturn(
                 CompletableFuture.supplyAsync {
                     Thread.sleep(100)
@@ -156,7 +156,7 @@ class CohortServiceTest {
                     )
                 }
             )
-        `when`(api.getCohort(GetCohortRequest("b")))
+        `when`(api.getCohort(GetCohortRequest("b", 0)))
             .thenReturn(
                 CompletableFuture.supplyAsync {
                     Thread.sleep(100)
@@ -166,7 +166,7 @@ class CohortServiceTest {
                     )
                 }
             )
-        `when`(api.getCohort(GetCohortRequest("c")))
+        `when`(api.getCohort(GetCohortRequest("c", 0)))
             .thenReturn(
                 CompletableFuture.supplyAsync {
                     Thread.sleep(100)
@@ -176,7 +176,7 @@ class CohortServiceTest {
                     )
                 }
             )
-        `when`(api.getCohort(GetCohortRequest("d")))
+        `when`(api.getCohort(GetCohortRequest("d", 0)))
             .thenReturn(
                 CompletableFuture.supplyAsync {
                     Thread.sleep(100)
@@ -205,7 +205,7 @@ class CohortServiceTest {
     fun `test download cohorts, single failure`() {
         val provider = { setOf("a", "b", "c") }
         val api = mock(CohortApi::class.java)
-        `when`(api.getCohort(GetCohortRequest("a")))
+        `when`(api.getCohort(GetCohortRequest("a", 0)))
             .thenReturn(
                 CompletableFuture.supplyAsync {
                     GetCohortResponse(
@@ -214,7 +214,7 @@ class CohortServiceTest {
                     )
                 }
             )
-        `when`(api.getCohort(GetCohortRequest("b")))
+        `when`(api.getCohort(GetCohortRequest("b", 0)))
             .thenReturn(
                 CompletableFuture.supplyAsync {
                     GetCohortResponse(
@@ -223,13 +223,13 @@ class CohortServiceTest {
                     )
                 }
             )
-        `when`(api.getCohort(GetCohortRequest("c")))
+        `when`(api.getCohort(GetCohortRequest("c", 0)))
             .thenReturn(
                 CompletableFuture.supplyAsync {
                     throw RuntimeException("Failure")
                 }
             )
-        `when`(api.getCohort(GetCohortRequest("d")))
+        `when`(api.getCohort(GetCohortRequest("d", 0)))
             .thenReturn(
                 CompletableFuture.supplyAsync {
                     GetCohortResponse(

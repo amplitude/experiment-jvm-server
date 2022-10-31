@@ -39,6 +39,7 @@ internal data class GetCohortsResponse(
 
 internal data class GetCohortRequest(
     val cohortId: String,
+    val lastComputed: Long,
 )
 
 @Serializable
@@ -75,13 +76,18 @@ internal class CohortApiImpl(
     }
 
     override fun getCohort(request: GetCohortRequest): CompletableFuture<GetCohortResponse> {
-        return semaphore.limit { get("api/3/cohorts/${request.cohortId}") }
+        return semaphore.limit {
+            get("api/3/cohorts/${request.cohortId}", mapOf("lastComputed" to "${request.lastComputed}"))
+        }
     }
 
-    private inline fun <reified T> get(path: String): CompletableFuture<T> {
-        val url = serverUrl.newBuilder()
-            .addPathSegments(path)
-            .build()
+    private inline fun <reified T> get(path: String, queries: Map<String, String>? = null): CompletableFuture<T> {
+        val url = serverUrl.newBuilder().apply {
+            addPathSegments(path)
+            queries?.forEach {
+                addQueryParameter(it.key, it.value)
+            }
+        }.build()
         val basicAuth = Base64.getEncoder().encodeToString("$apiKey:$secretKey".toByteArray(Charsets.UTF_8))
         val request = Request.Builder()
             .get()
