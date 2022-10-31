@@ -8,6 +8,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.Base64
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 
 /*
@@ -59,6 +60,7 @@ internal class CohortApiImpl(
 ) : CohortApi {
 
     private val httpClient: OkHttpClient
+    private val semaphore = Semaphore(5, true)
 
     init {
         this.httpClient = httpClient.newBuilder()
@@ -67,11 +69,13 @@ internal class CohortApiImpl(
     }
 
     override fun getCohorts(request: GetCohortsRequest): CompletableFuture<GetCohortsResponse> {
-        return get("api/3/cohorts")
+        return semaphore.limit {
+            get("api/3/cohorts")
+        }
     }
 
     override fun getCohort(request: GetCohortRequest): CompletableFuture<GetCohortResponse> {
-        return get("api/3/cohorts/${request.cohortId}")
+        return semaphore.limit { get("api/3/cohorts/${request.cohortId}") }
     }
 
     private inline fun <reified T> get(path: String): CompletableFuture<T> {
@@ -86,4 +90,12 @@ internal class CohortApiImpl(
             .build()
         return httpClient.request(request)
     }
+}
+
+private inline fun <reified T> Semaphore.limit(block: () -> CompletableFuture<T>): CompletableFuture<T> {
+    acquire()
+    val result: CompletableFuture<T> = block.invoke().whenComplete { _, _ ->
+        release()
+    }
+    return result
 }
