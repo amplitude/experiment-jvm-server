@@ -98,8 +98,8 @@ class LocalEvaluationClient internal constructor(
 
     // TODO feels too hacky. Design better interaction between cohort and flag config services
     private fun startCohortSync() {
-        val cohortStorage = this.cohortStorage;
-        val cohortService = this.cohortService;
+        val cohortStorage = this.cohortStorage
+        val cohortService = this.cohortService
         if (cohortService == null || cohortStorage == null) {
             return
         }
