@@ -29,8 +29,7 @@ internal class FlagConfigApiImpl(
     override fun getFlagConfigs(request: GetFlagConfigsRequest): CompletableFuture<GetFlagConfigsResponse> {
         val url = serverUrl.newBuilder()
             .addPathSegments("sdk/rules")
-            // TODO uncomment once product changes are done
-            // .addQueryParameter("eval_mode", "local")
+            .addQueryParameter("eval_mode", "local")
             .build()
         return httpClient.request<List<SerialFlagConfig>>(
             Request.Builder()
