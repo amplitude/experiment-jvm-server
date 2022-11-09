@@ -98,6 +98,8 @@ class LocalEvaluationClient internal constructor(
 
     // TODO feels too hacky. Design better interaction between cohort and flag config services
     private fun startCohortSync() {
+        val cohortStorage = this.cohortStorage;
+        val cohortService = this.cohortService;
         if (cohortService == null || cohortStorage == null) {
             return
         }
@@ -107,20 +109,21 @@ class LocalEvaluationClient internal constructor(
             val newCohortIds = mutableSetOf<String>()
             val stored = flagConfigStorage.getAll()
             incoming.forEach { (incomingFlagKey, incomingFlagConfig) ->
+                val incomingCohortIds = incomingFlagConfig.getCohortIds()
                 val storedFlagConfig = stored[incomingFlagKey]
                 if (storedFlagConfig == null || storedFlagConfig != incomingFlagConfig) {
                     // This is a new or updated flag config, check for new cohort Ids.
-                    newCohortIds += incomingFlagConfig.getCohortIds()
+                    newCohortIds += incomingCohortIds
                         .toMutableSet()
                         .filter { cohortId ->
-                            cohortStorage?.getCohortDescription(cohortId) == null
+                            cohortStorage.getCohortDescription(cohortId) == null
                         }
                 }
             }
             if (newCohortIds.isNotEmpty()) {
-                cohortService?.refresh(newCohortIds)
+                cohortService.refresh(newCohortIds)
             }
         }
-        cohortService?.start()
+        cohortService.start()
     }
 }

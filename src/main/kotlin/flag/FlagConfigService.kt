@@ -39,6 +39,7 @@ internal class FlagConfigServiceImpl(
         Logger.d("Refreshing flag configs.")
         val flagConfigs = getFlagConfigs()
         storeFlagConfigs(flagConfigs)
+        Logger.d("Refreshed ${flagConfigs.size} flag configs.")
     }
 
     override fun start() {
@@ -82,7 +83,6 @@ internal class FlagConfigServiceImpl(
     }
 
     private fun storeFlagConfigs(flagConfigs: Map<String, FlagConfig>) {
-        flagConfigStorage.clear()
-        flagConfigStorage.putAll(flagConfigs)
+        flagConfigStorage.overwrite(flagConfigs)
     }
 }

@@ -71,7 +71,16 @@ internal class CohortServiceImpl(
     internal fun filterCohorts(cohortDescriptions: List<CohortDescription>, cohortIds: Set<String> = setOf()): List<CohortDescription> {
         // Filter for explicit cohort ids, otherwise use the cohort ID provider.
         val includedCohortIds = cohortIds.ifEmpty {
-            cohortIdProvider.invoke()
+            val managedCohorts = cohortIdProvider.invoke()
+            // Delete stored cohorts that are not being managed.
+            val storedCohorts = cohortStorage.getAllCohortDescriptions()
+            storedCohorts.keys.forEach { storedCohortId ->
+                if (!managedCohorts.contains(storedCohortId)) {
+                    cohortStorage.deleteCohort(storedCohortId)
+                    Logger.d("Deleting unmanaged cohort $storedCohortId")
+                }
+            }
+            managedCohorts
         }
         Logger.d("Filtering cohorts for download: $includedCohortIds")
         // Filter out cohorts which are (1) not being targeted (2) too large (3) not updated
