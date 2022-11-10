@@ -8,4 +8,6 @@ object Versions {
     const val okhttp = "4.9.3"
     const val evaluationCore = "1.0.0"
     const val evaluationSerialization = "1.0.0"
+
+    const val mockito = "4.8.1"
 }

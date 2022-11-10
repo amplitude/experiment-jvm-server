@@ -1,82 +1,64 @@
 package com.amplitude.experiment
 
+import com.amplitude.experiment.cohort.CohortApiImpl
+import com.amplitude.experiment.cohort.CohortService
+import com.amplitude.experiment.cohort.CohortServiceConfig
+import com.amplitude.experiment.cohort.CohortServiceImpl
+import com.amplitude.experiment.cohort.CohortStorage
+import com.amplitude.experiment.cohort.ExperimentalCohortApi
+import com.amplitude.experiment.cohort.InMemoryCohortStorage
+import com.amplitude.experiment.cohort.getCohortIds
 import com.amplitude.experiment.evaluation.EvaluationEngine
 import com.amplitude.experiment.evaluation.EvaluationEngineImpl
-import com.amplitude.experiment.evaluation.FlagConfig
-import com.amplitude.experiment.evaluation.serialization.SerialFlagConfig
 import com.amplitude.experiment.evaluation.serialization.SerialVariant
+import com.amplitude.experiment.flag.FlagConfigApiImpl
+import com.amplitude.experiment.flag.FlagConfigService
+import com.amplitude.experiment.flag.FlagConfigServiceConfig
+import com.amplitude.experiment.flag.FlagConfigServiceImpl
+import com.amplitude.experiment.flag.InMemoryFlagConfigStorage
 import com.amplitude.experiment.util.Logger
+import com.amplitude.experiment.util.Once
 import com.amplitude.experiment.util.toSerialExperimentUser
 import com.amplitude.experiment.util.toVariant
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
-import okhttp3.Call
-import okhttp3.Callback
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import okio.IOException
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
-
-private val json = Json {
-    ignoreUnknownKeys = true
-}
 
 class LocalEvaluationClient internal constructor(
-    private val apiKey: String,
-    private val config: LocalEvaluationConfig = LocalEvaluationConfig(),
+    apiKey: String,
+    config: LocalEvaluationConfig = LocalEvaluationConfig(),
 ) {
-
-    private val startLock = Any()
-    private var started = false
+    private val lock = Once()
     private val httpClient = OkHttpClient()
     private val serverUrl: HttpUrl = config.serverUrl.toHttpUrl()
-    private val poller = Executors.newSingleThreadScheduledExecutor()
     private val evaluation: EvaluationEngine = EvaluationEngineImpl()
-    private val rulesLock = ReentrantReadWriteLock()
-    private var rules: Map<String, FlagConfig> = mapOf()
+    private val flagConfigStorage = InMemoryFlagConfigStorage()
+    private val flagConfigService: FlagConfigService = FlagConfigServiceImpl(
+        FlagConfigServiceConfig(config.flagConfigPollerIntervalMillis),
+        FlagConfigApiImpl(apiKey, serverUrl, httpClient),
+        flagConfigStorage
+    )
+    private var cohortStorage: CohortStorage? = null
+    private var cohortService: CohortService? = null
 
     fun start() {
-        synchronized(startLock) {
-            if (started) {
-                return
-            } else {
-                started = true
-            }
+        lock.once {
+            flagConfigService.start()
+            startCohortSync()
         }
-
-        // Poller
-        poller.scheduleAtFixedRate(
-            { updateRules() },
-            config.flagConfigPollerIntervalMillis,
-            config.flagConfigPollerIntervalMillis,
-            TimeUnit.MILLISECONDS
-        )
-
-        // Initial rules
-        updateRules().join()
     }
 
     @JvmOverloads
     fun evaluate(user: ExperimentUser, flagKeys: List<String> = listOf()): Map<String, Variant> {
-        val flagConfigs = rulesLock.read {
-            if (flagKeys.isEmpty()) {
-                rules.values.toList()
-            } else {
-                flagKeys.mapNotNull { flagKey ->
-                    rules[flagKey]
-                }
-            }
+        val flagConfigs = flagConfigService.getFlagConfigs(flagKeys)
+        val enrichedUser = if (user.userId == null) {
+            user
+        } else {
+            user.copyToBuilder().apply {
+                cohortIds(cohortService?.getCohorts(user.userId))
+            }.build()
         }
-
-        val flagResults = evaluation.evaluate(flagConfigs, user.toSerialExperimentUser().convert())
+        val flagResults = evaluation.evaluate(flagConfigs, enrichedUser.toSerialExperimentUser().convert())
         return flagResults.mapNotNull { entry ->
             if (!entry.value.isDefaultVariant) {
                 entry.key to SerialVariant(entry.value.variant).toVariant()
@@ -86,56 +68,62 @@ class LocalEvaluationClient internal constructor(
         }.toMap()
     }
 
-    private fun updateRules(): CompletableFuture<Map<String, FlagConfig>> {
-        return doRules().thenApply { newRules ->
-            rulesLock.write {
-                rules = newRules
+    @ExperimentalCohortApi
+    fun enableCohortSync(
+        apiKey: String,
+        secretKey: String,
+        config: CohortConfiguration = CohortConfiguration()
+    ) {
+        val cohortStorage = InMemoryCohortStorage()
+        val cohortService = CohortServiceImpl(
+            CohortServiceConfig(
+                config.cohortMaxSize,
+                config.cohortSyncIntervalSeconds
+            ),
+            CohortApiImpl(
+                apiKey,
+                secretKey,
+                config.cohortServerUrl.toHttpUrl(),
+                httpClient,
+            ),
+            cohortStorage
+        ) {
+            flagConfigStorage.getAll().values.getCohortIds().apply {
+                Logger.d("managing cohorts: $this")
             }
-            newRules
         }
+        this.cohortService = cohortService
+        this.cohortStorage = cohortStorage
     }
 
-    private fun doRules(): CompletableFuture<Map<String, FlagConfig>> {
-        val url = serverUrl.newBuilder()
-            .addPathSegments("sdk/rules")
-            .build()
-        val request = Request.Builder()
-            .get()
-            .url(url)
-            .addHeader("Authorization", "Api-Key $apiKey")
-            .addHeader("X-Amp-Exp-Library", "experiment-jvm-server/$LIBRARY_VERSION")
-            .build()
-        val future = CompletableFuture<Map<String, FlagConfig>>()
-        val call = httpClient.newCall(request)
-        call.timeout().timeout(config.flagConfigPollerRequestTimeoutMillis, TimeUnit.MILLISECONDS)
-        // Execute request and handle response
-        call.enqueue(object : Callback {
-            override fun onResponse(call: Call, response: Response) {
-                try {
-                    Logger.d("Received flag configs response: $response")
-                    val variants = response.use {
-                        if (!response.isSuccessful) {
-                            throw IOException("flag configs error response: $response")
+    // TODO feels too hacky. Design better interaction between cohort and flag config services
+    private fun startCohortSync() {
+        val cohortStorage = this.cohortStorage
+        val cohortService = this.cohortService
+        if (cohortService == null || cohortStorage == null) {
+            return
+        }
+        // Intercept incoming flag configs. If the configs are new, and
+        // contain cohort ids, refresh
+        flagConfigService.addFlagConfigInterceptor { incoming ->
+            val newCohortIds = mutableSetOf<String>()
+            val stored = flagConfigStorage.getAll()
+            incoming.forEach { (incomingFlagKey, incomingFlagConfig) ->
+                val incomingCohortIds = incomingFlagConfig.getCohortIds()
+                val storedFlagConfig = stored[incomingFlagKey]
+                if (storedFlagConfig == null || storedFlagConfig != incomingFlagConfig) {
+                    // This is a new or updated flag config, check for new cohort Ids.
+                    newCohortIds += incomingCohortIds
+                        .toMutableSet()
+                        .filter { cohortId ->
+                            cohortStorage.getCohortDescription(cohortId) == null
                         }
-                        parseFlagConfigsResponse(response.body?.string() ?: "")
-                    }
-                    future.complete(variants)
-                } catch (e: IOException) {
-                    onFailure(call, e)
                 }
             }
-
-            override fun onFailure(call: Call, e: IOException) {
-                future.completeExceptionally(e)
+            if (newCohortIds.isNotEmpty()) {
+                cohortService.refresh(newCohortIds)
             }
-        })
-        return future
+        }
+        cohortService.start()
     }
 }
-
-internal fun parseFlagConfigsResponse(jsonString: String) =
-    json.decodeFromString<List<SerialFlagConfig>>(
-        jsonString
-    ).associate {
-        it.flagKey to it.convert()
-    }
