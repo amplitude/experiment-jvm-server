@@ -28,7 +28,8 @@ class LocalEvaluationClient internal constructor(
     apiKey: String,
     config: LocalEvaluationConfig = LocalEvaluationConfig(),
 ) {
-    private val lock = Once()
+    private val startLock = Once()
+    private val cohortLock = Once()
     private val httpClient = OkHttpClient()
     private val serverUrl: HttpUrl = config.serverUrl.toHttpUrl()
     private val evaluation: EvaluationEngine = EvaluationEngineImpl()
@@ -42,7 +43,7 @@ class LocalEvaluationClient internal constructor(
     private var cohortService: CohortService? = null
 
     fun start() {
-        lock.once {
+        startLock.once {
             flagConfigService.start()
             startCohortSync()
         }
@@ -73,7 +74,8 @@ class LocalEvaluationClient internal constructor(
         apiKey: String,
         secretKey: String,
         config: CohortConfiguration = CohortConfiguration()
-    ) {
+    ) = cohortLock.once {
+        Logger.d("enableCohortSync called $config")
         val cohortStorage = InMemoryCohortStorage()
         val cohortService = CohortServiceImpl(
             CohortServiceConfig(
