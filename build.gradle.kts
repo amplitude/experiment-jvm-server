@@ -24,6 +24,8 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:${Versions.okhttp}")
     implementation("com.amplitude:evaluation-core:${Versions.evaluationCore}")
     implementation("com.amplitude:evaluation-serialization:${Versions.evaluationSerialization}")
+    implementation("com.amplitude:java-sdk:${Versions.amplitudeAnalytics}")
+    implementation("org.json:json:${Versions.json}")
 }
 
 // Publishing

@@ -1,9 +1,20 @@
 package com.amplitude.experiment
 
+import com.amplitude.experiment.analytics.DEFAULT_EVENT_UPLOAD_PERIOD_MILLIS
+import com.amplitude.experiment.analytics.DEFAULT_EVENT_UPLOAD_THRESHOLD
+import com.amplitude.experiment.analytics.DEFAULT_FILTER_CAPACITY
 import com.amplitude.experiment.cohort.DEFAULT_COHORT_SYNC_URL
 import com.amplitude.experiment.cohort.DEFAULT_MAX_COHORT_SIZE
 import com.amplitude.experiment.cohort.DEFAULT_SYNC_INTERVAL_SECONDS
 import com.amplitude.experiment.cohort.ExperimentalCohortApi
+
+@ExperimentalCohortApi
+data class AssignmentConfiguration(
+    val filterCapacity: Int = DEFAULT_FILTER_CAPACITY,
+    val eventUploadThreshold: Int = DEFAULT_EVENT_UPLOAD_THRESHOLD,
+    val eventUploadPeriodMillis: Int = DEFAULT_EVENT_UPLOAD_PERIOD_MILLIS,
+    val useBatchMode: Boolean = true,
+)
 
 @ExperimentalCohortApi
 data class CohortConfiguration(
