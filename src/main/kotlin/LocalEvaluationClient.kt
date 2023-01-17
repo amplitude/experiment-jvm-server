@@ -1,10 +1,10 @@
 package com.amplitude.experiment
 
 import com.amplitude.Amplitude
-import com.amplitude.experiment.analytics.AmplitudeAssignmentService
-import com.amplitude.experiment.analytics.Assignment
-import com.amplitude.experiment.analytics.AssignmentService
-import com.amplitude.experiment.analytics.LRUAssignmentDedupeService
+import com.amplitude.experiment.assignment.AmplitudeAssignmentService
+import com.amplitude.experiment.assignment.Assignment
+import com.amplitude.experiment.assignment.AssignmentService
+import com.amplitude.experiment.assignment.LRUAssignmentDedupeService
 import com.amplitude.experiment.cohort.CohortApiImpl
 import com.amplitude.experiment.cohort.CohortService
 import com.amplitude.experiment.cohort.CohortServiceConfig
@@ -15,7 +15,6 @@ import com.amplitude.experiment.cohort.InMemoryCohortStorage
 import com.amplitude.experiment.cohort.getCohortIds
 import com.amplitude.experiment.evaluation.EvaluationEngine
 import com.amplitude.experiment.evaluation.EvaluationEngineImpl
-import com.amplitude.experiment.evaluation.FlagResult
 import com.amplitude.experiment.evaluation.serialization.SerialVariant
 import com.amplitude.experiment.flag.FlagConfigApiImpl
 import com.amplitude.experiment.flag.FlagConfigService
@@ -78,7 +77,10 @@ class LocalEvaluationClient internal constructor(
     }
 
     @ExperimentalCohortApi
-    fun enableAssignmentTracking(apiKey: String, config: AssignmentConfiguration) {
+    fun enableAssignmentTracking(
+        apiKey: String,
+        config: AssignmentConfiguration = AssignmentConfiguration()
+    ) {
         val amplitude = Amplitude.getInstance("experiment").apply {
             setEventUploadThreshold(config.eventUploadThreshold)
             setEventUploadPeriodMillis(config.eventUploadThreshold)

@@ -1,4 +1,4 @@
-package com.amplitude.experiment.analytics
+package com.amplitude.experiment.assignment
 
 import com.amplitude.Amplitude
 import com.amplitude.Event
@@ -31,7 +31,7 @@ internal class AmplitudeAssignmentService(
             )
             event.eventProperties = JSONObject().apply {
                 for ((flagKey, result) in assignment.results) {
-                    put("$flagKey.variant", result.variant)
+                    put("$flagKey.variant", result.variant.key)
                     put("$flagKey.description", result.description)
                 }
             }
@@ -49,6 +49,7 @@ internal class AmplitudeAssignmentService(
                 put("\$unset", set)
 
             }
+            event.insertId = "${assignment.user.userId}-${assignment.user.deviceId}-${assignment.canonicalize().hashCode()}"
             amplitude.logEvent(event)
         }
     }
