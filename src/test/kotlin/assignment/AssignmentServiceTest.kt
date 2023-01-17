@@ -38,7 +38,8 @@ class AssignmentServiceTest {
         Assert.assertEquals(1, userProperties.getJSONObject("\$unset").length())
         Assert.assertEquals("on", userProperties.getJSONObject("\$set").get("[Experiment] flag-key-1"))
         Assert.assertEquals("-", userProperties.getJSONObject("\$unset").get("[Experiment] flag-key-2"))
-        val insertId = event.insertId
-        Assert.assertNotNull(insertId)
+        val canonicalization = "user device flag-key-1 on flag-key-2 off "
+        val expected = "user device ${canonicalization.hashCode()} ${assignment.timestamp / DAY_MILLIS}"
+        Assert.assertEquals(expected, event.insertId)
     }
 }
