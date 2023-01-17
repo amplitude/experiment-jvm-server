@@ -101,6 +101,7 @@ class LRUCacheTest {
                 }
             )
         }
+        futures.forEach { f -> f.get() }
         repeat(k) { i ->
             Assert.assertEquals(i, cache[i])
             Assert.assertEquals(i + k, cache[i + k])
