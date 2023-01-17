@@ -47,11 +47,9 @@ internal class AmplitudeAssignmentService(
                 }
                 put("\$set", set)
                 put("\$unset", set)
-
             }
             event.insertId = "${assignment.user.userId}-${assignment.user.deviceId}-${assignment.canonicalize().hashCode()}"
             amplitude.logEvent(event)
         }
     }
 }
-

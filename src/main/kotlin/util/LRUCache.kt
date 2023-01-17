@@ -60,7 +60,7 @@ internal class LRUCache<K, V>(private val capacity: Int) {
         after!!.prev = node
     }
 
-    private fun remove(node: Node<K,V>) {
+    private fun remove(node: Node<K, V>) {
         val before = node.prev
         val after = node.next
         before!!.next = after

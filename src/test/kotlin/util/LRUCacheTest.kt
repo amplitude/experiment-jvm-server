@@ -1,9 +1,9 @@
 package com.amplitude.experiment.util
 
-import java.util.concurrent.Executors
-import java.util.concurrent.Future
 import org.junit.Assert
 import org.junit.Test
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
 
 class LRUCacheTest {
 
@@ -82,9 +82,11 @@ class LRUCacheTest {
         val cache = LRUCache<Int, Int>(n)
         val futures = mutableListOf<Future<*>>()
         repeat(n) { i ->
-            futures.add(executor.submit {
-                cache[i] = i
-            })
+            futures.add(
+                executor.submit {
+                    cache[i] = i
+                }
+            )
         }
         futures.forEach { f -> f.get() }
         repeat(n) { i ->
@@ -93,13 +95,15 @@ class LRUCacheTest {
         futures.clear()
         val k = 50
         repeat(k) { i ->
-            futures.add(executor.submit {
-                cache[i+k] = i+k
-            })
+            futures.add(
+                executor.submit {
+                    cache[i + k] = i + k
+                }
+            )
         }
         repeat(k) { i ->
             Assert.assertEquals(i, cache[i])
-            Assert.assertEquals(i+k, cache[i+k])
+            Assert.assertEquals(i + k, cache[i + k])
         }
     }
 }
