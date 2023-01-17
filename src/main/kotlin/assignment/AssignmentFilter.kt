@@ -18,7 +18,7 @@ internal fun Assignment.canonicalize(): String {
     return sb.toString()
 }
 
-internal class LRUAssignmentDedupeService(size: Int) : AssignmentFilter {
+internal class LRUAssignmentFilter(size: Int) : AssignmentFilter {
 
     // Cache of canonical assignment to the last sent timestamp.
     private val cache = LRUCache<String, Long>(size)

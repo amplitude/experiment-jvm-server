@@ -4,7 +4,7 @@ import com.amplitude.Amplitude
 import com.amplitude.experiment.assignment.AmplitudeAssignmentService
 import com.amplitude.experiment.assignment.Assignment
 import com.amplitude.experiment.assignment.AssignmentService
-import com.amplitude.experiment.assignment.LRUAssignmentDedupeService
+import com.amplitude.experiment.assignment.LRUAssignmentFilter
 import com.amplitude.experiment.cohort.CohortApiImpl
 import com.amplitude.experiment.cohort.CohortService
 import com.amplitude.experiment.cohort.CohortServiceConfig
@@ -87,7 +87,7 @@ class LocalEvaluationClient internal constructor(
             useBatchMode(config.useBatchMode)
             init(apiKey)
         }
-        assignmentService = AmplitudeAssignmentService(amplitude, LRUAssignmentDedupeService(config.filterCapacity))
+        assignmentService = AmplitudeAssignmentService(amplitude, LRUAssignmentFilter(config.filterCapacity))
     }
 
     @ExperimentalCohortApi

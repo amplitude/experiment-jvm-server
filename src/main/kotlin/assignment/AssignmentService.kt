@@ -22,34 +22,39 @@ internal class AmplitudeAssignmentService(
     private val amplitude: Amplitude,
     private val assignmentFilter: AssignmentFilter,
 ) : AssignmentService {
+
     override fun track(assignment: Assignment) {
         if (assignmentFilter.shouldTrack(assignment)) {
-            val event = Event(
-                "[Experiment] Assignment",
-                assignment.user.userId,
-                assignment.user.deviceId
-            )
-            event.eventProperties = JSONObject().apply {
-                for ((flagKey, result) in assignment.results) {
-                    put("$flagKey.variant", result.variant.key)
-                    put("$flagKey.description", result.description)
-                }
-            }
-            event.userProperties = JSONObject().apply {
-                val set = JSONObject()
-                val unset = JSONObject()
-                for ((flagKey, result) in assignment.results) {
-                    if (result.isDefaultVariant) {
-                        unset.put("[Experiment] $flagKey", "-")
-                    } else {
-                        set.put("[Experiment] $flagKey", result.variant.key)
-                    }
-                }
-                put("\$set", set)
-                put("\$unset", set)
-            }
-            event.insertId = "${assignment.user.userId}-${assignment.user.deviceId}-${assignment.canonicalize().hashCode()}"
-            amplitude.logEvent(event)
+            amplitude.logEvent(assignment.toAmplitudeEvent())
         }
     }
+}
+
+internal fun Assignment.toAmplitudeEvent(): Event {
+    val event = Event(
+        "[Experiment] Assignment",
+        this.user.userId,
+        this.user.deviceId
+    )
+    event.eventProperties = JSONObject().apply {
+        for ((flagKey, result) in this@toAmplitudeEvent.results) {
+            put("$flagKey.variant", result.variant.key)
+            put("$flagKey.details", result.description)
+        }
+    }
+    event.userProperties = JSONObject().apply {
+        val set = JSONObject()
+        val unset = JSONObject()
+        for ((flagKey, result) in this@toAmplitudeEvent.results) {
+            if (result.isDefaultVariant) {
+                unset.put("[Experiment] $flagKey", "-")
+            } else {
+                set.put("[Experiment] $flagKey", result.variant.key)
+            }
+        }
+        put("\$set", set)
+        put("\$unset", unset)
+    }
+    event.insertId = "${this.user.userId}-${this.user.deviceId}-${this.canonicalize().hashCode()}"
+    return event
 }
