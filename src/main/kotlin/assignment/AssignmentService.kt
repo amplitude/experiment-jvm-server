@@ -4,8 +4,6 @@ import com.amplitude.Amplitude
 import com.amplitude.Event
 import org.json.JSONObject
 
-
-
 internal const val DEFAULT_EVENT_UPLOAD_THRESHOLD = 10
 internal const val DEFAULT_EVENT_UPLOAD_PERIOD_MILLIS = 10000
 
