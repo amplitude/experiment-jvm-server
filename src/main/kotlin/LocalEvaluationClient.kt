@@ -35,6 +35,7 @@ class LocalEvaluationClient internal constructor(
 ) {
     private val startLock = Once()
     private val cohortLock = Once()
+    private val assignmentLock = Once()
     private val httpClient = OkHttpClient()
     private val serverUrl: HttpUrl = config.serverUrl.toHttpUrl()
     private val evaluation: EvaluationEngine = EvaluationEngineImpl()
@@ -80,7 +81,7 @@ class LocalEvaluationClient internal constructor(
     fun enableAssignmentTracking(
         apiKey: String,
         config: AssignmentConfiguration = AssignmentConfiguration()
-    ) {
+    ) = assignmentLock.once {
         val amplitude = Amplitude.getInstance("experiment").apply {
             setEventUploadThreshold(config.eventUploadThreshold)
             setEventUploadPeriodMillis(config.eventUploadThreshold)
