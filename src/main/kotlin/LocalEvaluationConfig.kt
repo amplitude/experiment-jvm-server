@@ -1,17 +1,5 @@
 package com.amplitude.experiment
 
-import com.amplitude.experiment.cohort.DEFAULT_COHORT_SYNC_URL
-import com.amplitude.experiment.cohort.DEFAULT_MAX_COHORT_SIZE
-import com.amplitude.experiment.cohort.DEFAULT_SYNC_INTERVAL_SECONDS
-import com.amplitude.experiment.cohort.ExperimentalCohortApi
-
-@ExperimentalCohortApi
-data class CohortConfiguration(
-    val cohortServerUrl: String = DEFAULT_COHORT_SYNC_URL,
-    val cohortMaxSize: Int = DEFAULT_MAX_COHORT_SIZE,
-    val cohortSyncIntervalSeconds: Long = DEFAULT_SYNC_INTERVAL_SECONDS
-)
-
 /**
  * Configuration options. This is an immutable object that can be created using
  * a [LocalEvaluationConfig.Builder]. Example usage:
