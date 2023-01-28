@@ -52,6 +52,7 @@ class LocalEvaluationClient internal constructor(
     fun start() {
         startLock.once {
             flagConfigService.start()
+            startCohortSync()
         }
     }
 
@@ -67,7 +68,6 @@ class LocalEvaluationClient internal constructor(
         }
         val flagResults = evaluation.evaluate(flagConfigs, enrichedUser.toSerialExperimentUser().convert())
         assignmentService?.track(Assignment(user, flagResults))
-
         return flagResults.mapNotNull { entry ->
             if (!entry.value.isDefaultVariant) {
                 entry.key to SerialVariant(entry.value.variant).toVariant()
