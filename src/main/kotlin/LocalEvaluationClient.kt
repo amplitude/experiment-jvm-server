@@ -1,6 +1,5 @@
 package com.amplitude.experiment
 
-
 import com.amplitude.Amplitude
 import com.amplitude.experiment.assignment.AmplitudeAssignmentService
 import com.amplitude.experiment.assignment.Assignment
