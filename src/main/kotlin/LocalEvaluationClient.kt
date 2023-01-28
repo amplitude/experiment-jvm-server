@@ -1,5 +1,6 @@
 package com.amplitude.experiment
 
+
 import com.amplitude.Amplitude
 import com.amplitude.experiment.assignment.AmplitudeAssignmentService
 import com.amplitude.experiment.assignment.Assignment
@@ -52,7 +53,6 @@ class LocalEvaluationClient internal constructor(
     fun start() {
         startLock.once {
             flagConfigService.start()
-            startCohortSync()
         }
     }
 
