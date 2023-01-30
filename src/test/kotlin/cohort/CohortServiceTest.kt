@@ -20,7 +20,7 @@ class CohortServiceTest {
 
     @Test
     fun `test refresh, success`() {
-        val provider = { setOf("a", "b") }
+        val managedCohorts = setOf("a", "b")
         val api = mock(CohortApi::class.java)
         `when`(api.getCohorts(GetCohortsRequest))
             .thenReturn(
@@ -52,7 +52,9 @@ class CohortServiceTest {
                 )
             )
         val storage = InMemoryCohortStorage()
-        val service = CohortServiceImpl(config, api, storage, provider)
+        val service = PollingCohortService(config, api, storage).apply {
+            manage(managedCohorts)
+        }
         service.refresh()
 
         // Check storage description
@@ -70,10 +72,12 @@ class CohortServiceTest {
 
     @Test
     fun `test filter cohorts, cohorts not matching provider are filtered`() {
-        val provider = { setOf("a", "b") }
+        val managedCohorts = setOf("a", "b")
         val api = mock(CohortApi::class.java)
         val storage = InMemoryCohortStorage()
-        val service = CohortServiceImpl(config, api, storage, provider)
+        val service = PollingCohortService(config, api, storage).apply {
+            manage(managedCohorts)
+        }
         val actual = service.filterCohorts(
             listOf(
                 cohortDescription("a"),
@@ -87,10 +91,12 @@ class CohortServiceTest {
 
     @Test
     fun `test filter cohorts, cohorts greater than max cohort size are filtered`() {
-        val provider = { setOf("a", "b") }
+        val managedCohorts = setOf("a", "b")
         val api = mock(CohortApi::class.java)
         val storage = InMemoryCohortStorage()
-        val service = CohortServiceImpl(config, api, storage, provider)
+        val service = PollingCohortService(config, api, storage).apply {
+            manage(managedCohorts)
+        }
         val actual = service.filterCohorts(
             listOf(
                 cohortDescription("a", size = Int.MAX_VALUE),
@@ -103,12 +109,14 @@ class CohortServiceTest {
 
     @Test
     fun `test filter cohorts, already computed equivalent cohorts are filtered`() {
-        val provider = { setOf("a", "b") }
+        val managedCohorts = setOf("a", "b")
         val api = mock(CohortApi::class.java)
         val storage = InMemoryCohortStorage()
         storage.putCohort(cohortDescription("a", lastComputed = 0L), listOf())
         storage.putCohort(cohortDescription("b", lastComputed = 0L), listOf())
-        val service = CohortServiceImpl(config, api, storage, provider)
+        val service = PollingCohortService(config, api, storage).apply {
+            manage(managedCohorts)
+        }
         val actual = service.filterCohorts(
             listOf(
                 cohortDescription("a", lastComputed = 0L),
@@ -120,11 +128,13 @@ class CohortServiceTest {
     }
 
     @Test
-    fun `test filter cohorts, only explicit cohorts are included`() {
-        val provider = { setOf("a", "b") }
+    fun `test filter cohorts, only managed cohorts are included`() {
+        val managedCohorts = setOf("a", "b")
         val api = mock(CohortApi::class.java)
         val storage = InMemoryCohortStorage()
-        val service = CohortServiceImpl(config, api, storage, provider)
+        val service = PollingCohortService(config, api, storage).apply {
+            manage(managedCohorts)
+        }
         val actual = service.filterCohorts(
             listOf(
                 cohortDescription("a"),
@@ -133,18 +143,17 @@ class CohortServiceTest {
                 cohortDescription("d"),
                 cohortDescription("e"),
             ),
-            setOf("d", "e")
         )
         val expected = listOf(
-            cohortDescription("d"),
-            cohortDescription("e"),
+            cohortDescription("a"),
+            cohortDescription("b"),
         )
         assertEquals(expected, actual)
     }
 
     @Test
     fun `test download cohorts, happens async`() {
-        val provider = { setOf("a", "b", "c") }
+        val managedCohorts = setOf("a", "b", "c")
         val api = mock(CohortApi::class.java)
         `when`(api.getCohort(GetCohortRequest("a", 0)))
             .thenReturn(
@@ -187,7 +196,9 @@ class CohortServiceTest {
                 }
             )
         val storage = InMemoryCohortStorage()
-        val service = CohortServiceImpl(config, api, storage, provider)
+        val service = PollingCohortService(config, api, storage).apply {
+            manage(managedCohorts)
+        }
         val duration = measureTimeMillis {
             service.downloadCohorts(
                 listOf(
@@ -203,7 +214,7 @@ class CohortServiceTest {
 
     @Test
     fun `test download cohorts, single failure`() {
-        val provider = { setOf("a", "b", "c") }
+        val managedCohorts = setOf("a", "b", "c")
         val api = mock(CohortApi::class.java)
         `when`(api.getCohort(GetCohortRequest("a", 0)))
             .thenReturn(
@@ -239,7 +250,9 @@ class CohortServiceTest {
                 }
             )
         val storage = InMemoryCohortStorage()
-        val service = CohortServiceImpl(config, api, storage, provider)
+        val service = PollingCohortService(config, api, storage).apply {
+            manage(managedCohorts)
+        }
         val actual = service.downloadCohorts(
             listOf(
                 cohortDescription("a"),
@@ -267,10 +280,12 @@ class CohortServiceTest {
 
     @Test
     fun `test store cohorts, success`() {
-        val provider = { setOf("a", "b") }
+        val managedCohorts = setOf("a", "b")
         val api = mock(CohortApi::class.java)
         val storage = InMemoryCohortStorage()
-        val service = CohortServiceImpl(config, api, storage, provider)
+        val service = PollingCohortService(config, api, storage).apply {
+            manage(managedCohorts)
+        }
         service.storeCohorts(
             listOf(
                 GetCohortResponse(

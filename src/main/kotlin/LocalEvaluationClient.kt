@@ -8,7 +8,7 @@ import com.amplitude.experiment.assignment.LRUAssignmentFilter
 import com.amplitude.experiment.cohort.CohortApiImpl
 import com.amplitude.experiment.cohort.CohortService
 import com.amplitude.experiment.cohort.CohortServiceConfig
-import com.amplitude.experiment.cohort.CohortServiceImpl
+import com.amplitude.experiment.cohort.PollingCohortService
 import com.amplitude.experiment.cohort.CohortStorage
 import com.amplitude.experiment.cohort.ExperimentalCohortApi
 import com.amplitude.experiment.cohort.InMemoryCohortStorage
@@ -51,8 +51,18 @@ class LocalEvaluationClient internal constructor(
 
     fun start() {
         startLock.once {
+            val cohortService = this.cohortService
+            if (cohortService != null) {
+                // Intercept incoming flag configs and update the cohort service's set of managed cohorts
+                flagConfigService.addFlagConfigInterceptor { incoming ->
+                    val cohortIds = incoming.flatMapTo(mutableSetOf()) { it.value.getCohortIds() }
+                    if (cohortService.manage(cohortIds)) {
+                        cohortService.refresh()
+                    }
+                }
+            }
             flagConfigService.start()
-            startCohortSync()
+            cohortService?.start()
         }
     }
 
@@ -63,7 +73,7 @@ class LocalEvaluationClient internal constructor(
             user
         } else {
             user.copyToBuilder().apply {
-                cohortIds(cohortService?.getCohorts(user.userId))
+                cohortIds(cohortService?.getCohortsForUser(user.userId))
             }.build()
         }
         val flagResults = evaluation.evaluate(flagConfigs, enrichedUser.toSerialExperimentUser().convert())
@@ -99,7 +109,7 @@ class LocalEvaluationClient internal constructor(
     ) = cohortLock.once {
         Logger.d("enableCohortSync called $config")
         val cohortStorage = InMemoryCohortStorage()
-        val cohortService = CohortServiceImpl(
+        val cohortService = PollingCohortService(
             CohortServiceConfig(
                 config.cohortMaxSize,
                 config.cohortSyncIntervalSeconds
@@ -111,43 +121,12 @@ class LocalEvaluationClient internal constructor(
                 httpClient,
             ),
             cohortStorage
-        ) {
-            flagConfigStorage.getAll().values.getCohortIds().apply {
-                Logger.d("managing cohorts: $this")
-            }
-        }
+        )
         this.cohortService = cohortService
         this.cohortStorage = cohortStorage
     }
 
-    // TODO feels too hacky. Design better interaction between cohort and flag config services
     private fun startCohortSync() {
-        val cohortStorage = this.cohortStorage
-        val cohortService = this.cohortService
-        if (cohortService == null || cohortStorage == null) {
-            return
-        }
-        // Intercept incoming flag configs. If the configs are new, and
-        // contain cohort ids, refresh
-        flagConfigService.addFlagConfigInterceptor { incoming ->
-            val newCohortIds = mutableSetOf<String>()
-            val stored = flagConfigStorage.getAll()
-            incoming.forEach { (incomingFlagKey, incomingFlagConfig) ->
-                val incomingCohortIds = incomingFlagConfig.getCohortIds()
-                val storedFlagConfig = stored[incomingFlagKey]
-                if (storedFlagConfig == null || storedFlagConfig != incomingFlagConfig) {
-                    // This is a new or updated flag config, check for new cohort Ids.
-                    newCohortIds += incomingCohortIds
-                        .toMutableSet()
-                        .filter { cohortId ->
-                            cohortStorage.getCohortDescription(cohortId) == null
-                        }
-                }
-            }
-            if (newCohortIds.isNotEmpty()) {
-                cohortService.refresh(newCohortIds)
-            }
-        }
-        cohortService.start()
+
     }
 }

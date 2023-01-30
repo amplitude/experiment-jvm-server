@@ -4,6 +4,9 @@ import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.Once
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 internal const val DEFAULT_MAX_COHORT_SIZE = 15_000
 internal const val DEFAULT_SYNC_INTERVAL_SECONDS = 60L
@@ -16,47 +19,59 @@ internal data class CohortServiceConfig(
 internal interface CohortService {
     fun start()
     fun stop()
-    fun refresh(cohortIds: Set<String> = setOf())
-    fun getCohorts(userId: String): Set<String>
+    fun refresh()
+    fun manage(cohortIds: Set<String>): Boolean
+    fun getCohortsForUser(userId: String): Set<String>
 }
 
-internal class CohortServiceImpl(
+internal class PollingCohortService(
     private val config: CohortServiceConfig,
     private val cohortApi: CohortApi,
     private val cohortStorage: CohortStorage,
-    private val cohortIdProvider: CohortIdProvider,
 ) : CohortService {
 
-    private val lock = Once()
-    private val poller = Executors.newSingleThreadScheduledExecutor()
+    private val start = Once()
+    private val refreshLock = Any()
+    private val scheduledExecutor = Executors.newSingleThreadScheduledExecutor()
+    private val managedCohortsLock = ReentrantReadWriteLock()
+    private val managedCohorts = mutableSetOf<String>()
 
-    override fun refresh(cohortIds: Set<String>) {
-        Logger.d("Refreshing cohorts $cohortIds")
-        getCohortDescriptions()
-            .filterCohorts(cohortIds)
-            .downloadCohorts()
-            .storeCohorts()
-    }
-
-    override fun start() {
-        lock.once {
-            refresh()
-            poller.scheduleWithFixedDelay(
-                { refresh() },
-                config.cohortSyncIntervalSeconds,
-                config.cohortSyncIntervalSeconds,
-                TimeUnit.SECONDS
-            )
-        }
+    override fun start() = start.once {
+        refresh()
+        scheduledExecutor.scheduleWithFixedDelay(
+            { refresh() },
+            config.cohortSyncIntervalSeconds,
+            config.cohortSyncIntervalSeconds,
+            TimeUnit.SECONDS
+        )
     }
 
     override fun stop() {
-        poller.shutdown()
+        scheduledExecutor.shutdown()
     }
 
-    override fun getCohorts(userId: String): Set<String> {
+    override fun getCohortsForUser(userId: String): Set<String> {
         return cohortStorage.getCohortsForUser(userId)
     }
+
+    override fun manage(cohortIds: Set<String>): Boolean = managedCohortsLock.write {
+        if (cohortIds != managedCohorts) {
+            managedCohorts.clear()
+            managedCohorts.addAll(cohortIds)
+            true
+        } else {
+            false
+        }
+    }
+
+    override fun refresh() = synchronized(refreshLock) {
+        Logger.d("Refreshing cohorts")
+        val cohortDescriptions = getCohortDescriptions()
+        val filteredCohortDescriptions = filterCohorts(cohortDescriptions)
+        val cohortResponses = downloadCohorts(filteredCohortDescriptions)
+        storeCohorts(cohortResponses)
+    }
+
 
     internal fun getCohortDescriptions(): List<CohortDescription> {
         Logger.d("Getting cohort descriptions.")
@@ -65,40 +80,22 @@ internal class CohortServiceImpl(
         }
     }
 
-    private fun List<CohortDescription>.filterCohorts(cohortIds: Set<String>): List<CohortDescription> =
-        filterCohorts(this, cohortIds)
-
-    internal fun filterCohorts(cohortDescriptions: List<CohortDescription>, cohortIds: Set<String> = setOf()): List<CohortDescription> {
-        // Filter for explicit cohort ids, otherwise use the cohort ID provider.
-        val includedCohortIds = cohortIds.ifEmpty {
-            val managedCohorts = cohortIdProvider.invoke()
-            // Delete stored cohorts that are not being managed.
-            val storedCohorts = cohortStorage.getAllCohortDescriptions()
-            storedCohorts.keys.forEach { storedCohortId ->
-                if (!managedCohorts.contains(storedCohortId)) {
-                    cohortStorage.deleteCohort(storedCohortId)
-                    Logger.d("Deleting unmanaged cohort $storedCohortId")
-                }
-            }
-            managedCohorts
-        }
-        Logger.d("Filtering cohorts for download: $includedCohortIds")
+    internal fun filterCohorts(networkDescriptions: List<CohortDescription>): List<CohortDescription> {
+        Logger.d("Filtering cohorts for download: $networkDescriptions")
+        val managedCohorts = managedCohortsLock.read { managedCohorts.toSet() }
         // Filter out cohorts which are (1) not being targeted (2) too large (3) not updated
-        return cohortDescriptions.filter { inputDescription ->
-            val storageDescription = cohortStorage.getCohortDescription(inputDescription.id)
-            includedCohortIds.contains(inputDescription.id) &&
-                inputDescription.size < config.maxCohortSize &&
-                inputDescription.lastComputed > (storageDescription?.lastComputed ?: -1)
+        return networkDescriptions.filter { networkDescription ->
+            val storageDescription = cohortStorage.getCohortDescription(networkDescription.id)
+            managedCohorts.contains(networkDescription.id)
+                && networkDescription.size <= config.maxCohortSize
+                && networkDescription.lastComputed > (storageDescription?.lastComputed ?: -1)
         }.apply {
             Logger.d("Cohorts filtered: $this")
         }
     }
 
-    private fun List<CohortDescription>.downloadCohorts(): List<GetCohortResponse> =
-        downloadCohorts(this)
-
     internal fun downloadCohorts(cohortDescriptions: List<CohortDescription>): List<GetCohortResponse> {
-        Logger.d("Downloading cohorts.")
+        Logger.d("Downloading cohorts. ${cohortDescriptions.map { it.id }}")
         // Make a request to download each cohort
         return cohortDescriptions.map { description ->
             Logger.d("Downloading cohort ${description.id}")
@@ -124,9 +121,6 @@ internal class CohortServiceImpl(
                 Logger.d("Downloaded cohorts.")
             }
     }
-
-    private fun List<GetCohortResponse>.storeCohorts() =
-        storeCohorts(this)
 
     internal fun storeCohorts(getCohortResponses: List<GetCohortResponse>) {
         Logger.d("Storing cohorts.")
