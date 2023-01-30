@@ -52,6 +52,7 @@ class LocalEvaluationClient internal constructor(
     fun start() {
         startLock.once {
             flagConfigService.start()
+            startCohortSync()
         }
     }
 
