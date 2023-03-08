@@ -6,8 +6,8 @@ object Versions {
     const val serializationPlugin = "1.6.20"
     const val serializationRuntime = "1.3.2"
     const val okhttp = "4.9.3"
-    const val evaluationCore = "1.0.0"
-    const val evaluationSerialization = "1.0.0"
+    const val evaluationCore = "1.1.0-beta.1"
+    const val evaluationSerialization = "1.1.0-beta.1"
 
     const val mockito = "4.8.1"
 }
