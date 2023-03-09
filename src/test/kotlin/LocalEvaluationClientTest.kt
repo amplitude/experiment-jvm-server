@@ -49,8 +49,8 @@ class LocalEvaluationClientTest {
             client.evaluate(ExperimentUser(userId = "test_user"), listOf("sdk-local-evaluation-ci-test"))
         }
         val millis = duration / 1000.0 / 1000.0
-        Assert.assertTrue(millis < 10)
         println("1 flag: $millis")
+        Assert.assertTrue(millis < 10)
     }
 
     @Test
@@ -64,8 +64,8 @@ class LocalEvaluationClientTest {
             }
         }
         val millis = total / 1000.0 / 1000.0
-        Assert.assertTrue(millis < 20)
         println("10 flags: $millis")
+        Assert.assertTrue(millis < 20)
     }
 
     @Test
@@ -79,8 +79,8 @@ class LocalEvaluationClientTest {
             }
         }
         val millis = total / 1000.0 / 1000.0
-        Assert.assertTrue(millis < 20)
         println("100 flags: $millis")
+        Assert.assertTrue(millis < 20)
     }
 
     @Test
@@ -94,7 +94,7 @@ class LocalEvaluationClientTest {
             }
         }
         val millis = total / 1000.0 / 1000.0
-        Assert.assertTrue(millis < 100)
         println("1000 flags: $millis")
+        Assert.assertTrue(millis < 100)
     }
 }
