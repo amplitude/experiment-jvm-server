@@ -1,6 +1,5 @@
 package com.amplitude.experiment.flag
 
-import com.amplitude.experiment.evaluation.EvaluationMode
 import com.amplitude.experiment.evaluation.FlagConfig
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.Once
@@ -73,7 +72,7 @@ internal class FlagConfigServiceImpl(
     }
 
     private fun getFlagConfigs(): Map<String, FlagConfig> {
-        return flagConfigApi.getFlagConfigs(GetFlagConfigsRequest(EvaluationMode.LOCAL)).get().apply {
+        return flagConfigApi.getFlagConfigs(GetFlagConfigsRequest).get().apply {
             interceptorsLock.read {
                 interceptors.forEach { interceptor ->
                     interceptor.invoke(this)
