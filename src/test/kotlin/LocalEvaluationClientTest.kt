@@ -97,4 +97,46 @@ class LocalEvaluationClientTest {
         println("1000 flags: $millis")
         Assert.assertTrue(millis < 160)
     }
+
+    @Test
+    fun `test evaluate, with dependencies, should return variant`() {
+        val client = LocalEvaluationClient(API_KEY)
+        client.start()
+        val variants = client.evaluate(ExperimentUser(userId = "user_id", deviceId = "device_id"))
+        val variant = variants["sdk-ci-local-dependencies-test"]
+        Assert.assertEquals(variant, Variant(value = "control", payload = null))
+    }
+
+    @Test
+    fun `test evaluate, with dependencies and flag keys, should return variant`() {
+        val client = LocalEvaluationClient(API_KEY)
+        client.start()
+        val variants = client.evaluate(
+            ExperimentUser(userId = "user_id", deviceId = "device_id"),
+            listOf("sdk-ci-local-dependencies-test")
+        )
+        val variant = variants["sdk-ci-local-dependencies-test"]
+        Assert.assertEquals(variant, Variant(value = "control", payload = null))
+    }
+
+    @Test
+    fun `test evaluate, with dependencies and unknown flag keys, should not return variant`() {
+        val client = LocalEvaluationClient(API_KEY)
+        client.start()
+        val variants = client.evaluate(
+            ExperimentUser(userId = "user_id", deviceId = "device_id"),
+            listOf("does-not-exist")
+        )
+        val variant = variants["sdk-ci-local-dependencies-test"]
+        Assert.assertEquals(variant, null)
+    }
+
+    @Test
+    fun `test evaluate, with dependency holdout exclusion, should not return variant`() {
+        val client = LocalEvaluationClient(API_KEY)
+        client.start()
+        val variants = client.evaluate(ExperimentUser(userId = "user_id", deviceId = "device_id"))
+        val variant = variants["sdk-ci-local-dependencies-test-holdout"]
+        Assert.assertEquals(variant, null)
+    }
 }
