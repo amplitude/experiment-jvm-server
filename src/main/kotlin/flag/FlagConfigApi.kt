@@ -11,7 +11,7 @@ import java.util.concurrent.CompletableFuture
 
 internal object GetFlagConfigsRequest
 
-internal typealias GetFlagConfigsResponse = Map<String, FlagConfig>
+internal typealias GetFlagConfigsResponse = List<FlagConfig>
 
 internal interface FlagConfigApi {
     fun getFlagConfigs(request: GetFlagConfigsRequest): CompletableFuture<GetFlagConfigsResponse>
@@ -35,9 +35,7 @@ internal class FlagConfigApiImpl(
                 .addHeader("X-Amp-Exp-Library", "experiment-jvm-server/$LIBRARY_VERSION")
                 .build()
         ).thenApply { result ->
-            result.associate {
-                it.flagKey to it.convert()
-            }
+            result.map { it.convert() }
         }
     }
 }

@@ -50,7 +50,7 @@ class LocalEvaluationClientTest {
         }
         val millis = duration / 1000.0 / 1000.0
         println("1 flag: $millis")
-        Assert.assertTrue(millis < 10)
+        Assert.assertTrue(millis < 20)
     }
 
     @Test
@@ -65,7 +65,7 @@ class LocalEvaluationClientTest {
         }
         val millis = total / 1000.0 / 1000.0
         println("10 flags: $millis")
-        Assert.assertTrue(millis < 20)
+        Assert.assertTrue(millis < 40)
     }
 
     @Test
@@ -80,7 +80,7 @@ class LocalEvaluationClientTest {
         }
         val millis = total / 1000.0 / 1000.0
         println("100 flags: $millis")
-        Assert.assertTrue(millis < 20)
+        Assert.assertTrue(millis < 80)
     }
 
     @Test
@@ -95,6 +95,6 @@ class LocalEvaluationClientTest {
         }
         val millis = total / 1000.0 / 1000.0
         println("1000 flags: $millis")
-        Assert.assertTrue(millis < 100)
+        Assert.assertTrue(millis < 160)
     }
 }

@@ -13,19 +13,18 @@ internal data class FlagConfigServiceConfig(
     val flagConfigPollerIntervalMillis: Long,
 )
 
-internal typealias FlagConfigInterceptor = (Map<String, FlagConfig>) -> Unit
+internal typealias FlagConfigInterceptor = (List<FlagConfig>) -> Unit
 
 internal interface FlagConfigService {
     fun start()
     fun stop()
-    fun getFlagConfigs(keys: List<String> = listOf()): List<FlagConfig>
+    fun getFlagConfigs(): List<FlagConfig>
     fun addFlagConfigInterceptor(listener: FlagConfigInterceptor)
 }
 
 internal class FlagConfigServiceImpl(
     private val config: FlagConfigServiceConfig,
     private val flagConfigApi: FlagConfigApi,
-    private val flagConfigStorage: FlagConfigStorage,
 ) : FlagConfigService {
 
     private val lock = Once()
@@ -33,10 +32,12 @@ internal class FlagConfigServiceImpl(
 
     private val interceptorsLock = ReentrantReadWriteLock()
     private val interceptors: MutableSet<FlagConfigInterceptor> = mutableSetOf()
+    private val flagConfigsLock = ReentrantReadWriteLock()
+    private val flagConfigs: MutableList<FlagConfig> = mutableListOf()
 
     private fun refresh() {
         Logger.d("Refreshing flag configs.")
-        val flagConfigs = getFlagConfigs()
+        val flagConfigs = fetchFlagConfigs()
         storeFlagConfigs(flagConfigs)
         Logger.d("Refreshed ${flagConfigs.size} flag configs.")
     }
@@ -57,11 +58,9 @@ internal class FlagConfigServiceImpl(
         poller.shutdown()
     }
 
-    override fun getFlagConfigs(keys: List<String>): List<FlagConfig> {
-        return if (keys.isEmpty()) {
-            flagConfigStorage.getAll().values.toList()
-        } else {
-            keys.mapNotNull { flagConfigStorage.get(it) }
+    override fun getFlagConfigs(): List<FlagConfig> {
+        return flagConfigsLock.read {
+            flagConfigs
         }
     }
 
@@ -71,7 +70,7 @@ internal class FlagConfigServiceImpl(
         }
     }
 
-    private fun getFlagConfigs(): Map<String, FlagConfig> {
+    private fun fetchFlagConfigs(): List<FlagConfig> {
         return flagConfigApi.getFlagConfigs(GetFlagConfigsRequest).get().apply {
             interceptorsLock.read {
                 interceptors.forEach { interceptor ->
@@ -81,7 +80,10 @@ internal class FlagConfigServiceImpl(
         }
     }
 
-    private fun storeFlagConfigs(flagConfigs: Map<String, FlagConfig>) {
-        flagConfigStorage.overwrite(flagConfigs)
+    private fun storeFlagConfigs(flagConfigs: List<FlagConfig>) {
+        flagConfigsLock.write {
+            this.flagConfigs.clear()
+            this.flagConfigs.addAll(flagConfigs)
+        }
     }
 }
