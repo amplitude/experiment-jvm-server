@@ -1,3 +1,15 @@
+# [1.1.0](https://github.com/amplitude/experiment-jvm-server/compare/1.0.0...1.1.0) (2023-03-14)
+
+
+### Bug Fixes
+
+* remove map based flag config storage ([#7](https://github.com/amplitude/experiment-jvm-server/issues/7)) ([48c0628](https://github.com/amplitude/experiment-jvm-server/commit/48c0628d4989bc051e1cc4a5cc26706bd7013ce1))
+
+
+### Features
+
+* flag dependencies ([#6](https://github.com/amplitude/experiment-jvm-server/issues/6)) ([63d7e46](https://github.com/amplitude/experiment-jvm-server/commit/63d7e463b569eb1c6cf3329be0c6dda0f118be67))
+
 # 1.0.0 (2023-01-27)
 
 
