@@ -15,4 +15,4 @@ package com.amplitude.experiment.cohort
     AnnotationTarget.PROPERTY_SETTER,
     AnnotationTarget.TYPEALIAS
 )
-annotation class ExperimentalCohortApi
+annotation class ExperimentalApi

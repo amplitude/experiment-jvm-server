@@ -1,7 +1,5 @@
 package com.amplitude.experiment.cohort
 
-import com.amplitude.experiment.util.Logger
-import com.amplitude.experiment.util.SystemLogger
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
 import java.util.concurrent.CompletableFuture
@@ -13,10 +11,6 @@ import kotlin.test.assertTrue
 class CohortServiceTest {
 
     private val config = CohortServiceConfig()
-
-    init {
-        Logger.implementation = SystemLogger(debug = true)
-    }
 
     @Test
     fun `test refresh, success`() {

@@ -1,7 +1,11 @@
 package com.amplitude.experiment.cohort
 
+import com.amplitude.experiment.LocalEvaluationClient
+import com.amplitude.experiment.LocalEvaluationMetrics
+import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.Once
+import com.amplitude.experiment.util.wrapMetrics
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -28,6 +32,7 @@ internal class PollingCohortService(
     private val config: CohortServiceConfig,
     private val cohortApi: CohortApi,
     private val cohortStorage: CohortStorage,
+    private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper(),
 ) : CohortService {
 
     private val start = Once()
@@ -66,9 +71,19 @@ internal class PollingCohortService(
 
     override fun refresh() = synchronized(refreshLock) {
         Logger.d("Refreshing cohorts")
-        val cohortDescriptions = getCohortDescriptions()
+        val cohortDescriptions = wrapMetrics(
+            metric = metrics::onCohortDescriptionsFetch,
+            failure = metrics::onCohortDescriptionsFetchFailure,
+        ) {
+            getCohortDescriptions()
+        }
         val filteredCohortDescriptions = filterCohorts(cohortDescriptions)
-        val cohortResponses = downloadCohorts(filteredCohortDescriptions)
+        val cohortResponses = wrapMetrics(
+            metric = metrics::onCohortDownload,
+            failure = metrics::onCohortDownloadFailure,
+        ) {
+            downloadCohorts(filteredCohortDescriptions)
+        }
         storeCohorts(cohortResponses)
     }
 

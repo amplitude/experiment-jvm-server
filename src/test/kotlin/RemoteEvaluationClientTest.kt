@@ -1,7 +1,5 @@
 package com.amplitude.experiment
 
-import com.amplitude.experiment.util.Logger
-import com.amplitude.experiment.util.SystemLogger
 import org.junit.Assert
 import java.util.Date
 import java.util.concurrent.CancellationException
@@ -13,10 +11,6 @@ import kotlin.test.fail
 private const val API_KEY = "server-qz35UwzJ5akieoAdIgzM4m9MIiOLXLoz"
 
 class RemoteEvaluationClientTest {
-
-    init {
-        Logger.implementation = SystemLogger(false)
-    }
 
     private val testFlagKey = "sdk-ci-test"
     private val testVariant = Variant("on", "payload")

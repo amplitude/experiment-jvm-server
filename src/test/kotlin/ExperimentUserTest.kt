@@ -1,8 +1,6 @@
 package com.amplitude.experiment
 
 import com.amplitude.experiment.ExperimentUser.Companion.builder
-import com.amplitude.experiment.util.Logger
-import com.amplitude.experiment.util.SystemLogger
 import com.amplitude.experiment.util.toSerialExperimentUser
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -19,10 +17,6 @@ private val json = Json {
 }
 
 class ExperimentUserTest {
-
-    init {
-        Logger.implementation = SystemLogger(true)
-    }
 
     @Test
     fun `user to json`() {

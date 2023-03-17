@@ -10,7 +10,7 @@ import com.amplitude.experiment.cohort.CohortService
 import com.amplitude.experiment.cohort.CohortServiceConfig
 import com.amplitude.experiment.cohort.PollingCohortService
 import com.amplitude.experiment.cohort.CohortStorage
-import com.amplitude.experiment.cohort.ExperimentalCohortApi
+import com.amplitude.experiment.cohort.ExperimentalApi
 import com.amplitude.experiment.cohort.InMemoryCohortStorage
 import com.amplitude.experiment.cohort.getCohortIds
 import com.amplitude.experiment.evaluation.EvaluationEngine
@@ -20,11 +20,12 @@ import com.amplitude.experiment.flag.FlagConfigApiImpl
 import com.amplitude.experiment.flag.FlagConfigService
 import com.amplitude.experiment.flag.FlagConfigServiceConfig
 import com.amplitude.experiment.flag.FlagConfigServiceImpl
-import com.amplitude.experiment.flag.InMemoryFlagConfigStorage
+import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.Once
 import com.amplitude.experiment.util.toSerialExperimentUser
 import com.amplitude.experiment.util.toVariant
+import com.amplitude.experiment.util.wrapMetrics
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
@@ -36,14 +37,13 @@ class LocalEvaluationClient internal constructor(
     private val startLock = Once()
     private val cohortLock = Once()
     private val assignmentLock = Once()
+
     private val httpClient = OkHttpClient()
     private val serverUrl: HttpUrl = config.serverUrl.toHttpUrl()
     private val evaluation: EvaluationEngine = EvaluationEngineImpl()
-    private val flagConfigStorage = InMemoryFlagConfigStorage()
     private val flagConfigService: FlagConfigService = FlagConfigServiceImpl(
         FlagConfigServiceConfig(config.flagConfigPollerIntervalMillis),
         FlagConfigApiImpl(apiKey, serverUrl, httpClient),
-        flagConfigStorage
     )
     private var cohortStorage: CohortStorage? = null
     private var cohortService: CohortService? = null
@@ -55,7 +55,7 @@ class LocalEvaluationClient internal constructor(
             if (cohortService != null) {
                 // Intercept incoming flag configs and update the cohort service's set of managed cohorts
                 flagConfigService.addFlagConfigInterceptor { incoming ->
-                    val cohortIds = incoming.flatMapTo(mutableSetOf()) { it.value.getCohortIds() }
+                    val cohortIds = incoming.flatMapTo(mutableSetOf()) {  it.getCohortIds() }
                     if (cohortService.manage(cohortIds)) {
                         cohortService.refresh()
                     }
@@ -68,7 +68,6 @@ class LocalEvaluationClient internal constructor(
 
     @JvmOverloads
     fun evaluate(user: ExperimentUser, flagKeys: List<String> = listOf()): Map<String, Variant> {
-        val flagConfigs = flagConfigService.getFlagConfigs(flagKeys)
         val enrichedUser = if (user.userId == null) {
             user
         } else {
@@ -76,18 +75,26 @@ class LocalEvaluationClient internal constructor(
                 cohortIds(cohortService?.getCohortsForUser(user.userId))
             }.build()
         }
-        val flagResults = evaluation.evaluate(flagConfigs, enrichedUser.toSerialExperimentUser().convert())
+        val flagConfigs = flagConfigService.getFlagConfigs()
+        val flagResults = wrapMetrics(
+            metric = metricsWrapper::onEvaluation,
+            failure = metricsWrapper::onEvaluationFailure,
+        ) {
+            evaluation.evaluate(flagConfigs, enrichedUser.toSerialExperimentUser().convert())
+        }
+        Logger.i("evaluate - user=$enrichedUser, result=$flagResults")
         assignmentService?.track(Assignment(user, flagResults))
-        return flagResults.mapNotNull { entry ->
-            if (!entry.value.isDefaultVariant) {
-                entry.key to SerialVariant(entry.value.variant).toVariant()
-            } else {
-                null
-            }
+        return flagResults.filter { entry ->
+            val isVariant = !entry.value.isDefaultVariant
+            val isIncluded = (flagKeys.isEmpty() || flagKeys.contains(entry.key))
+            val isDeployed = entry.value.deployed
+            isVariant && isIncluded && isDeployed
+        }.map { entry ->
+            entry.key to SerialVariant(entry.value.variant).toVariant()
         }.toMap()
     }
 
-    @ExperimentalCohortApi
+    @ExperimentalApi
     fun enableAssignmentTracking(
         apiKey: String,
         config: AssignmentConfiguration = AssignmentConfiguration()
@@ -101,7 +108,7 @@ class LocalEvaluationClient internal constructor(
         assignmentService = AmplitudeAssignmentService(amplitude, LRUAssignmentFilter(config.filterCapacity))
     }
 
-    @ExperimentalCohortApi
+    @ExperimentalApi
     fun enableCohortSync(
         apiKey: String,
         secretKey: String,
@@ -126,7 +133,28 @@ class LocalEvaluationClient internal constructor(
         this.cohortStorage = cohortStorage
     }
 
-    private fun startCohortSync() {
+    // Metrics
 
+    private val metricsWrapper = LocalEvaluationMetricsWrapper()
+
+    @ExperimentalApi
+    fun enableMetrics(metrics: LocalEvaluationMetrics) {
+        metricsWrapper.metrics = metrics
     }
+
+}
+
+interface LocalEvaluationMetrics {
+    fun onEvaluation()
+    fun onEvaluationFailure(exception: Exception)
+    fun onAssignment()
+    fun onAssignmentFilter()
+    fun onAssignmentEvent()
+    fun onAssignmentEventFailure(exception: Exception)
+    fun onFlagConfigFetch()
+    fun onFlagConfigFetchFailure(exception: Exception)
+    fun onCohortDescriptionsFetch()
+    fun onCohortDescriptionsFetchFailure(exception: Exception)
+    fun onCohortDownload()
+    fun onCohortDownloadFailure(exception: Exception)
 }

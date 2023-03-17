@@ -6,7 +6,7 @@ import com.amplitude.experiment.assignment.DEFAULT_FILTER_CAPACITY
 import com.amplitude.experiment.cohort.DEFAULT_COHORT_SYNC_URL
 import com.amplitude.experiment.cohort.DEFAULT_MAX_COHORT_SIZE
 import com.amplitude.experiment.cohort.DEFAULT_SYNC_INTERVAL_SECONDS
-import com.amplitude.experiment.cohort.ExperimentalCohortApi
+import com.amplitude.experiment.cohort.ExperimentalApi
 
 /**
  * Configuration options. This is an immutable object that can be created using
@@ -103,7 +103,7 @@ class LocalEvaluationConfig internal constructor(
     }
 }
 
-@ExperimentalCohortApi
+@ExperimentalApi
 data class AssignmentConfiguration(
     val filterCapacity: Int = DEFAULT_FILTER_CAPACITY,
     val eventUploadThreshold: Int = DEFAULT_EVENT_UPLOAD_THRESHOLD,
@@ -111,7 +111,7 @@ data class AssignmentConfiguration(
     val useBatchMode: Boolean = true,
 )
 
-@ExperimentalCohortApi
+@ExperimentalApi
 data class CohortConfiguration(
     val cohortServerUrl: String = DEFAULT_COHORT_SYNC_URL,
     val cohortMaxSize: Int = DEFAULT_MAX_COHORT_SIZE,

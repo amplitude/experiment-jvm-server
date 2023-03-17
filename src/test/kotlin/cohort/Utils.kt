@@ -1,8 +1,9 @@
 package com.amplitude.experiment.cohort
 
 import com.amplitude.experiment.evaluation.Allocation
-import com.amplitude.experiment.evaluation.EvaluationMode
+import com.amplitude.experiment.evaluation.FLAG_TYPE_RELEASE
 import com.amplitude.experiment.evaluation.FlagConfig
+import com.amplitude.experiment.evaluation.ParentDependencies
 import com.amplitude.experiment.evaluation.SegmentTargetingConfig
 import com.amplitude.experiment.evaluation.UserPropertyFilter
 import com.amplitude.experiment.evaluation.Variant
@@ -26,7 +27,7 @@ internal fun segmentTargetingConfig(
     name: String = "",
     conditions: List<UserPropertyFilter> = listOf(),
     allocations: List<Allocation> = listOf(),
-    bucketingKey: String? = null,
+    bucketingKey: String = "",
 ): SegmentTargetingConfig = SegmentTargetingConfig(
     name = name,
     conditions = conditions,
@@ -36,26 +37,30 @@ internal fun segmentTargetingConfig(
 
 internal fun flagConfig(
     flagKey: String = "",
+    experimentKey: String? = null,
+    flagVersion: Int = 0,
     enabled: Boolean = false,
-    bucketingKey: String = "",
-    bucketingSalt: String? = null,
+    bucketingSalt: String = "salt",
     defaultValue: String? = null,
     variants: List<Variant> = listOf(),
-    variantsExclusions: Map<String, Set<String>>? = null,
     variantsInclusions: Map<String, Set<String>>? = null,
     allUsersTargetingConfig: SegmentTargetingConfig = segmentTargetingConfig(),
     customSegmentTargetingConfigs: List<SegmentTargetingConfig>? = null,
-    evalMode: EvaluationMode = EvaluationMode.LOCAL,
+    parentDependencies: ParentDependencies? = null,
+    type: String = FLAG_TYPE_RELEASE,
+    deployed: Boolean = true,
 ): FlagConfig = FlagConfig(
     flagKey = flagKey,
+    experimentKey = experimentKey,
+    flagVersion = flagVersion,
     enabled = enabled,
-    bucketingKey = bucketingKey,
     bucketingSalt = bucketingSalt,
     defaultValue = defaultValue,
     variants = variants,
-    variantsExclusions = variantsExclusions,
     variantsInclusions = variantsInclusions,
     allUsersTargetingConfig = allUsersTargetingConfig,
     customSegmentTargetingConfigs = customSegmentTargetingConfigs,
-    evalMode = evalMode,
+    parentDependencies = parentDependencies,
+    type = type,
+    deployed = deployed,
 )

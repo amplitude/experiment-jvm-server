@@ -1,9 +1,11 @@
 package com.amplitude.experiment.flag
 
-import com.amplitude.experiment.evaluation.EvaluationMode
+import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.evaluation.FlagConfig
+import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.Once
+import com.amplitude.experiment.util.wrapMetrics
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -14,19 +16,19 @@ internal data class FlagConfigServiceConfig(
     val flagConfigPollerIntervalMillis: Long,
 )
 
-internal typealias FlagConfigInterceptor = (Map<String, FlagConfig>) -> Unit
+internal typealias FlagConfigInterceptor = (List<FlagConfig>) -> Unit
 
 internal interface FlagConfigService {
     fun start()
     fun stop()
-    fun getFlagConfigs(keys: List<String> = listOf()): List<FlagConfig>
+    fun getFlagConfigs(): List<FlagConfig>
     fun addFlagConfigInterceptor(listener: FlagConfigInterceptor)
 }
 
 internal class FlagConfigServiceImpl(
     private val config: FlagConfigServiceConfig,
     private val flagConfigApi: FlagConfigApi,
-    private val flagConfigStorage: FlagConfigStorage,
+    private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper()
 ) : FlagConfigService {
 
     private val lock = Once()
@@ -34,10 +36,17 @@ internal class FlagConfigServiceImpl(
 
     private val interceptorsLock = ReentrantReadWriteLock()
     private val interceptors: MutableSet<FlagConfigInterceptor> = mutableSetOf()
+    private val flagConfigsLock = ReentrantReadWriteLock()
+    private val flagConfigs: MutableList<FlagConfig> = mutableListOf()
 
     private fun refresh() {
         Logger.d("Refreshing flag configs.")
-        val flagConfigs = getFlagConfigs()
+        val flagConfigs = wrapMetrics(
+            metric = metrics::onFlagConfigFetch,
+            failure = metrics::onFlagConfigFetchFailure,
+        ) {
+            fetchFlagConfigs()
+        }
         storeFlagConfigs(flagConfigs)
         Logger.d("Refreshed ${flagConfigs.size} flag configs.")
     }
@@ -58,11 +67,9 @@ internal class FlagConfigServiceImpl(
         poller.shutdown()
     }
 
-    override fun getFlagConfigs(keys: List<String>): List<FlagConfig> {
-        return if (keys.isEmpty()) {
-            flagConfigStorage.getAll().values.toList()
-        } else {
-            keys.mapNotNull { flagConfigStorage.get(it) }
+    override fun getFlagConfigs(): List<FlagConfig> {
+        return flagConfigsLock.read {
+            flagConfigs
         }
     }
 
@@ -72,8 +79,8 @@ internal class FlagConfigServiceImpl(
         }
     }
 
-    private fun getFlagConfigs(): Map<String, FlagConfig> {
-        return flagConfigApi.getFlagConfigs(GetFlagConfigsRequest(EvaluationMode.LOCAL)).get().apply {
+    private fun fetchFlagConfigs(): List<FlagConfig> {
+        return flagConfigApi.getFlagConfigs(GetFlagConfigsRequest).get().apply {
             interceptorsLock.read {
                 interceptors.forEach { interceptor ->
                     interceptor.invoke(this)
@@ -82,7 +89,10 @@ internal class FlagConfigServiceImpl(
         }
     }
 
-    private fun storeFlagConfigs(flagConfigs: Map<String, FlagConfig>) {
-        flagConfigStorage.overwrite(flagConfigs)
+    private fun storeFlagConfigs(flagConfigs: List<FlagConfig>) {
+        flagConfigsLock.write {
+            this.flagConfigs.clear()
+            this.flagConfigs.addAll(flagConfigs)
+        }
     }
 }

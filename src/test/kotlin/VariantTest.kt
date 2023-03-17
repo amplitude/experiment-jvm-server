@@ -1,8 +1,6 @@
 package com.amplitude.experiment
 
 import com.amplitude.experiment.evaluation.serialization.SerialVariant
-import com.amplitude.experiment.util.Logger
-import com.amplitude.experiment.util.SystemLogger
 import com.amplitude.experiment.util.toVariant
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
@@ -16,10 +14,6 @@ private val json = Json {
 }
 
 class VariantTest {
-
-    init {
-        Logger.implementation = SystemLogger(true)
-    }
 
     // Test Remote
 
