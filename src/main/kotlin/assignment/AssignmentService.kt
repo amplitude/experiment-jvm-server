@@ -5,6 +5,7 @@ import com.amplitude.AmplitudeCallbacks
 import com.amplitude.Event
 import com.amplitude.experiment.LocalEvaluationClient
 import com.amplitude.experiment.LocalEvaluationMetrics
+import com.amplitude.experiment.evaluation.FLAG_TYPE_MUTUAL_EXCLUSION_GROUP
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.wrapMetrics
 import org.json.JSONObject
@@ -73,7 +74,10 @@ internal fun Assignment.toAmplitudeEvent(): Event {
         val set = JSONObject()
         val unset = JSONObject()
         for ((flagKey, result) in this@toAmplitudeEvent.results) {
-            if (result.isDefaultVariant) {
+            if (result.type == FLAG_TYPE_MUTUAL_EXCLUSION_GROUP) {
+                // Dont set user properties for mutual exclusion groups.
+                continue
+            } else if (result.isDefaultVariant) {
                 unset.put("[Experiment] $flagKey", "-")
             } else {
                 set.put("[Experiment] $flagKey", result.variant.key)
