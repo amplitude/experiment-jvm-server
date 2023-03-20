@@ -64,4 +64,8 @@ open class LocalEvaluationMetricsCounter : LocalEvaluationMetrics {
     override fun onCohortDownloadFailure(exception: Exception) {
         cohortDownloadFailure++
     }
+
+    override fun toString(): String {
+        return "LocalEvaluationMetricsCounter(evaluation=$evaluation, evaluationFailure=$evaluationFailure, assignment=$assignment, assignmentFilter=$assignmentFilter, assignmentEvent=$assignmentEvent, assignmentEventFailure=$assignmentEventFailure, flagConfigFetch=$flagConfigFetch, flagConfigFetchFailure=$flagConfigFetchFailure, cohortDescriptionsFetch=$cohortDescriptionsFetch, cohortDescriptionsFetchFailure=$cohortDescriptionsFetchFailure, cohortDownload=$cohortDownload, cohortDownloadFailure=$cohortDownloadFailure)"
+    }
 }

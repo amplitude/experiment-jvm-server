@@ -5,6 +5,7 @@ import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.Once
 import com.amplitude.experiment.util.wrapMetrics
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -43,7 +44,13 @@ internal class PollingCohortService(
     override fun start() = start.once {
         refresh()
         scheduledExecutor.scheduleWithFixedDelay(
-            { refresh() },
+            {
+                try {
+                    refresh()
+                } catch (t: Throwable) {
+                    Logger.e("Cohort refresh failed.", t)
+                }
+            },
             config.cohortSyncIntervalSeconds,
             config.cohortSyncIntervalSeconds,
             TimeUnit.SECONDS
@@ -60,6 +67,7 @@ internal class PollingCohortService(
 
     override fun manage(cohortIds: Set<String>): Boolean = managedCohortsLock.write {
         if (cohortIds != managedCohorts) {
+            Logger.d("manage - cohorts: $cohortIds")
             managedCohorts.clear()
             managedCohorts.addAll(cohortIds)
             true
@@ -69,21 +77,22 @@ internal class PollingCohortService(
     }
 
     override fun refresh() = synchronized(refreshLock) {
-        Logger.d("Refreshing cohorts")
-        val cohortDescriptions = wrapMetrics(
-            metric = metrics::onCohortDescriptionsFetch,
-            failure = metrics::onCohortDescriptionsFetchFailure,
-        ) {
-            getCohortDescriptions()
+        try {
+            Logger.d("Refreshing cohorts")
+            val cohortDescriptions = wrapMetrics(
+                metric = metrics::onCohortDescriptionsFetch,
+                failure = metrics::onCohortDescriptionsFetchFailure,
+            ) {
+                getCohortDescriptions()
+            }
+            val filteredCohortDescriptions = filterCohorts(cohortDescriptions)
+            val cohortResponses = downloadCohorts(filteredCohortDescriptions)
+            storeCohorts(cohortResponses)
+        } catch (e: ExecutionException) {
+            throw (e.cause ?: e)
+        } catch (t: Throwable) {
+            throw t
         }
-        val filteredCohortDescriptions = filterCohorts(cohortDescriptions)
-        val cohortResponses = wrapMetrics(
-            metric = metrics::onCohortDownload,
-            failure = metrics::onCohortDownloadFailure,
-        ) {
-            downloadCohorts(filteredCohortDescriptions)
-        }
-        storeCohorts(cohortResponses)
     }
 
     internal fun getCohortDescriptions(): List<CohortDescription> {
@@ -111,28 +120,23 @@ internal class PollingCohortService(
         Logger.d("Downloading cohorts. ${cohortDescriptions.map { it.id }}")
         // Make a request to download each cohort
         return cohortDescriptions.map { description ->
-            Logger.d("Downloading cohort ${description.id}")
-            cohortApi.getCohort(
-                GetCohortRequest(
-                    cohortId = description.id,
-                    lastComputed = description.lastComputed
-                )
-            )
-        }
-            // Handle exceptions and get the response
-            .mapNotNull {
-                it.handle<GetCohortResponse?> { response, t ->
-                    Logger.d("Downloaded cohort ${response?.cohort?.id}")
-                    if (response == null || t != null) {
-                        Logger.e("get cohort request failed", t)
-                        null
-                    } else {
-                        response
-                    }
-                }.join()
-            }.apply {
-                Logger.d("Downloaded cohorts.")
+            wrapMetrics(
+                metric = metrics::onCohortDownload,
+                failure = metrics::onCohortDownloadFailure,
+            ) {
+                Logger.d("Downloading cohort ${description.id}")
+                cohortApi.getCohort(
+                    GetCohortRequest(
+                        cohortId = description.id,
+                        lastComputed = description.lastComputed
+                    )
+                ).get().also {
+                    Logger.d("Cohort downloaded: ${description.id}")
+                }
             }
+        }.apply {
+            Logger.d("Downloaded cohorts.")
+        }
     }
 
     internal fun storeCohorts(getCohortResponses: List<GetCohortResponse>) {

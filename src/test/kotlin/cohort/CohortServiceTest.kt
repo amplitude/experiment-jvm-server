@@ -1,7 +1,9 @@
 package com.amplitude.experiment.cohort
 
+import org.junit.Assert
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
+import java.io.IOException
 import java.util.concurrent.CompletableFuture
 import kotlin.system.measureTimeMillis
 import kotlin.test.Test
@@ -303,5 +305,45 @@ class CohortServiceTest {
         val storageUser2Cohorts = storage.getCohortsForUser("2")
         assertEquals(setOf("a", "b"), storageUser1Cohorts)
         assertEquals(setOf("b"), storageUser2Cohorts)
+    }
+
+    @Test
+    fun `test refresh download failure throws`() {
+        val managedCohorts = setOf("a", "b")
+        val api = mock(CohortApi::class.java)
+        val storage = InMemoryCohortStorage()
+        val service = PollingCohortService(config, api, storage).apply {
+            manage(managedCohorts)
+        }
+
+        // Setup mocks
+        `when`(api.getCohorts(GetCohortsRequest))
+            .thenReturn(
+                CompletableFuture.completedFuture(
+                    GetCohortsResponse(
+                        listOf(
+                            cohortDescription("a"),
+                            cohortDescription("b"),
+                        )
+                    )
+                )
+            )
+        `when`(api.getCohort(GetCohortRequest("a", 0)))
+            .thenReturn(
+                CompletableFuture.completedFuture(
+                    GetCohortResponse(
+                        cohortDescription("a"),
+                        listOf("1"),
+                    )
+                )
+            )
+        `when`(api.getCohort(GetCohortRequest("b", 0)))
+            .thenReturn(
+                CompletableFuture.failedFuture(IOException("Connection timed out"))
+            )
+
+        // Refresh should throw. No cohorts should be stored.
+        Assert.assertThrows(IOException::class.java) { service.refresh() }
+        Assert.assertEquals(emptySet<String>(), storage.getCohortsForUser("1"))
     }
 }
