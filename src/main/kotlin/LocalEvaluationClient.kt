@@ -8,10 +8,10 @@ import com.amplitude.experiment.assignment.LRUAssignmentFilter
 import com.amplitude.experiment.cohort.CohortApiImpl
 import com.amplitude.experiment.cohort.CohortService
 import com.amplitude.experiment.cohort.CohortServiceConfig
-import com.amplitude.experiment.cohort.PollingCohortService
 import com.amplitude.experiment.cohort.CohortStorage
 import com.amplitude.experiment.cohort.ExperimentalApi
 import com.amplitude.experiment.cohort.InMemoryCohortStorage
+import com.amplitude.experiment.cohort.PollingCohortService
 import com.amplitude.experiment.cohort.getCohortIds
 import com.amplitude.experiment.evaluation.EvaluationEngine
 import com.amplitude.experiment.evaluation.EvaluationEngineImpl
@@ -38,12 +38,15 @@ class LocalEvaluationClient internal constructor(
     private val cohortLock = Once()
     private val assignmentLock = Once()
 
+    private val metricsWrapper = LocalEvaluationMetricsWrapper()
+
     private val httpClient = OkHttpClient()
     private val serverUrl: HttpUrl = config.serverUrl.toHttpUrl()
     private val evaluation: EvaluationEngine = EvaluationEngineImpl()
     private val flagConfigService: FlagConfigService = FlagConfigServiceImpl(
         FlagConfigServiceConfig(config.flagConfigPollerIntervalMillis),
         FlagConfigApiImpl(apiKey, serverUrl, httpClient),
+        metricsWrapper
     )
     private var cohortStorage: CohortStorage? = null
     private var cohortService: CohortService? = null
@@ -55,7 +58,7 @@ class LocalEvaluationClient internal constructor(
             if (cohortService != null) {
                 // Intercept incoming flag configs and update the cohort service's set of managed cohorts
                 flagConfigService.addFlagConfigInterceptor { incoming ->
-                    val cohortIds = incoming.flatMapTo(mutableSetOf()) {  it.getCohortIds() }
+                    val cohortIds = incoming.flatMapTo(mutableSetOf()) { it.getCohortIds() }
                     if (cohortService.manage(cohortIds)) {
                         cohortService.refresh()
                     }
@@ -105,7 +108,11 @@ class LocalEvaluationClient internal constructor(
             useBatchMode(config.useBatchMode)
             init(apiKey)
         }
-        assignmentService = AmplitudeAssignmentService(amplitude, LRUAssignmentFilter(config.filterCapacity))
+        assignmentService = AmplitudeAssignmentService(
+            amplitude,
+            LRUAssignmentFilter(config.filterCapacity),
+            metricsWrapper
+        )
     }
 
     @ExperimentalApi
@@ -119,7 +126,7 @@ class LocalEvaluationClient internal constructor(
         val cohortService = PollingCohortService(
             CohortServiceConfig(
                 config.cohortMaxSize,
-                config.cohortSyncIntervalSeconds
+                config.cohortSyncIntervalSeconds,
             ),
             CohortApiImpl(
                 apiKey,
@@ -127,21 +134,17 @@ class LocalEvaluationClient internal constructor(
                 config.cohortServerUrl.toHttpUrl(),
                 httpClient,
             ),
-            cohortStorage
+            cohortStorage,
+            metricsWrapper,
         )
         this.cohortService = cohortService
         this.cohortStorage = cohortStorage
     }
 
-    // Metrics
-
-    private val metricsWrapper = LocalEvaluationMetricsWrapper()
-
     @ExperimentalApi
     fun enableMetrics(metrics: LocalEvaluationMetrics) {
         metricsWrapper.metrics = metrics
     }
-
 }
 
 interface LocalEvaluationMetrics {

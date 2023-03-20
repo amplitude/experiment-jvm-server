@@ -1,5 +1,6 @@
 package com.amplitude.experiment
 
+import com.amplitude.experiment.util.LocalEvaluationMetricsCounter
 import org.junit.Assert
 import kotlin.system.measureNanoTime
 import kotlin.test.Test
@@ -138,5 +139,16 @@ class LocalEvaluationClientTest {
         val variants = client.evaluate(ExperimentUser(userId = "user_id", deviceId = "device_id"))
         val variant = variants["sdk-ci-local-dependencies-test-holdout"]
         Assert.assertEquals(variant, null)
+    }
+
+    @Test
+    fun `test client metrics`() {
+        val metrics = LocalEvaluationMetricsCounter()
+        val client = LocalEvaluationClient(API_KEY)
+        client.enableMetrics(metrics)
+        client.start()
+        client.evaluate(ExperimentUser(userId = "user_id", deviceId = "device_id"))
+        Assert.assertEquals(1, metrics.evaluation)
+        Assert.assertEquals(1, metrics.flagConfigFetch)
     }
 }

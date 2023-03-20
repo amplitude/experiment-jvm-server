@@ -3,7 +3,7 @@ package com.amplitude.experiment.util
 import com.amplitude.experiment.LocalEvaluationMetrics
 import java.util.concurrent.Executors
 
-fun <R> wrapMetrics(metric: (() -> Unit)?, failure: ((e: Exception) -> Unit)?, block: () -> R): R {
+internal fun <R> wrapMetrics(metric: (() -> Unit)?, failure: ((e: Exception) -> Unit)?, block: () -> R): R {
     try {
         metric?.invoke()
         return block.invoke()
@@ -13,7 +13,7 @@ fun <R> wrapMetrics(metric: (() -> Unit)?, failure: ((e: Exception) -> Unit)?, b
     }
 }
 
-class LocalEvaluationMetricsWrapper : LocalEvaluationMetrics {
+internal class LocalEvaluationMetricsWrapper : LocalEvaluationMetrics {
 
     var metrics: LocalEvaluationMetrics? = null
     private val executor = Executors.newSingleThreadExecutor()

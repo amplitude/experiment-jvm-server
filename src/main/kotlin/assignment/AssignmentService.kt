@@ -3,7 +3,6 @@ package com.amplitude.experiment.assignment
 import com.amplitude.Amplitude
 import com.amplitude.AmplitudeCallbacks
 import com.amplitude.Event
-import com.amplitude.experiment.LocalEvaluationClient
 import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.evaluation.FLAG_TYPE_MUTUAL_EXCLUSION_GROUP
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
@@ -24,7 +23,6 @@ class EventTrackingException(
 ) : Exception(
     "Failed to track event to amplitude: event=${event.eventType}, status=$status, msg=$message"
 )
-
 
 internal class AmplitudeAssignmentService(
     private val amplitude: Amplitude,

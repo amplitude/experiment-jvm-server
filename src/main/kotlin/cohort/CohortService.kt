@@ -1,6 +1,5 @@
 package com.amplitude.experiment.cohort
 
-import com.amplitude.experiment.LocalEvaluationClient
 import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
@@ -87,7 +86,6 @@ internal class PollingCohortService(
         storeCohorts(cohortResponses)
     }
 
-
     internal fun getCohortDescriptions(): List<CohortDescription> {
         Logger.d("Getting cohort descriptions.")
         return cohortApi.getCohorts(GetCohortsRequest).get().cohorts.apply {
@@ -101,9 +99,9 @@ internal class PollingCohortService(
         // Filter out cohorts which are (1) not being targeted (2) too large (3) not updated
         return networkDescriptions.filter { networkDescription ->
             val storageDescription = cohortStorage.getCohortDescription(networkDescription.id)
-            managedCohorts.contains(networkDescription.id)
-                && networkDescription.size <= config.maxCohortSize
-                && networkDescription.lastComputed > (storageDescription?.lastComputed ?: -1)
+            managedCohorts.contains(networkDescription.id) &&
+                networkDescription.size <= config.maxCohortSize &&
+                networkDescription.lastComputed > (storageDescription?.lastComputed ?: -1)
         }.apply {
             Logger.d("Cohorts filtered: $this")
         }

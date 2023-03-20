@@ -5,8 +5,6 @@ import com.amplitude.experiment.evaluation.UserPropertyFilter
 
 internal const val COHORT_PROP_KEY = "userdata_cohort"
 
-internal typealias CohortIdProvider = () -> Set<String>
-
 internal fun Collection<FlagConfig>.getCohortIds(): Set<String> {
     val cohortIds = mutableSetOf<String>()
     for (flag in this) {
