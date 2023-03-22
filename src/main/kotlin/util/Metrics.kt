@@ -1,5 +1,8 @@
+@file:OptIn(ExperimentalApi::class)
+
 package com.amplitude.experiment.util
 
+import com.amplitude.experiment.ExperimentalApi
 import com.amplitude.experiment.LocalEvaluationMetrics
 import java.util.concurrent.Executors
 
@@ -13,9 +16,10 @@ internal fun <R> wrapMetrics(metric: (() -> Unit)?, failure: ((e: Exception) -> 
     }
 }
 
-internal class LocalEvaluationMetricsWrapper : LocalEvaluationMetrics {
+internal class LocalEvaluationMetricsWrapper(
+    private val metrics: LocalEvaluationMetrics? = null
+) : LocalEvaluationMetrics {
 
-    var metrics: LocalEvaluationMetrics? = null
     private val executor = Executors.newSingleThreadExecutor()
 
     override fun onEvaluation() {

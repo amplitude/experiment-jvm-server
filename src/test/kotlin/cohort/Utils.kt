@@ -14,11 +14,6 @@ internal fun cohortDescription(
     size: Int = 0
 ): CohortDescription = CohortDescription(
     lastComputed = lastComputed,
-    published = true,
-    archived = false,
-    appId = 0,
-    lastMod = 0,
-    type = "",
     id = id,
     size = size,
 )

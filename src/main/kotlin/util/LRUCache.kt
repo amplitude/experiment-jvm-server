@@ -2,13 +2,14 @@ package com.amplitude.experiment.util
 
 import java.util.HashMap
 
-internal class LRUCache<K, V>(private val capacity: Int) {
+internal class LRUCache<K, V>(private val capacity: Int, private val ttlMillis: Long = Long.MAX_VALUE) {
 
     private class Node<K, V>(
         var key: K? = null,
         var value: V? = null,
         var prev: Node<K, V>? = null,
         var next: Node<K, V>? = null,
+        var ts: Long = System.currentTimeMillis(),
     )
 
     private var count = 0
@@ -24,6 +25,9 @@ internal class LRUCache<K, V>(private val capacity: Int) {
 
     operator fun get(key: K): V? = synchronized(lock) {
         val n = map[key] ?: return null
+        if (n.ts + ttlMillis < System.currentTimeMillis()) {
+            return null
+        }
         update(n)
         return n.value
     }
@@ -37,6 +41,7 @@ internal class LRUCache<K, V>(private val capacity: Int) {
             ++count
         } else {
             n.value = value
+            n.ts = System.currentTimeMillis()
             update(n)
         }
         if (count > capacity) {

@@ -1,5 +1,8 @@
+@file:OptIn(ExperimentalApi::class)
+
 package com.amplitude.experiment.util
 
+import com.amplitude.experiment.ExperimentalApi
 import com.amplitude.experiment.LocalEvaluationMetrics
 
 open class LocalEvaluationMetricsCounter : LocalEvaluationMetrics {

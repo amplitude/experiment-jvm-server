@@ -1,16 +1,16 @@
+@file:OptIn(ExperimentalApi::class)
+
 package com.amplitude.experiment.assignment
 
 import com.amplitude.Amplitude
 import com.amplitude.AmplitudeCallbacks
 import com.amplitude.Event
+import com.amplitude.experiment.ExperimentalApi
 import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.evaluation.FLAG_TYPE_MUTUAL_EXCLUSION_GROUP
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.wrapMetrics
 import org.json.JSONObject
-
-internal const val DEFAULT_EVENT_UPLOAD_THRESHOLD = 10
-internal const val DEFAULT_EVENT_UPLOAD_PERIOD_MILLIS = 10000
 
 internal interface AssignmentService {
     fun track(assignment: Assignment)

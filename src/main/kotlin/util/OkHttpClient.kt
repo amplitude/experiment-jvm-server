@@ -4,10 +4,12 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import okhttp3.Call
 import okhttp3.Callback
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okio.IOException
+import java.util.Base64
 import java.util.concurrent.CompletableFuture
 
 private val json = Json {
@@ -40,4 +42,24 @@ internal inline fun <reified T> OkHttpClient.request(
         }
     })
     return future
+}
+
+internal inline fun <reified T> OkHttpClient.get(
+    serverUrl: HttpUrl,
+    path: String,
+    headers: Map<String, String>? = null,
+    queries: Map<String, String>? = null,
+): T {
+    val url = serverUrl.newBuilder().apply {
+        addPathSegments(path)
+        queries?.forEach {
+            addQueryParameter(it.key, it.value)
+        }
+    }.build()
+    val builder = Request.Builder().get().url(url)
+    headers?.forEach {
+        builder.addHeader(it.key, it.value)
+    }
+    val request = builder.build()
+    return this.request<T>(request).get()
 }

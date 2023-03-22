@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalApi::class)
+
 package com.amplitude.experiment
 
 import com.amplitude.Amplitude
@@ -5,80 +7,66 @@ import com.amplitude.experiment.assignment.AmplitudeAssignmentService
 import com.amplitude.experiment.assignment.Assignment
 import com.amplitude.experiment.assignment.AssignmentService
 import com.amplitude.experiment.assignment.LRUAssignmentFilter
-import com.amplitude.experiment.cohort.CohortApiImpl
-import com.amplitude.experiment.cohort.CohortService
-import com.amplitude.experiment.cohort.CohortServiceConfig
 import com.amplitude.experiment.cohort.CohortStorage
-import com.amplitude.experiment.cohort.ExperimentalApi
 import com.amplitude.experiment.cohort.InMemoryCohortStorage
-import com.amplitude.experiment.cohort.PollingCohortService
-import com.amplitude.experiment.cohort.getCohortIds
+import com.amplitude.experiment.cohort.ProxyCohortMembershipApi
+import com.amplitude.experiment.cohort.ProxyCohortStorage
+import com.amplitude.experiment.deployment.DeploymentRunner
 import com.amplitude.experiment.evaluation.EvaluationEngine
 import com.amplitude.experiment.evaluation.EvaluationEngineImpl
 import com.amplitude.experiment.evaluation.serialization.SerialVariant
-import com.amplitude.experiment.flag.FlagConfigApiImpl
-import com.amplitude.experiment.flag.FlagConfigService
-import com.amplitude.experiment.flag.FlagConfigServiceConfig
-import com.amplitude.experiment.flag.FlagConfigServiceImpl
+import com.amplitude.experiment.flag.DirectFlagConfigApi
+import com.amplitude.experiment.flag.FlagConfigApi
+import com.amplitude.experiment.flag.FlagConfigStorage
+import com.amplitude.experiment.flag.InMemoryFlagConfigStorage
+import com.amplitude.experiment.flag.ProxyFlagConfigApi
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
-import com.amplitude.experiment.util.Once
+import com.amplitude.experiment.util.getCohortIds
 import com.amplitude.experiment.util.toSerialExperimentUser
 import com.amplitude.experiment.util.toVariant
 import com.amplitude.experiment.util.wrapMetrics
-import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 
 class LocalEvaluationClient internal constructor(
-    apiKey: String,
-    config: LocalEvaluationConfig = LocalEvaluationConfig(),
+    private val deploymentKey: String,
+    private val config: LocalEvaluationConfig = LocalEvaluationConfig(),
 ) {
-    private val startLock = Once()
-    private val cohortLock = Once()
-    private val assignmentLock = Once()
 
-    private val metricsWrapper = LocalEvaluationMetricsWrapper()
-
-    private val httpClient = OkHttpClient()
-    private val serverUrl: HttpUrl = config.serverUrl.toHttpUrl()
+    private val metricsWrapper = LocalEvaluationMetricsWrapper(config.metrics)
     private val evaluation: EvaluationEngine = EvaluationEngineImpl()
-    private val flagConfigService: FlagConfigService = FlagConfigServiceImpl(
-        FlagConfigServiceConfig(config.flagConfigPollerIntervalMillis),
-        FlagConfigApiImpl(apiKey, serverUrl, httpClient),
+    private val httpClient = OkHttpClient()
+    private val assignmentService: AssignmentService? = createAssignmentService()
+    private val cohortStorage: CohortStorage = createCohortStorage()
+    private val flagConfigStorage: FlagConfigStorage = InMemoryFlagConfigStorage()
+    private val deploymentRunner = DeploymentRunner(
+        config,
+        httpClient,
+        createFlagConfigApi(),
+        flagConfigStorage,
+        cohortStorage,
         metricsWrapper
     )
-    private var cohortStorage: CohortStorage? = null
-    private var cohortService: CohortService? = null
-    private var assignmentService: AssignmentService? = null
 
     fun start() {
-        startLock.once {
-            val cohortService = this.cohortService
-            if (cohortService != null) {
-                // Intercept incoming flag configs and update the cohort service's set of managed cohorts
-                flagConfigService.addFlagConfigInterceptor { incoming ->
-                    val cohortIds = incoming.flatMapTo(mutableSetOf()) { it.getCohortIds() }
-                    if (cohortService.manage(cohortIds)) {
-                        cohortService.refresh()
-                    }
-                }
-            }
-            flagConfigService.start()
-            cohortService?.start()
-        }
+        deploymentRunner.start()
+    }
+
+    fun stop() {
+        deploymentRunner.stop()
     }
 
     @JvmOverloads
     fun evaluate(user: ExperimentUser, flagKeys: List<String> = listOf()): Map<String, Variant> {
+        val flagConfigs = flagConfigStorage.getFlagConfigs()
         val enrichedUser = if (user.userId == null) {
             user
         } else {
             user.copyToBuilder().apply {
-                cohortIds(cohortService?.getCohortsForUser(user.userId))
+                cohortIds(cohortStorage.getCohortsForUser(user.userId, flagConfigs.getCohortIds()))
             }.build()
         }
-        val flagConfigs = flagConfigService.getFlagConfigs()
         val flagResults = wrapMetrics(
             metric = metricsWrapper::onEvaluation,
             failure = metricsWrapper::onEvaluationFailure,
@@ -97,67 +85,28 @@ class LocalEvaluationClient internal constructor(
         }.toMap()
     }
 
-    @ExperimentalApi
-    fun enableAssignmentTracking(
-        apiKey: String,
-        config: AssignmentConfiguration = AssignmentConfiguration()
-    ) = assignmentLock.once {
-        val amplitude = Amplitude.getInstance("experiment").apply {
-            setEventUploadThreshold(config.eventUploadThreshold)
-            setEventUploadPeriodMillis(config.eventUploadThreshold)
-            useBatchMode(config.useBatchMode)
-            init(apiKey)
-        }
-        assignmentService = AmplitudeAssignmentService(
-            amplitude,
-            LRUAssignmentFilter(config.filterCapacity),
+    private fun createAssignmentService(): AssignmentService? {
+        if (config.assignmentConfiguration == null) return null
+        return AmplitudeAssignmentService(
+            Amplitude.getInstance("experiment").apply {
+                setEventUploadThreshold(config.assignmentConfiguration.eventUploadThreshold)
+                setEventUploadPeriodMillis(config.assignmentConfiguration.eventUploadPeriodMillis)
+                useBatchMode(config.assignmentConfiguration.useBatchMode)
+                init(config.assignmentConfiguration.apiKey)
+            },
+            LRUAssignmentFilter(config.assignmentConfiguration.filterCapacity),
             metricsWrapper
         )
     }
 
-    @ExperimentalApi
-    fun enableCohortSync(
-        apiKey: String,
-        secretKey: String,
-        config: CohortConfiguration = CohortConfiguration()
-    ) = cohortLock.once {
-        Logger.d("enableCohortSync called $config")
-        val cohortStorage = InMemoryCohortStorage()
-        val cohortService = PollingCohortService(
-            CohortServiceConfig(
-                config.cohortMaxSize,
-                config.cohortSyncIntervalSeconds,
-            ),
-            CohortApiImpl(
-                apiKey,
-                secretKey,
-                config.cohortServerUrl.toHttpUrl(),
-                httpClient,
-            ),
-            cohortStorage,
-            metricsWrapper,
-        )
-        this.cohortService = cohortService
-        this.cohortStorage = cohortStorage
+    private fun createCohortStorage(): CohortStorage {
+        if (config.proxyConfiguration == null) return InMemoryCohortStorage()
+        return ProxyCohortStorage(config.proxyConfiguration, ProxyCohortMembershipApi(deploymentKey, config.proxyConfiguration.proxyUrl.toHttpUrl(), httpClient))
     }
 
-    @ExperimentalApi
-    fun enableMetrics(metrics: LocalEvaluationMetrics) {
-        metricsWrapper.metrics = metrics
+    private fun createFlagConfigApi(): FlagConfigApi {
+        if (config.proxyConfiguration == null) return DirectFlagConfigApi(deploymentKey, config.serverUrl.toHttpUrl(), httpClient)
+        return ProxyFlagConfigApi(deploymentKey, config.proxyConfiguration.proxyUrl.toHttpUrl(), httpClient)
     }
 }
 
-interface LocalEvaluationMetrics {
-    fun onEvaluation()
-    fun onEvaluationFailure(exception: Exception)
-    fun onAssignment()
-    fun onAssignmentFilter()
-    fun onAssignmentEvent()
-    fun onAssignmentEventFailure(exception: Exception)
-    fun onFlagConfigFetch()
-    fun onFlagConfigFetchFailure(exception: Exception)
-    fun onCohortDescriptionsFetch()
-    fun onCohortDescriptionsFetchFailure(exception: Exception)
-    fun onCohortDownload()
-    fun onCohortDownloadFailure(exception: Exception)
-}

@@ -1,7 +1,13 @@
+@file:OptIn(ExperimentalApi::class)
+
 package com.amplitude.experiment
 
 import com.amplitude.experiment.util.LocalEvaluationMetricsCounter
+import com.amplitude.experiment.util.Logger
+import com.amplitude.experiment.util.SystemLogger
 import org.junit.Assert
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.system.measureNanoTime
 import kotlin.test.Test
 
@@ -144,8 +150,10 @@ class LocalEvaluationClientTest {
     @Test
     fun `test client metrics`() {
         val metrics = LocalEvaluationMetricsCounter()
-        val client = LocalEvaluationClient(API_KEY)
-        client.enableMetrics(metrics)
+        val config = LocalEvaluationConfig.builder().apply {
+            enableMetrics(metrics)
+        }.build()
+        val client = LocalEvaluationClient(API_KEY, config)
         client.start()
         client.evaluate(ExperimentUser(userId = "user_id", deviceId = "device_id"))
         Assert.assertEquals(1, metrics.evaluation)

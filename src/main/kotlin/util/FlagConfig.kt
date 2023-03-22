@@ -1,4 +1,4 @@
-package com.amplitude.experiment.cohort
+package com.amplitude.experiment.util
 
 import com.amplitude.experiment.evaluation.FlagConfig
 import com.amplitude.experiment.evaluation.UserPropertyFilter

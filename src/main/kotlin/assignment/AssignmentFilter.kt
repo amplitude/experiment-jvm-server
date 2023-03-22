@@ -2,8 +2,6 @@ package com.amplitude.experiment.assignment
 
 import com.amplitude.experiment.util.LRUCache
 
-internal const val DEFAULT_FILTER_CAPACITY = 65536
-
 internal interface AssignmentFilter {
     fun shouldTrack(assignment: Assignment): Boolean
 }
@@ -11,17 +9,14 @@ internal interface AssignmentFilter {
 internal class LRUAssignmentFilter(size: Int) : AssignmentFilter {
 
     // Cache of canonical assignment to the last sent timestamp.
-    private val cache = LRUCache<String, Long>(size)
+    private val cache = LRUCache<String, Unit>(size, DAY_MILLIS)
 
     override fun shouldTrack(assignment: Assignment): Boolean {
-        val now = System.currentTimeMillis()
         val canonicalAssignment = assignment.canonicalize()
-        val lastSent = cache[canonicalAssignment]
-        return if (lastSent == null || now > lastSent + DAY_MILLIS) {
-            cache[canonicalAssignment] = now
-            true
-        } else {
-            false
+        val track = cache[canonicalAssignment] == null
+        if (track) {
+            cache[canonicalAssignment] = Unit
         }
+        return track
     }
 }

@@ -1,4 +1,4 @@
-package com.amplitude.experiment.cohort
+package com.amplitude.experiment
 
 @RequiresOptIn(level = RequiresOptIn.Level.WARNING)
 @Retention(AnnotationRetention.BINARY)
