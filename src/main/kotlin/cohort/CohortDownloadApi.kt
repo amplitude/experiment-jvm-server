@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit
  * https://www.docs.developers.amplitude.com/analytics/apis/behavioral-cohorts-api/
  */
 
-internal const val DEFAULT_COHORT_SYNC_URL = "https://cohort.lab.amplitude.com/"
+private const val DEFAULT_COHORT_SYNC_URL = "https://cohort.lab.amplitude.com/"
 
 @Serializable
 private data class SerialCohortDescription(
@@ -40,7 +40,7 @@ private data class GetCohortMembersResponse(
     @SerialName("user_ids") val userIds: List<String?>,
 )
 
-interface CohortDownloadApi {
+internal interface CohortDownloadApi {
     fun getCohortDescriptions(): List<CohortDescription>
     fun getCohortMembers(cohortDescription: CohortDescription): Set<String>
 }

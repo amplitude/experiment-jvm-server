@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalApi::class)
+
 package com.amplitude.experiment
 
 import okhttp3.HttpUrl

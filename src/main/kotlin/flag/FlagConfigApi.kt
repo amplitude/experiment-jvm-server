@@ -13,14 +13,19 @@ internal interface FlagConfigApi {
 }
 
 internal class HybridFlagConfigApi(
-    deploymentKey: String,
-    directUrl: HttpUrl,
-    proxyUrl: HttpUrl?,
-    httpClient: OkHttpClient,
+    private val directApi: FlagConfigApi,
+    private val proxyApi: FlagConfigApi?,
 ) : FlagConfigApi {
 
-    private val proxyApi = proxyUrl?.let { ProxyFlagConfigApi(deploymentKey, proxyUrl, httpClient) }
-    private val directApi = DirectFlagConfigApi(deploymentKey, directUrl, httpClient)
+    constructor(
+        deploymentKey: String,
+        directUrl: HttpUrl,
+        proxyUrl: HttpUrl?,
+        httpClient: OkHttpClient,
+    ) : this(
+        directApi = DirectFlagConfigApi(deploymentKey, directUrl, httpClient),
+        proxyApi = proxyUrl?.let { ProxyFlagConfigApi(deploymentKey, proxyUrl, httpClient) },
+    )
 
     override fun getFlagConfigs(): List<FlagConfig> {
         if (proxyApi != null) {

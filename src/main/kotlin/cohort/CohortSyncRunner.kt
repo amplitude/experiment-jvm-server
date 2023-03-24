@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
 
 private const val POLLING_INTERVAL_MILLIS = 60000L
 
-internal class PollingCohortSyncService(
+internal class CohortSyncRunner(
     private val config: CohortSyncConfiguration,
     private val cohortDownloadApi: CohortDownloadApi,
     private val cohortStorage: CohortStorage,
@@ -45,7 +45,7 @@ internal class PollingCohortSyncService(
         scheduledExecutor.shutdown()
     }
 
-    fun refresh(cohortIds: Set<String>? = null) = synchronized(refreshLock) {
+    internal fun refresh(cohortIds: Set<String>? = null) = synchronized(refreshLock) {
         if (cohortIds != null) {
             managedCohorts.clear()
             managedCohorts.addAll(cohortIds)

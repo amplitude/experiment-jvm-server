@@ -7,7 +7,7 @@ import com.amplitude.experiment.LocalEvaluationConfig
 import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.cohort.CohortStorage
 import com.amplitude.experiment.cohort.DirectCohortDownloadApi
-import com.amplitude.experiment.cohort.PollingCohortSyncService
+import com.amplitude.experiment.cohort.CohortSyncRunner
 import com.amplitude.experiment.flag.FlagConfigApi
 import com.amplitude.experiment.flag.FlagConfigStorage
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
@@ -33,7 +33,7 @@ internal class DeploymentRunner(
             config.cohortSyncConfiguration.secretKey,
             httpClient
         )
-        PollingCohortSyncService(
+        CohortSyncRunner(
             config = config.cohortSyncConfiguration,
             cohortDownloadApi = cohortDownloadApi,
             cohortStorage = cohortStorage,
