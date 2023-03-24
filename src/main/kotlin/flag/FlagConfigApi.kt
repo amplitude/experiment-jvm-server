@@ -3,12 +3,35 @@ package com.amplitude.experiment.flag
 import com.amplitude.experiment.LIBRARY_VERSION
 import com.amplitude.experiment.evaluation.FlagConfig
 import com.amplitude.experiment.evaluation.serialization.SerialFlagConfig
+import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.get
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 
 internal interface FlagConfigApi {
     fun getFlagConfigs(): List<FlagConfig>
+}
+
+internal class HybridFlagConfigApi(
+    deploymentKey: String,
+    directUrl: HttpUrl,
+    proxyUrl: HttpUrl?,
+    httpClient: OkHttpClient,
+) : FlagConfigApi {
+
+    private val proxyApi = proxyUrl?.let { ProxyFlagConfigApi(deploymentKey, proxyUrl, httpClient) }
+    private val directApi = DirectFlagConfigApi(deploymentKey, directUrl, httpClient)
+
+    override fun getFlagConfigs(): List<FlagConfig> {
+        if (proxyApi != null) {
+            try {
+                return proxyApi.getFlagConfigs()
+            } catch (e: Exception) {
+                Logger.e("Failed to get flag configs from proxy api.", e)
+            }
+        }
+        return directApi.getFlagConfigs()
+    }
 }
 
 internal class DirectFlagConfigApi(

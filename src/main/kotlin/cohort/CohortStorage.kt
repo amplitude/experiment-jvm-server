@@ -5,6 +5,7 @@ package com.amplitude.experiment.cohort
 import com.amplitude.experiment.ExperimentalApi
 import com.amplitude.experiment.ProxyConfiguration
 import com.amplitude.experiment.util.LRUCache
+import com.amplitude.experiment.util.Logger
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
@@ -34,8 +35,14 @@ internal class ProxyCohortStorage(
             inMemoryStorage.getCohortsForUser(userId, cohortIds)
         } else {
             cohortCache[userId]
-                ?: cohortMembershipApi.getCohortsForUser(userId).also { proxyCohortMemberships ->
-                    cohortCache[userId] = proxyCohortMemberships
+                ?: try {
+                    cohortMembershipApi.getCohortsForUser(userId).also { proxyCohortMemberships ->
+                        cohortCache[userId] = proxyCohortMemberships
+                    }
+                } catch (e: Exception) {
+                    // TODO throw exception or continue? Waiting to hear back...
+                    Logger.e("Failed to get cohort membership from proxy.", e)
+                    inMemoryStorage.getCohortsForUser(userId, cohortIds)
                 }
         }
     }

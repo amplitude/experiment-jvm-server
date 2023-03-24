@@ -18,6 +18,7 @@ import com.amplitude.experiment.evaluation.serialization.SerialVariant
 import com.amplitude.experiment.flag.DirectFlagConfigApi
 import com.amplitude.experiment.flag.FlagConfigApi
 import com.amplitude.experiment.flag.FlagConfigStorage
+import com.amplitude.experiment.flag.HybridFlagConfigApi
 import com.amplitude.experiment.flag.InMemoryFlagConfigStorage
 import com.amplitude.experiment.flag.ProxyFlagConfigApi
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
@@ -43,7 +44,12 @@ class LocalEvaluationClient internal constructor(
     private val deploymentRunner = DeploymentRunner(
         config,
         httpClient,
-        createFlagConfigApi(),
+        HybridFlagConfigApi(
+            deploymentKey,
+            config.serverUrl.toHttpUrl(),
+            config.proxyConfiguration?.proxyUrl?.toHttpUrl(),
+            httpClient,
+        ),
         flagConfigStorage,
         cohortStorage,
         metricsWrapper
@@ -102,11 +108,6 @@ class LocalEvaluationClient internal constructor(
     private fun createCohortStorage(): CohortStorage {
         if (config.proxyConfiguration == null) return InMemoryCohortStorage()
         return ProxyCohortStorage(config.proxyConfiguration, ProxyCohortMembershipApi(deploymentKey, config.proxyConfiguration.proxyUrl.toHttpUrl(), httpClient))
-    }
-
-    private fun createFlagConfigApi(): FlagConfigApi {
-        if (config.proxyConfiguration == null) return DirectFlagConfigApi(deploymentKey, config.serverUrl.toHttpUrl(), httpClient)
-        return ProxyFlagConfigApi(deploymentKey, config.proxyConfiguration.proxyUrl.toHttpUrl(), httpClient)
     }
 }
 
