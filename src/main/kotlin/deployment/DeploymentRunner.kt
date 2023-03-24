@@ -7,12 +7,13 @@ import com.amplitude.experiment.LocalEvaluationConfig
 import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.cohort.CohortStorage
 import com.amplitude.experiment.cohort.DirectCohortDownloadApi
-import com.amplitude.experiment.cohort.CohortSyncRunner
+import com.amplitude.experiment.cohort.CohortSyncService
 import com.amplitude.experiment.flag.FlagConfigApi
 import com.amplitude.experiment.flag.FlagConfigStorage
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.Once
+import com.amplitude.experiment.util.getCohortIds
 import com.amplitude.experiment.util.wrapMetrics
 import okhttp3.OkHttpClient
 import java.util.concurrent.Executors
@@ -33,7 +34,7 @@ internal class DeploymentRunner(
             config.cohortSyncConfiguration.secretKey,
             httpClient
         )
-        CohortSyncRunner(
+        CohortSyncService(
             config = config.cohortSyncConfiguration,
             cohortDownloadApi = cohortDownloadApi,
             cohortStorage = cohortStorage,
@@ -52,7 +53,7 @@ internal class DeploymentRunner(
         ) {
             flagConfigApi.getFlagConfigs()
         }
-
+        cohortService?.refresh(flagConfigs.getCohortIds())
         flagConfigStorage.putFlagConfigs(flagConfigs)
         Logger.d("Refreshed ${flagConfigs.size} flag configs.")
     }
