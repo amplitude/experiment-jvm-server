@@ -7,7 +7,7 @@ on:
       - main
 
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -19,5 +19,5 @@ jobs:
           distribution: 'zulu'
           java-version: '8'
 
-    - name: Lint
-      run: ./gradlew ktlintCheck
+      - name: Lint
+        run: ./gradlew ktlintCheck

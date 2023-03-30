@@ -40,8 +40,8 @@ internal class ProxyCohortStorage(
                         cohortCache[userId] = proxyCohortMemberships
                     }
                 } catch (e: Exception) {
-                    // TODO throw exception or continue? Waiting to hear back...
                     Logger.e("Failed to get cohort membership from proxy.", e)
+                    // Fall back on in memory storage in the case of proxy failure.
                     inMemoryStorage.getCohortsForUser(userId, cohortIds)
                 }
         }
