@@ -9,7 +9,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okio.IOException
-import java.util.Base64
 import java.util.concurrent.CompletableFuture
 
 private val json = Json {

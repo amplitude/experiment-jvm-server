@@ -1,10 +1,5 @@
 package com.amplitude.experiment.cohort
 
-import com.amplitude.experiment.evaluation.Operator
-import com.amplitude.experiment.evaluation.UserPropertyFilter
-import kotlin.test.Test
-import kotlin.test.assertEquals
-
 class CohortIdProviderTest {
 
     // @Test

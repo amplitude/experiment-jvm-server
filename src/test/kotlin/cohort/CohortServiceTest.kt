@@ -1,15 +1,5 @@
 package com.amplitude.experiment.cohort
 
-import org.junit.Assert
-import org.mockito.Mockito.mock
-import org.mockito.Mockito.`when`
-import java.io.IOException
-import java.util.concurrent.CompletableFuture
-import kotlin.system.measureTimeMillis
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
-
 class CohortServiceTest {
 
     // private val config = CohortServiceConfig()

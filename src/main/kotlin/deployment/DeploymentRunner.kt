@@ -6,8 +6,8 @@ import com.amplitude.experiment.ExperimentalApi
 import com.amplitude.experiment.LocalEvaluationConfig
 import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.cohort.CohortStorage
-import com.amplitude.experiment.cohort.DirectCohortDownloadApi
 import com.amplitude.experiment.cohort.CohortSyncService
+import com.amplitude.experiment.cohort.DirectCohortDownloadApi
 import com.amplitude.experiment.flag.FlagConfigApi
 import com.amplitude.experiment.flag.FlagConfigStorage
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper

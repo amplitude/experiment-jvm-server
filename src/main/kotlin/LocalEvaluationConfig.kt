@@ -2,8 +2,6 @@
 
 package com.amplitude.experiment
 
-import okhttp3.HttpUrl
-
 /**
  * Configuration options. This is an immutable object that can be created using
  * a [LocalEvaluationConfig.Builder]. Example usage:

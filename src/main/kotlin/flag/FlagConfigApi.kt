@@ -46,10 +46,13 @@ internal class DirectFlagConfigApi(
 ) : FlagConfigApi {
 
     override fun getFlagConfigs(): List<FlagConfig> {
-        val response = httpClient.get<List<SerialFlagConfig>>(serverUrl, "sdk/v1/flags", headers = mapOf(
-            "Authorization" to "Api-Key $deploymentKey",
-            "X-Amp-Exp-Library" to "experiment-jvm-server/$LIBRARY_VERSION"
-        ))
+        val response = httpClient.get<List<SerialFlagConfig>>(
+            serverUrl, "sdk/v1/flags",
+            headers = mapOf(
+                "Authorization" to "Api-Key $deploymentKey",
+                "X-Amp-Exp-Library" to "experiment-jvm-server/$LIBRARY_VERSION"
+            )
+        )
         return response.map { it.convert() }
     }
 }

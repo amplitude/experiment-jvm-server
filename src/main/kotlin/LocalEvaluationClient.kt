@@ -15,12 +15,9 @@ import com.amplitude.experiment.deployment.DeploymentRunner
 import com.amplitude.experiment.evaluation.EvaluationEngine
 import com.amplitude.experiment.evaluation.EvaluationEngineImpl
 import com.amplitude.experiment.evaluation.serialization.SerialVariant
-import com.amplitude.experiment.flag.DirectFlagConfigApi
-import com.amplitude.experiment.flag.FlagConfigApi
 import com.amplitude.experiment.flag.FlagConfigStorage
 import com.amplitude.experiment.flag.HybridFlagConfigApi
 import com.amplitude.experiment.flag.InMemoryFlagConfigStorage
-import com.amplitude.experiment.flag.ProxyFlagConfigApi
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.getCohortIds
@@ -110,4 +107,3 @@ class LocalEvaluationClient internal constructor(
         return ProxyCohortStorage(config.proxyConfiguration, ProxyCohortMembershipApi(deploymentKey, config.proxyConfiguration.proxyUrl.toHttpUrl(), httpClient))
     }
 }
-

@@ -6,7 +6,6 @@ import kotlinx.serialization.Serializable
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import java.util.Base64
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 
@@ -95,5 +94,3 @@ private inline fun <reified T> Semaphore.limit(block: () -> T): T {
     }
     return result
 }
-
-
