@@ -6,7 +6,7 @@ import com.amplitude.Amplitude
 import com.amplitude.experiment.assignment.AmplitudeAssignmentService
 import com.amplitude.experiment.assignment.Assignment
 import com.amplitude.experiment.assignment.AssignmentService
-import com.amplitude.experiment.assignment.LRUAssignmentFilter
+import com.amplitude.experiment.assignment.InMemoryAssignmentFilter
 import com.amplitude.experiment.cohort.CohortStorage
 import com.amplitude.experiment.cohort.InMemoryCohortStorage
 import com.amplitude.experiment.cohort.ProxyCohortMembershipApi
@@ -97,7 +97,7 @@ class LocalEvaluationClient internal constructor(
                 useBatchMode(config.assignmentConfiguration.useBatchMode)
                 init(config.assignmentConfiguration.apiKey)
             },
-            LRUAssignmentFilter(config.assignmentConfiguration.filterCapacity),
+            InMemoryAssignmentFilter(config.assignmentConfiguration.filterCapacity),
             metricsWrapper
         )
     }

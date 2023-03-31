@@ -2,7 +2,10 @@ package com.amplitude.experiment.util
 
 import java.util.HashMap
 
-internal class LRUCache<K, V>(private val capacity: Int, private val ttlMillis: Long = Long.MAX_VALUE) {
+/**
+ * Least recently used (LRU) cache with TTL for cache entries.
+ */
+internal class Cache<K, V>(private val capacity: Int, private val ttlMillis: Long = 0) {
 
     private class Node<K, V>(
         var key: K? = null,
@@ -17,6 +20,7 @@ internal class LRUCache<K, V>(private val capacity: Int, private val ttlMillis: 
     private val head: Node<K, V> = Node()
     private val tail: Node<K, V> = Node()
     private val lock = Any()
+    private val timeout = ttlMillis > 0
 
     init {
         head.next = tail
@@ -25,10 +29,11 @@ internal class LRUCache<K, V>(private val capacity: Int, private val ttlMillis: 
 
     operator fun get(key: K): V? = synchronized(lock) {
         val n = map[key] ?: return null
-        if (n.ts + ttlMillis < System.currentTimeMillis()) {
+        if (timeout && n.ts + ttlMillis < System.currentTimeMillis()) {
+            remove(key)
             return null
         }
-        update(n)
+        updateInternal(n)
         return n.value
     }
 
@@ -37,27 +42,34 @@ internal class LRUCache<K, V>(private val capacity: Int, private val ttlMillis: 
         if (n == null) {
             n = Node(key, value)
             map[key] = n
-            add(n)
+            addInternal(n)
             ++count
         } else {
             n.value = value
             n.ts = System.currentTimeMillis()
-            update(n)
+            updateInternal(n)
         }
         if (count > capacity) {
-            val toDel = tail.prev
-            remove(toDel!!)
-            map.remove(toDel.key)
-            --count
+            val del = tail.prev?.key
+            if (del != null) {
+                remove(del)
+            }
         }
     }
 
-    private fun update(node: Node<K, V>) {
-        remove(node)
-        add(node)
+    fun remove(key: K): Unit = synchronized(lock) {
+        val n = map[key] ?: return
+        removeInternal(n)
+        map.remove(n.key)
+        --count
     }
 
-    private fun add(node: Node<K, V>) {
+    private fun updateInternal(node: Node<K, V>) {
+        removeInternal(node)
+        addInternal(node)
+    }
+
+    private fun addInternal(node: Node<K, V>) {
         val after = head.next
         head.next = node
         node.prev = head
@@ -65,7 +77,7 @@ internal class LRUCache<K, V>(private val capacity: Int, private val ttlMillis: 
         after!!.prev = node
     }
 
-    private fun remove(node: Node<K, V>) {
+    private fun removeInternal(node: Node<K, V>) {
         val before = node.prev
         val after = node.next
         before!!.next = after

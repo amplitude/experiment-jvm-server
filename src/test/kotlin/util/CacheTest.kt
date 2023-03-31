@@ -5,18 +5,18 @@ import org.junit.Test
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 
-class LRUCacheTest {
+class CacheTest {
 
     @Test
     fun `test get no entry`() {
-        val cache = LRUCache<Int, Int>(4)
+        val cache = Cache<Int, Int>(4)
         val value = cache[0]
         Assert.assertNull(value)
     }
 
     @Test
     fun `test set and get`() {
-        val cache = LRUCache<Int, Int>(4)
+        val cache = Cache<Int, Int>(4)
         cache[0] = 0
         val value = cache[0]
         Assert.assertEquals(0, value)
@@ -24,7 +24,7 @@ class LRUCacheTest {
 
     @Test
     fun `test least recently used entry is removed`() {
-        val cache = LRUCache<Int, Int>(4)
+        val cache = Cache<Int, Int>(4)
         repeat(4) { i ->
             cache[i] = i
         }
@@ -35,7 +35,7 @@ class LRUCacheTest {
 
     @Test
     fun `test first set then get entry is not removed`() {
-        val cache = LRUCache<Int, Int>(4)
+        val cache = Cache<Int, Int>(4)
         repeat(4) { i ->
             cache[i] = i
         }
@@ -49,7 +49,7 @@ class LRUCacheTest {
 
     @Test
     fun `test first set then re-set entry is not removed`() {
-        val cache = LRUCache<Int, Int>(4)
+        val cache = Cache<Int, Int>(4)
         repeat(4) { i ->
             cache[i] = i
         }
@@ -63,7 +63,7 @@ class LRUCacheTest {
 
     @Test
     fun `test first set then re-set with different value entry is not removed`() {
-        val cache = LRUCache<Int, Int>(4)
+        val cache = Cache<Int, Int>(4)
         repeat(4) { i ->
             cache[i] = i
         }
@@ -79,7 +79,7 @@ class LRUCacheTest {
     fun `test concurrent access`() {
         val n = 100
         val executor = Executors.newFixedThreadPool(n)
-        val cache = LRUCache<Int, Int>(n)
+        val cache = Cache<Int, Int>(n)
         val futures = mutableListOf<Future<*>>()
         repeat(n) { i ->
             futures.add(

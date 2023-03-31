@@ -8,7 +8,7 @@ class AssignmentFilterTest {
 
     @Test
     fun `test single assignment`() {
-        val filter = LRUAssignmentFilter(100)
+        val filter = InMemoryAssignmentFilter(100)
         val assignment = Assignment(
             ExperimentUser(userId = "user"),
             mapOf(
@@ -21,7 +21,7 @@ class AssignmentFilterTest {
 
     @Test
     fun `test duplicate assignments`() {
-        val filter = LRUAssignmentFilter(100)
+        val filter = InMemoryAssignmentFilter(100)
         val assignment1 = Assignment(
             ExperimentUser(userId = "user"),
             mapOf(
@@ -42,7 +42,7 @@ class AssignmentFilterTest {
 
     @Test
     fun `test same user different results`() {
-        val filter = LRUAssignmentFilter(100)
+        val filter = InMemoryAssignmentFilter(100)
         val assignment1 = Assignment(
             ExperimentUser(userId = "user"),
             mapOf(
@@ -63,7 +63,7 @@ class AssignmentFilterTest {
 
     @Test
     fun `test same results for different users`() {
-        val filter = LRUAssignmentFilter(100)
+        val filter = InMemoryAssignmentFilter(100)
         val assignment1 = Assignment(
             ExperimentUser(userId = "user"),
             mapOf(
@@ -84,7 +84,7 @@ class AssignmentFilterTest {
 
     @Test
     fun `test empty results`() {
-        val filter = LRUAssignmentFilter(100)
+        val filter = InMemoryAssignmentFilter(100)
         val assignment1 = Assignment(
             ExperimentUser(userId = "user"),
             mapOf()
@@ -104,7 +104,7 @@ class AssignmentFilterTest {
 
     @Test
     fun `test duplicate assignments with different result ordering`() {
-        val filter = LRUAssignmentFilter(100)
+        val filter = InMemoryAssignmentFilter(100)
         val assignment1 = Assignment(
             ExperimentUser(userId = "user"),
             linkedMapOf(
@@ -125,7 +125,7 @@ class AssignmentFilterTest {
 
     @Test
     fun `test lru replacement`() {
-        val filter = LRUAssignmentFilter(2)
+        val filter = InMemoryAssignmentFilter(2)
         val assignment1 = Assignment(
             ExperimentUser(userId = "user1"),
             mapOf(

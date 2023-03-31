@@ -4,7 +4,7 @@ package com.amplitude.experiment.cohort
 
 import com.amplitude.experiment.ExperimentalApi
 import com.amplitude.experiment.ProxyConfiguration
-import com.amplitude.experiment.util.LRUCache
+import com.amplitude.experiment.util.Cache
 import com.amplitude.experiment.util.Logger
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
@@ -23,7 +23,7 @@ internal class ProxyCohortStorage(
     private val cohortMembershipApi: CohortMembershipApi
 ) : CohortStorage {
 
-    private val cohortCache = LRUCache<String, Set<String>>(
+    private val cohortCache = Cache<String, Set<String>>(
         proxyConfig.cohortCacheCapacity,
         proxyConfig.cohortCacheTtlMillis
     )
