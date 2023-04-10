@@ -26,6 +26,7 @@ dependencies {
     implementation("com.amplitude:evaluation-serialization:${Versions.evaluationSerialization}")
     implementation("com.amplitude:java-sdk:${Versions.amplitudeAnalytics}")
     implementation("org.json:json:${Versions.json}")
+    implementation("org.apache.commons:commons-csv:${Versions.apacheCommons}")
 }
 
 // Publishing

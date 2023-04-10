@@ -15,22 +15,19 @@ private val json = Json {
     ignoreUnknownKeys = true
 }
 
-internal inline fun <reified T> OkHttpClient.request(
+private fun OkHttpClient.submit(
     request: Request,
-): CompletableFuture<T> {
-    val future = CompletableFuture<T>()
+): CompletableFuture<Response> {
+    val future = CompletableFuture<Response>()
     val call = newCall(request)
     call.enqueue(object : Callback {
         override fun onResponse(call: Call, response: Response) {
             try {
-                val result = response.use {
-                    if (!response.isSuccessful) {
-                        throw IOException("$request - error response: $response")
-                    }
-                    val body = response.body?.string() ?: throw IOException("$request - null response body")
-                    json.decodeFromString<T>(body)
+                if (!response.isSuccessful) {
+                    response.close()
+                    throw IOException("$request - error response: $response")
                 }
-                future.complete(result)
+                future.complete(response)
             } catch (e: Exception) {
                 future.completeExceptionally(e)
             }
@@ -43,12 +40,12 @@ internal inline fun <reified T> OkHttpClient.request(
     return future
 }
 
-internal inline fun <reified T> OkHttpClient.get(
+private fun newGet(
     serverUrl: HttpUrl,
     path: String,
     headers: Map<String, String>? = null,
     queries: Map<String, String>? = null,
-): T {
+): Request {
     val url = serverUrl.newBuilder().apply {
         addPathSegments(path)
         queries?.forEach {
@@ -59,6 +56,30 @@ internal inline fun <reified T> OkHttpClient.get(
     headers?.forEach {
         builder.addHeader(it.key, it.value)
     }
-    val request = builder.build()
-    return this.request<T>(request).get()
+    return builder.build()
+}
+
+internal fun OkHttpClient.get(
+    serverUrl: HttpUrl,
+    path: String,
+    headers: Map<String, String>? = null,
+    queries: Map<String, String>? = null,
+): Response {
+    val request = newGet(serverUrl, path, headers, queries)
+    return submit(request).get()
+}
+
+internal inline fun <reified T> OkHttpClient.get(
+    serverUrl: HttpUrl,
+    path: String,
+    headers: Map<String, String>? = null,
+    queries: Map<String, String>? = null,
+): T {
+    val request = newGet(serverUrl, path, headers, queries)
+    return submit(request).thenApply { response ->
+        response.use {
+            val body = response.body?.string() ?: throw IOException("$request - null response body")
+            json.decodeFromString<T>(body)
+        }
+    }.get()
 }
