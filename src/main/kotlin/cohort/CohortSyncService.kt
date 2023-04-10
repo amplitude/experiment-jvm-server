@@ -24,13 +24,15 @@ internal class CohortSyncService(
     private val start = Once()
     private val refreshLock = Any()
     private val scheduledExecutor = Executors.newSingleThreadScheduledExecutor()
-    private val managedCohorts = mutableSetOf<String>()
+    internal val managedCohorts = mutableSetOf<String>()
 
     fun start() = start.once {
         scheduledExecutor.scheduleWithFixedDelay(
             {
                 try {
-                    refresh()
+                    synchronized(refreshLock) {
+                        refresh(managedCohorts)
+                    }
                 } catch (t: Throwable) {
                     Logger.e("Cohort refresh failed.", t)
                 }
@@ -46,16 +48,20 @@ internal class CohortSyncService(
     }
 
     fun refresh(cohortIds: Set<String>? = null) = synchronized(refreshLock) {
-        if (cohortIds != null) {
+        val refreshCohortIds = if (cohortIds != null) {
             val deletedCohortsIds = managedCohorts - cohortIds
+            val addedCohortIds = cohortIds - managedCohorts
             managedCohorts.clear()
             managedCohorts.addAll(cohortIds)
             for (cohortId in deletedCohortsIds) {
                 cohortStorage.deleteCohort(cohortId)
             }
+            addedCohortIds
+        } else {
+            managedCohorts
         }
         val networkCohortDescriptions = getCohortDescriptions()
-        val filteredCohorts = filterCohorts(networkCohortDescriptions)
+        val filteredCohorts = filterCohorts(networkCohortDescriptions, refreshCohortIds)
         downloadCohorts(filteredCohorts)
     }
 
@@ -74,10 +80,13 @@ internal class CohortSyncService(
      *   2. Larger than the max size.
      *   3. Are equal to what has been downloaded already.
      */
-    internal fun filterCohorts(networkCohortDescriptions: List<CohortDescription>): List<CohortDescription> {
+    internal fun filterCohorts(
+        networkCohortDescriptions: List<CohortDescription>,
+        cohortIds: Set<String>
+    ): List<CohortDescription> {
         return networkCohortDescriptions.filter { networkCohortDescription ->
             val storageDescription = cohortStorage.getCohortDescription(networkCohortDescription.id)
-            managedCohorts.contains(networkCohortDescription.id) &&
+            cohortIds.contains(networkCohortDescription.id) &&
                 networkCohortDescription.size <= config.maxCohortSize &&
                 networkCohortDescription.lastComputed > (storageDescription?.lastComputed ?: -1)
         }

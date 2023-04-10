@@ -76,7 +76,7 @@ class LocalEvaluationClient internal constructor(
         ) {
             evaluation.evaluate(flagConfigs, enrichedUser.toSerialExperimentUser().convert())
         }
-        Logger.i("evaluate - user=$enrichedUser, result=$flagResults")
+        Logger.d("evaluate - user=$enrichedUser, result=$flagResults")
         assignmentService?.track(Assignment(user, flagResults))
         return flagResults.filter { entry ->
             val isVariant = !entry.value.isDefaultVariant
