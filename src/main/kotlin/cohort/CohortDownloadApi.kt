@@ -139,7 +139,6 @@ internal class DirectCohortDownloadApiV5(
             Logger.d("getCohortMembers: requestId=${initialResponse.requestId}")
             // Poll until the cohort is ready for download
             while (true) {
-                sleep(1000)
                 val statusResponse = httpClient.get(
                     serverUrl = directServerUrl,
                     path = "api/5/cohorts/request-status/${initialResponse.requestId}",
@@ -151,6 +150,7 @@ internal class DirectCohortDownloadApiV5(
                 } else if (statusResponse.code != 202) {
                     throw IOException("Cohort status request resulted in error response ${statusResponse.code}")
                 }
+                sleep(1000)
             }
             val downloadResponse = httpClient.get(
                 serverUrl = directServerUrl,
