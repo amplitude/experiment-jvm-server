@@ -46,7 +46,7 @@ private data class GetCohortMembersResponse(
 )
 
 internal interface CohortDownloadApi {
-    fun getCohortDescriptions(): List<CohortDescription>
+    fun getCohortDescriptions(cohortIds: Set<String>): List<CohortDescription>
     fun getCohortMembers(cohortDescription: CohortDescription): Set<String>
 }
 
@@ -63,12 +63,14 @@ internal class DirectCohortDownloadApiV3(
     private val semaphore = Semaphore(5, true)
     private val basicAuth = Base64.getEncoder().encodeToString("$apiKey:$secretKey".toByteArray(Charsets.UTF_8))
 
-    override fun getCohortDescriptions(): List<CohortDescription> {
+    override fun getCohortDescriptions(cohortIds: Set<String>): List<CohortDescription> {
         return semaphore.limit {
             val response = httpClient.get<GetCohortDescriptionsResponse>(
                 serverUrl = serverUrl,
                 path = "api/3/cohorts",
                 headers = mapOf("Authorization" to "Basic $basicAuth"),
+                queries = mapOf("cohortIds" to cohortIds.sorted().joinToString()),
+
             )
             response.cohorts.map { CohortDescription(id = it.id, lastComputed = it.lastComputed, size = it.size) }
         }
@@ -116,12 +118,13 @@ internal class DirectCohortDownloadApiV5(
         setHeader()
     }.build()
 
-    override fun getCohortDescriptions(): List<CohortDescription> {
+    override fun getCohortDescriptions(cohortIds: Set<String>): List<CohortDescription> {
         return semaphore.limit {
             val response = httpClient.get<GetCohortDescriptionsResponse>(
                 serverUrl = cdnServerUrl,
                 path = "api/3/cohorts",
                 headers = mapOf("Authorization" to "Basic $basicAuth"),
+                queries = mapOf("cohortIds" to cohortIds.sorted().joinToString()),
             )
             response.cohorts.map { CohortDescription(id = it.id, lastComputed = it.lastComputed, size = it.size) }
         }

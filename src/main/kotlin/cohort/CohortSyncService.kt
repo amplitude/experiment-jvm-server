@@ -70,7 +70,7 @@ internal class CohortSyncService(
             metric = metrics::onCohortDescriptionsFetch,
             failure = metrics::onCohortDescriptionsFetchFailure,
         ) {
-            cohortDownloadApi.getCohortDescriptions()
+            cohortDownloadApi.getCohortDescriptions(managedCohorts)
         }
     }
 

@@ -20,7 +20,7 @@ class CohortSyncServiceTest {
     fun `test refresh, success`() {
         val cohortIds = setOf("a", "b")
         val api = mock(CohortDownloadApi::class.java)
-        `when`(api.getCohortDescriptions()).thenReturn(listOf(
+        `when`(api.getCohortDescriptions(setOf("a", "b"))).thenReturn(listOf(
             cohortDescription("a"),
             cohortDescription("b"),
         ))
@@ -131,7 +131,7 @@ class CohortSyncServiceTest {
         val service = CohortSyncService(config, api, storage)
 
         // Setup mocks
-        `when`(api.getCohortDescriptions())
+        `when`(api.getCohortDescriptions(setOf("a", "b", "c")))
             .thenReturn(listOf(
                 cohortDescription("a"),
                 cohortDescription("b"),
@@ -152,7 +152,7 @@ class CohortSyncServiceTest {
     @Test
     fun `test refresh cohort ids managed`() {
         val api = mock(CohortDownloadApi::class.java)
-        `when`(api.getCohortDescriptions()).thenReturn(listOf(
+        `when`(api.getCohortDescriptions(setOf("a", "b"))).thenReturn(listOf(
             cohortDescription("a"),
             cohortDescription("b"),
         ))
@@ -173,7 +173,7 @@ class CohortSyncServiceTest {
     @Test
     fun `test refresh cohort ids managed, subsequent refresh maintains state`() {
         val api = mock(CohortDownloadApi::class.java)
-        `when`(api.getCohortDescriptions()).thenReturn(listOf(
+        `when`(api.getCohortDescriptions(setOf("a", "b"))).thenReturn(listOf(
             cohortDescription("a"),
             cohortDescription("b"),
         ))
@@ -199,7 +199,12 @@ class CohortSyncServiceTest {
     @Test
     fun `test refresh cohort ids managed, update managed cohorts one added one removed`() {
         val api = mock(CohortDownloadApi::class.java)
-        `when`(api.getCohortDescriptions()).thenReturn(listOf(
+        `when`(api.getCohortDescriptions(setOf("a", "b"))).thenReturn(listOf(
+            cohortDescription("a"),
+            cohortDescription("b"),
+            cohortDescription("c"),
+        ))
+        `when`(api.getCohortDescriptions(setOf("a", "c"))).thenReturn(listOf(
             cohortDescription("a"),
             cohortDescription("b"),
             cohortDescription("c"),
