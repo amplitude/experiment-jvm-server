@@ -8,7 +8,7 @@ object Versions {
     const val json = "20201115"
     const val evaluationCore = "1.1.0"
     const val evaluationSerialization = "1.1.0"
-    const val amplitudeAnalytics = "1.10.0"
+    const val amplitudeAnalytics = "1.10.3"
     const val mockito = "4.8.1"
     const val apacheCommons = "1.10.0"
 }
