@@ -8,6 +8,7 @@ import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.internal.closeQuietly
 import okio.IOException
 import java.util.concurrent.CompletableFuture
 
@@ -24,12 +25,13 @@ private fun OkHttpClient.submit(
         override fun onResponse(call: Call, response: Response) {
             try {
                 if (!response.isSuccessful) {
-                    response.close()
                     throw IOException("$request - error response: $response")
                 }
                 future.complete(response)
             } catch (e: Exception) {
                 future.completeExceptionally(e)
+            } finally {
+                response.closeQuietly()
             }
         }
 
