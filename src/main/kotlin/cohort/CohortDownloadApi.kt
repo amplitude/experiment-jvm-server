@@ -18,9 +18,8 @@ import java.util.concurrent.TimeUnit
  * Based on the Behavioral Cohort API:
  * https://www.docs.developers.amplitude.com/analytics/apis/behavioral-cohorts-api/
  */
-
+// TODO make configurable to support EU datacenter
 private const val CDN_COHORT_SYNC_URL = "https://cohort.lab.amplitude.com/"
-private const val DIRECT_COHORT_SYNC_URL = "https://amplitude.com/"
 
 @Serializable
 private data class SerialCohortDescription(
@@ -70,7 +69,6 @@ internal class DirectCohortDownloadApiV3(
                 path = "api/3/cohorts",
                 headers = mapOf("Authorization" to "Basic $basicAuth"),
                 queries = mapOf("cohortIds" to cohortIds.sorted().joinToString()),
-
             )
             response.cohorts.map { CohortDescription(id = it.id, lastComputed = it.lastComputed, size = it.size) }
         }
@@ -111,7 +109,6 @@ internal class DirectCohortDownloadApiV5(
         .readTimeout(5, TimeUnit.MINUTES)
         .build()
     private val cdnServerUrl = CDN_COHORT_SYNC_URL.toHttpUrl()
-    private val directServerUrl = DIRECT_COHORT_SYNC_URL.toHttpUrl()
     private val semaphore = Semaphore(5, true)
     private val basicAuth = Base64.getEncoder().encodeToString("$apiKey:$secretKey".toByteArray(Charsets.UTF_8))
     private val csvFormat = CSVFormat.RFC4180.builder().apply {
@@ -143,7 +140,7 @@ internal class DirectCohortDownloadApiV5(
             // Poll until the cohort is ready for download
             while (true) {
                 val statusResponse = httpClient.get(
-                    serverUrl = directServerUrl,
+                    serverUrl = cdnServerUrl,
                     path = "api/5/cohorts/request-status/${initialResponse.requestId}",
                     headers = mapOf("Authorization" to "Basic $basicAuth"),
                 )
@@ -155,14 +152,13 @@ internal class DirectCohortDownloadApiV5(
                 }
                 sleep(1000)
             }
-            val downloadResponse = httpClient.get(
-                serverUrl = directServerUrl,
+            return httpClient.get(
+                serverUrl = cdnServerUrl,
                 path = "api/5/cohorts/request/${initialResponse.requestId}/file",
                 headers = mapOf("Authorization" to "Basic $basicAuth"),
-            )
-            downloadResponse.use {
-                val csv = CSVParser.parse(downloadResponse.body?.byteStream(), Charsets.UTF_8, csvFormat)
-                return csv.map { it.get("user_id") }.filterNot { it.isNullOrEmpty() }.toSet()
+            ) { response ->
+                val csv = CSVParser.parse(response.body?.byteStream(), Charsets.UTF_8, csvFormat)
+                csv.map { it.get("user_id") }.filterNot { it.isNullOrEmpty() }.toSet()
                     .also { Logger.d("getCohortMembers: end - resultSize=${it.size}") }
             }
         }

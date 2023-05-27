@@ -8,7 +8,6 @@ import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import okhttp3.internal.closeQuietly
 import okio.IOException
 import java.util.concurrent.CompletableFuture
 
@@ -25,13 +24,12 @@ private fun OkHttpClient.submit(
         override fun onResponse(call: Call, response: Response) {
             try {
                 if (!response.isSuccessful) {
+                    response.close()
                     throw IOException("$request - error response: $response")
                 }
                 future.complete(response)
             } catch (e: Exception) {
                 future.completeExceptionally(e)
-            } finally {
-                response.closeQuietly()
             }
         }
 
@@ -68,7 +66,22 @@ internal fun OkHttpClient.get(
     queries: Map<String, String>? = null,
 ): Response {
     val request = newGet(serverUrl, path, headers, queries)
-    return submit(request).get()
+    return submit(request).thenApply { it.apply{ close() } }.get()
+}
+
+internal inline fun <reified T> OkHttpClient.get(
+    serverUrl: HttpUrl,
+    path: String,
+    headers: Map<String, String>? = null,
+    queries: Map<String, String>? = null,
+    crossinline block: (Response) -> T,
+): T {
+    val request = newGet(serverUrl, path, headers, queries)
+    return submit(request).thenApply {
+        it.use { response ->
+            block(response)
+        }
+    }.get()
 }
 
 internal inline fun <reified T> OkHttpClient.get(
@@ -77,11 +90,8 @@ internal inline fun <reified T> OkHttpClient.get(
     headers: Map<String, String>? = null,
     queries: Map<String, String>? = null,
 ): T {
-    val request = newGet(serverUrl, path, headers, queries)
-    return submit(request).thenApply { response ->
-        response.use {
-            val body = response.body?.string() ?: throw IOException("$request - null response body")
-            json.decodeFromString<T>(body)
-        }
-    }.get()
+    return get(serverUrl, path, headers, queries) { response ->
+        val body = response.body?.string() ?: throw IOException("null response body")
+        json.decodeFromString(body)
+    }
 }
