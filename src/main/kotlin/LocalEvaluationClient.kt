@@ -14,6 +14,7 @@ import com.amplitude.experiment.cohort.ProxyCohortStorage
 import com.amplitude.experiment.deployment.DeploymentRunner
 import com.amplitude.experiment.evaluation.EvaluationEngine
 import com.amplitude.experiment.evaluation.EvaluationEngineImpl
+import com.amplitude.experiment.evaluation.FlagConfig
 import com.amplitude.experiment.evaluation.serialization.SerialVariant
 import com.amplitude.experiment.flag.FlagConfigStorage
 import com.amplitude.experiment.flag.HybridFlagConfigApi
@@ -63,13 +64,7 @@ class LocalEvaluationClient internal constructor(
     @JvmOverloads
     fun evaluate(user: ExperimentUser, flagKeys: List<String> = listOf()): Map<String, Variant> {
         val flagConfigs = flagConfigStorage.getFlagConfigs()
-        val enrichedUser = if (user.userId == null) {
-            user
-        } else {
-            user.copyToBuilder().apply {
-                cohortIds(cohortStorage.getCohortsForUser(user.userId, flagConfigs.getCohortIds()))
-            }.build()
-        }
+        val enrichedUser = enrichUser(user, flagConfigs)
         val flagResults = wrapMetrics(
             metric = metricsWrapper::onEvaluation,
             failure = metricsWrapper::onEvaluationFailure,
@@ -86,6 +81,17 @@ class LocalEvaluationClient internal constructor(
         }.map { entry ->
             entry.key to SerialVariant(entry.value.variant).toVariant()
         }.toMap()
+    }
+
+    private fun enrichUser(user: ExperimentUser, flagConfigs: List<FlagConfig>): ExperimentUser {
+        val cohortIds = flagConfigs.getCohortIds()
+        return if (user.userId == null || cohortIds.isEmpty()) {
+            user
+        } else {
+            user.copyToBuilder().apply {
+                cohortIds(cohortStorage.getCohortsForUser(user.userId, cohortIds))
+            }.build()
+        }
     }
 
     private fun createAssignmentService(): AssignmentService? {
