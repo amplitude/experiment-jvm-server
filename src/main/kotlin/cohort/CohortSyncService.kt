@@ -48,6 +48,7 @@ internal class CohortSyncService(
     }
 
     fun refresh(cohortIds: Set<String>? = null) = synchronized(refreshLock) {
+        Logger.d("Refreshing cohorts $cohortIds")
         val refreshCohortIds = if (cohortIds != null) {
             val deletedCohortsIds = managedCohorts - cohortIds
             val addedCohortIds = cohortIds - managedCohorts

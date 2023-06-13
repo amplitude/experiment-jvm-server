@@ -34,6 +34,17 @@ private data class SerialCohortDescription(
 )
 
 @Serializable
+private data class SerialSingleCohortDescription(
+    @SerialName("cohort_id") val cohortId: String,
+    @SerialName("app_id") val appId: Int = 0,
+    @SerialName("org_id") val orgId: Int = 0,
+    @SerialName("name") val name: String? = null,
+    @SerialName("size") val size: Int = Int.MAX_VALUE,
+    @SerialName("description") val description: String? = null,
+    @SerialName("last_computed") val lastComputed: Long = 0,
+)
+
+@Serializable
 private data class GetCohortDescriptionsResponse(
     @SerialName("cohorts") val cohorts: List<SerialCohortDescription>,
 )
@@ -117,13 +128,20 @@ internal class DirectCohortDownloadApiV5(
 
     override fun getCohortDescriptions(cohortIds: Set<String>): List<CohortDescription> {
         return semaphore.limit {
-            val response = httpClient.get<GetCohortDescriptionsResponse>(
-                serverUrl = cdnServerUrl,
-                path = "api/3/cohorts",
-                headers = mapOf("Authorization" to "Basic $basicAuth"),
-                queries = mapOf("cohortIds" to cohortIds.sorted().joinToString()),
-            )
-            response.cohorts.map { CohortDescription(id = it.id, lastComputed = it.lastComputed, size = it.size) }
+            val result = mutableListOf<CohortDescription>()
+            for (cohortId in cohortIds) {
+                val response = httpClient.get<SerialSingleCohortDescription>(
+                    serverUrl = cdnServerUrl,
+                    path = "api/3/cohorts/info/$cohortId",
+                    headers = mapOf("Authorization" to "Basic $basicAuth"),
+                )
+                result += CohortDescription(
+                    id = response.cohortId,
+                    lastComputed = response.lastComputed,
+                    size = response.size
+                )
+            }
+            result
         }
     }
 
