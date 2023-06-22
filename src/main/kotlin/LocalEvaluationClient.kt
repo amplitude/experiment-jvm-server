@@ -98,10 +98,10 @@ class LocalEvaluationClient internal constructor(
         if (config.assignmentConfiguration == null) return null
         return AmplitudeAssignmentService(
             Amplitude.getInstance("experiment").apply {
+                init(config.assignmentConfiguration.apiKey)
                 setEventUploadThreshold(config.assignmentConfiguration.eventUploadThreshold)
                 setEventUploadPeriodMillis(config.assignmentConfiguration.eventUploadPeriodMillis)
                 useBatchMode(config.assignmentConfiguration.useBatchMode)
-                init(config.assignmentConfiguration.apiKey)
             },
             InMemoryAssignmentFilter(config.assignmentConfiguration.filterCapacity),
             metricsWrapper
