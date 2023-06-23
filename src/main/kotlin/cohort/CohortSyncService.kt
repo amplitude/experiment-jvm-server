@@ -31,7 +31,7 @@ internal class CohortSyncService(
             {
                 try {
                     synchronized(refreshLock) {
-                        refresh(managedCohorts)
+                        refresh(null)
                     }
                 } catch (t: Throwable) {
                     Logger.e("Cohort refresh failed.", t)
@@ -48,19 +48,23 @@ internal class CohortSyncService(
     }
 
     fun refresh(cohortIds: Set<String>? = null) = synchronized(refreshLock) {
-        Logger.d("Refreshing cohorts $cohortIds")
+        Logger.d("Request to refresh cohorts: $cohortIds")
         val refreshCohortIds = if (cohortIds != null) {
             val deletedCohortsIds = managedCohorts - cohortIds
             val addedCohortIds = cohortIds - managedCohorts
-            managedCohorts.clear()
-            managedCohorts.addAll(cohortIds)
-            for (cohortId in deletedCohortsIds) {
-                cohortStorage.deleteCohort(cohortId)
+            if (addedCohortIds.isNotEmpty() || deletedCohortsIds.isNotEmpty()) {
+                Logger.d("Refreshing cohorts detected difference: added=$addedCohortIds, deleted=$deletedCohortsIds")
+                managedCohorts.clear()
+                managedCohorts.addAll(cohortIds)
+                for (cohortId in deletedCohortsIds) {
+                    cohortStorage.deleteCohort(cohortId)
+                }
             }
             addedCohortIds
         } else {
             managedCohorts
         }
+        Logger.d("Refreshing cohorts: $refreshCohortIds")
         val networkCohortDescriptions = getCohortDescriptions()
         val filteredCohorts = filterCohorts(networkCohortDescriptions, refreshCohortIds)
         downloadCohorts(filteredCohorts)
