@@ -54,7 +54,14 @@ class LocalEvaluationClient internal constructor(
     )
 
     fun start() {
-        deploymentRunner.start()
+        try {
+            deploymentRunner.start()
+        } catch (t: Throwable) {
+            throw ExperimentException(
+                message = "Failed to start local evaluation client.",
+                cause = t
+            )
+        }
     }
 
     fun stop() {
@@ -110,6 +117,9 @@ class LocalEvaluationClient internal constructor(
 
     private fun createCohortStorage(): CohortStorage {
         if (config.proxyConfiguration == null) return InMemoryCohortStorage()
-        return ProxyCohortStorage(config.proxyConfiguration, ProxyCohortMembershipApi(deploymentKey, config.proxyConfiguration.proxyUrl.toHttpUrl(), httpClient))
+        return ProxyCohortStorage(
+            config.proxyConfiguration,
+            ProxyCohortMembershipApi(deploymentKey, config.proxyConfiguration.proxyUrl.toHttpUrl(), httpClient)
+        )
     }
 }
