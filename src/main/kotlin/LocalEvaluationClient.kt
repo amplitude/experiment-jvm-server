@@ -36,7 +36,7 @@ class LocalEvaluationClient internal constructor(
     private val metricsWrapper = LocalEvaluationMetricsWrapper(config.metrics)
     private val evaluation: EvaluationEngine = EvaluationEngineImpl()
     private val httpClient = OkHttpClient()
-    private val assignmentService: AssignmentService? = createAssignmentService()
+    private val assignmentService: AssignmentService? = createAssignmentService(deploymentKey)
     private val cohortStorage: CohortStorage = createCohortStorage()
     private val flagConfigStorage: FlagConfigStorage = InMemoryFlagConfigStorage()
     private val deploymentRunner = DeploymentRunner(
@@ -101,10 +101,10 @@ class LocalEvaluationClient internal constructor(
         }
     }
 
-    private fun createAssignmentService(): AssignmentService? {
+    private fun createAssignmentService(deploymentKey: String): AssignmentService? {
         if (config.assignmentConfiguration == null) return null
         return AmplitudeAssignmentService(
-            Amplitude.getInstance("experiment").apply {
+            Amplitude.getInstance(deploymentKey).apply {
                 init(config.assignmentConfiguration.apiKey)
                 setEventUploadThreshold(config.assignmentConfiguration.eventUploadThreshold)
                 setEventUploadPeriodMillis(config.assignmentConfiguration.eventUploadPeriodMillis)
