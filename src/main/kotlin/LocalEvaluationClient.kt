@@ -15,6 +15,7 @@ import com.amplitude.experiment.deployment.DeploymentRunner
 import com.amplitude.experiment.evaluation.EvaluationEngine
 import com.amplitude.experiment.evaluation.EvaluationEngineImpl
 import com.amplitude.experiment.evaluation.FlagConfig
+import com.amplitude.experiment.evaluation.FlagResult
 import com.amplitude.experiment.evaluation.serialization.SerialVariant
 import com.amplitude.experiment.flag.FlagConfigStorage
 import com.amplitude.experiment.flag.HybridFlagConfigApi
@@ -72,22 +73,27 @@ class LocalEvaluationClient internal constructor(
     fun evaluate(user: ExperimentUser, flagKeys: List<String> = listOf()): Map<String, Variant> {
         val flagConfigs = flagConfigStorage.getFlagConfigs()
         val enrichedUser = enrichUser(user, flagConfigs)
-        val flagResults = wrapMetrics(
+        val evaluationResults = wrapMetrics(
             metric = metricsWrapper::onEvaluation,
             failure = metricsWrapper::onEvaluationFailure,
         ) {
             evaluation.evaluate(flagConfigs, enrichedUser.toSerialExperimentUser().convert())
         }
-        Logger.d("evaluate - user=$enrichedUser, result=$flagResults")
-        assignmentService?.track(Assignment(user, flagResults))
-        return flagResults.filter { entry ->
+        Logger.d("evaluate - user=$enrichedUser, result=$evaluationResults")
+        val assignmentResults = mutableMapOf<String, FlagResult>()
+        val results = evaluationResults.filter { entry ->
             val isVariant = !entry.value.isDefaultVariant
             val isIncluded = (flagKeys.isEmpty() || flagKeys.contains(entry.key))
             val isDeployed = entry.value.deployed
+            if (isIncluded || entry.value.type == "mutual-exclusion-group" || entry.value.type == "holdout-group") {
+                assignmentResults[entry.key] = entry.value
+            }
             isVariant && isIncluded && isDeployed
         }.map { entry ->
             entry.key to SerialVariant(entry.value.variant).toVariant()
         }.toMap()
+        assignmentService?.track(Assignment(user, assignmentResults))
+        return results;
     }
 
     private fun enrichUser(user: ExperimentUser, flagConfigs: List<FlagConfig>): ExperimentUser {
