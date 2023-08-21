@@ -15,6 +15,8 @@ class LocalEvaluationConfig internal constructor(
     val flagConfigPollerIntervalMillis: Long = Defaults.FLAG_CONFIG_POLLER_INTERVAL_MILLIS,
     @JvmField
     val flagConfigPollerRequestTimeoutMillis: Long = Defaults.FLAG_CONFIG_POLLER_REQUEST_TIMEOUT_MILLIS,
+    @JvmField
+    val assignmentConfiguration: AssignmentConfiguration? = Defaults.ASSIGNMENT_CONFIGURATION,
 ) {
 
     /**
@@ -46,6 +48,11 @@ class LocalEvaluationConfig internal constructor(
          * 10,000
          */
         const val FLAG_CONFIG_POLLER_REQUEST_TIMEOUT_MILLIS = 10_000L
+
+        /**
+         * null
+         */
+        val ASSIGNMENT_CONFIGURATION: AssignmentConfiguration? = null
     }
 
     companion object {
@@ -61,6 +68,7 @@ class LocalEvaluationConfig internal constructor(
         private var serverUrl = Defaults.SERVER_URL
         private var flagConfigPollerIntervalMillis = Defaults.FLAG_CONFIG_POLLER_INTERVAL_MILLIS
         private var flagConfigPollerRequestTimeoutMillis = Defaults.FLAG_CONFIG_POLLER_REQUEST_TIMEOUT_MILLIS
+        private var assignmentConfiguration = Defaults.ASSIGNMENT_CONFIGURATION
 
         fun debug(debug: Boolean) = apply {
             this.debug = debug
@@ -78,12 +86,17 @@ class LocalEvaluationConfig internal constructor(
             this.flagConfigPollerRequestTimeoutMillis = flagConfigPollerRequestTimeoutMillis
         }
 
+        fun enableAssignmentTracking(assignmentConfiguration: AssignmentConfiguration) = apply {
+            this.assignmentConfiguration = assignmentConfiguration
+        }
+
         fun build(): LocalEvaluationConfig {
             return LocalEvaluationConfig(
                 debug = debug,
                 serverUrl = serverUrl,
                 flagConfigPollerIntervalMillis = flagConfigPollerIntervalMillis,
                 flagConfigPollerRequestTimeoutMillis = flagConfigPollerRequestTimeoutMillis,
+                assignmentConfiguration = assignmentConfiguration,
             )
         }
     }
@@ -93,4 +106,12 @@ class LocalEvaluationConfig internal constructor(
             "flagConfigPollerIntervalMillis=$flagConfigPollerIntervalMillis, " +
             "flagConfigPollerRequestTimeoutMillis=$flagConfigPollerRequestTimeoutMillis)"
     }
+    data class AssignmentConfiguration(
+        val apiKey: String,
+        val filterCapacity: Int = 65536,
+        val eventUploadThreshold: Int = 10,
+        val eventUploadPeriodMillis: Int = 10000,
+        val useBatchMode: Boolean = true,
+    )
+
 }
