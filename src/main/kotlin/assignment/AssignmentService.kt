@@ -39,7 +39,7 @@ internal fun Assignment.toAmplitudeEvent(): Event {
         val unset = JSONObject()
         for ((flagKey, result) in this@toAmplitudeEvent.results) {
             if (result.type == FLAG_TYPE_MUTUAL_EXCLUSION_GROUP) {
-                // Dont set user properties for mutual exclusion groups.
+                // Don't set user properties for mutual exclusion groups.
                 continue
             } else if (result.isDefaultVariant) {
                 unset.put("[Experiment] $flagKey", "-")

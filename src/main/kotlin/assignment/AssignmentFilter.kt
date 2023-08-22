@@ -6,10 +6,10 @@ internal interface AssignmentFilter {
     fun shouldTrack(assignment: Assignment): Boolean
 }
 
-internal class InMemoryAssignmentFilter(size: Int) : AssignmentFilter {
+internal class InMemoryAssignmentFilter(size: Int, ttlMillis: Long = DAY_MILLIS) : AssignmentFilter {
 
     // Cache of canonical assignment to the last sent timestamp.
-    private val cache = Cache<String, Unit>(size, DAY_MILLIS)
+    private val cache = Cache<String, Unit>(size, ttlMillis)
 
     override fun shouldTrack(assignment: Assignment): Boolean {
         val canonicalAssignment = assignment.canonicalize()

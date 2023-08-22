@@ -108,7 +108,7 @@ class LocalEvaluationConfig internal constructor(
     }
     data class AssignmentConfiguration(
         val apiKey: String,
-        val filterCapacity: Int = 65536,
+        val cacheCapacity: Int = 65536,
         val eventUploadThreshold: Int = 10,
         val eventUploadPeriodMillis: Int = 10000,
         val useBatchMode: Boolean = true,
