@@ -152,4 +152,32 @@ class AssignmentFilterTest {
         Assert.assertTrue(filter.shouldTrack(assignment3))
         Assert.assertTrue(filter.shouldTrack(assignment1))
     }
+
+    @Test
+    fun `test lru eviction`() {
+        val filter = InMemoryAssignmentFilter(2,1000)
+        val assignment1 = Assignment(
+            ExperimentUser(userId = "user1"),
+            mapOf(
+                "flag-key-1" to flagResult("on"),
+                "flag-key-2" to flagResult("control"),
+            )
+        )
+        Assert.assertTrue(filter.shouldTrack(assignment1))
+        Assert.assertFalse(filter.shouldTrack(assignment1))
+        Thread.sleep(950)
+        Assert.assertFalse(filter.shouldTrack(assignment1))
+
+        val assignment2 = Assignment(
+            ExperimentUser(userId = "user2"),
+            mapOf(
+                "flag-key-1" to flagResult("on"),
+                "flag-key-2" to flagResult("control"),
+            )
+        )
+        Assert.assertTrue(filter.shouldTrack(assignment2))
+        Assert.assertFalse(filter.shouldTrack(assignment2))
+        Thread.sleep(1050)
+        Assert.assertTrue(filter.shouldTrack(assignment2))
+    }
 }
