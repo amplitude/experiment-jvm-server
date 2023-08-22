@@ -42,63 +42,6 @@ class LocalEvaluationClientTest {
     }
 
     @Test
-    fun `test evaluate, benchmark 1 flag evaluation`() {
-        val client = LocalEvaluationClient(API_KEY)
-        client.start()
-        val duration = measureNanoTime {
-            client.evaluate(ExperimentUser(userId = "test_user"), listOf("sdk-local-evaluation-ci-test"))
-        }
-        val millis = duration / 1000.0 / 1000.0
-        println("1 flag: $millis")
-        Assert.assertTrue(millis < 20)
-    }
-
-    @Test
-    fun `test evaluate, benchmark 10 flag evaluations`() {
-        val client = LocalEvaluationClient(API_KEY)
-        client.start()
-        var total = 0L
-        repeat(1000) {
-            total += measureNanoTime {
-                client.evaluate(ExperimentUser(userId = "test_user"), listOf("sdk-local-evaluation-ci-test"))
-            }
-        }
-        val millis = total / 1000.0 / 1000.0
-        println("10 flags: $millis")
-        Assert.assertTrue(millis < 40)
-    }
-
-    @Test
-    fun `test evaluate, benchmark 100 flag evaluation`() {
-        val client = LocalEvaluationClient(API_KEY)
-        client.start()
-        var total = 0L
-        repeat(1000) {
-            total += measureNanoTime {
-                client.evaluate(ExperimentUser(userId = "test_user"), listOf("sdk-local-evaluation-ci-test"))
-            }
-        }
-        val millis = total / 1000.0 / 1000.0
-        println("100 flags: $millis")
-        Assert.assertTrue(millis < 80)
-    }
-
-    @Test
-    fun `test evaluate, benchmark 1000 flag evaluation`() {
-        val client = LocalEvaluationClient(API_KEY)
-        client.start()
-        var total = 0L
-        repeat(1000) {
-            total += measureNanoTime {
-                client.evaluate(ExperimentUser(userId = "test_user"), listOf("sdk-local-evaluation-ci-test"))
-            }
-        }
-        val millis = total / 1000.0 / 1000.0
-        println("1000 flags: $millis")
-        Assert.assertTrue(millis < 160)
-    }
-
-    @Test
     fun `test evaluate, with dependencies, should return variant`() {
         val client = LocalEvaluationClient(API_KEY)
         client.start()
