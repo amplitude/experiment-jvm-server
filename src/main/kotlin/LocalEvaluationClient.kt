@@ -5,9 +5,7 @@ import com.amplitude.experiment.assignment.AmplitudeAssignmentService
 import com.amplitude.experiment.assignment.Assignment
 import com.amplitude.experiment.assignment.AssignmentService
 import com.amplitude.experiment.assignment.InMemoryAssignmentFilter
-import com.amplitude.experiment.evaluation.EvaluationEngine
-import com.amplitude.experiment.evaluation.EvaluationEngineImpl
-import com.amplitude.experiment.evaluation.FlagResult
+import com.amplitude.experiment.evaluation.*
 import com.amplitude.experiment.evaluation.serialization.SerialVariant
 import com.amplitude.experiment.flag.FlagConfigApiImpl
 import com.amplitude.experiment.flag.FlagConfigService
@@ -62,7 +60,7 @@ class LocalEvaluationClient internal constructor(
             val isVariant = !entry.value.isDefaultVariant
             val isIncluded = (flagKeys.isEmpty() || flagKeys.contains(entry.key))
             val isDeployed = entry.value.deployed
-            if (isIncluded || entry.value.type == "mutual-exclusion-group" || entry.value.type == "holdout-group") {
+            if (isIncluded || entry.value.type == FLAG_TYPE_MUTUAL_EXCLUSION_GROUP || entry.value.type == FLAG_TYPE_HOLDOUT_GROUP) {
                 assignmentResults[entry.key] = entry.value
             }
             isVariant && isIncluded && isDeployed
