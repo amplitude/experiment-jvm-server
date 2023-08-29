@@ -155,7 +155,7 @@ class AssignmentFilterTest {
 
     @Test
     fun `test lru eviction`() {
-        val filter = InMemoryAssignmentFilter(2,1000)
+        val filter = InMemoryAssignmentFilter(2, 1000)
         val assignment1 = Assignment(
             ExperimentUser(userId = "user1"),
             mapOf(

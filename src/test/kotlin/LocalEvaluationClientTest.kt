@@ -1,7 +1,6 @@
 package com.amplitude.experiment
 
 import org.junit.Assert
-import kotlin.system.measureNanoTime
 import kotlin.test.Test
 
 private const val API_KEY = "server-qz35UwzJ5akieoAdIgzM4m9MIiOLXLoz"

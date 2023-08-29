@@ -5,7 +5,11 @@ import com.amplitude.experiment.assignment.AmplitudeAssignmentService
 import com.amplitude.experiment.assignment.Assignment
 import com.amplitude.experiment.assignment.AssignmentService
 import com.amplitude.experiment.assignment.InMemoryAssignmentFilter
-import com.amplitude.experiment.evaluation.*
+import com.amplitude.experiment.evaluation.EvaluationEngine
+import com.amplitude.experiment.evaluation.EvaluationEngineImpl
+import com.amplitude.experiment.evaluation.FLAG_TYPE_HOLDOUT_GROUP
+import com.amplitude.experiment.evaluation.FLAG_TYPE_MUTUAL_EXCLUSION_GROUP
+import com.amplitude.experiment.evaluation.FlagResult
 import com.amplitude.experiment.evaluation.serialization.SerialVariant
 import com.amplitude.experiment.flag.FlagConfigApiImpl
 import com.amplitude.experiment.flag.FlagConfigService
