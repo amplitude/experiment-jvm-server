@@ -1,3 +1,15 @@
+# [1.2.0](https://github.com/amplitude/experiment-jvm-server/compare/1.1.0...1.2.0) (2023-08-29)
+
+
+### Bug Fixes
+
+* move AssignmentConfiguration into separate file ([774a60d](https://github.com/amplitude/experiment-jvm-server/commit/774a60d49a89765685cd3d09c4ccab1d465305aa))
+
+
+### Features
+
+* Automatic assignment tracking ([#10](https://github.com/amplitude/experiment-jvm-server/issues/10)) ([1046e59](https://github.com/amplitude/experiment-jvm-server/commit/1046e59864de6b49e4930583ca7e11beb1ffc248))
+
 # [1.1.0](https://github.com/amplitude/experiment-jvm-server/compare/1.0.0...1.1.0) (2023-03-14)
 
 
