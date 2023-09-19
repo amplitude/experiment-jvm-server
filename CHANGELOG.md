@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/amplitude/experiment-jvm-server/compare/1.2.0...1.2.1) (2023-09-19)
+
+
+### Bug Fixes
+
+* Do not track empty assignment events ([#12](https://github.com/amplitude/experiment-jvm-server/issues/12)) ([d0aa48e](https://github.com/amplitude/experiment-jvm-server/commit/d0aa48e14da97c887c8ea716d8fe63ea022e5608))
+
 # [1.2.0](https://github.com/amplitude/experiment-jvm-server/compare/1.1.0...1.2.0) (2023-08-29)
 
 
