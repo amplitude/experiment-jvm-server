@@ -89,7 +89,7 @@ class AssignmentFilterTest {
             ExperimentUser(userId = "user"),
             mapOf()
         )
-        Assert.assertTrue(filter.shouldTrack(assignment1))
+        Assert.assertFalse(filter.shouldTrack(assignment1))
         val assignment2 = Assignment(
             ExperimentUser(userId = "user"),
             mapOf()
@@ -99,7 +99,7 @@ class AssignmentFilterTest {
             ExperimentUser(userId = "different user"),
             mapOf()
         )
-        Assert.assertTrue(filter.shouldTrack(assignment3))
+        Assert.assertFalse(filter.shouldTrack(assignment3))
     }
 
     @Test

@@ -12,6 +12,9 @@ internal class InMemoryAssignmentFilter(size: Int, ttlMillis: Long = DAY_MILLIS)
     private val cache = Cache<String, Unit>(size, ttlMillis)
 
     override fun shouldTrack(assignment: Assignment): Boolean {
+        if (assignment.results.isEmpty()) {
+            return false
+        }
         val canonicalAssignment = assignment.canonicalize()
         val track = cache[canonicalAssignment] == null
         if (track) {
