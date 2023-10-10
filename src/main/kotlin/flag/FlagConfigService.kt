@@ -37,24 +37,20 @@ internal class FlagConfigServiceImpl(
 
     private fun refresh() {
         Logger.d("Refreshing flag configs.")
-        try {
-            val flagConfigs = fetchFlagConfigs()
-            storeFlagConfigs(flagConfigs)
-            Logger.d("Refreshed ${flagConfigs.size} flag configs.")
-        } catch (e: Exception) {
-            Logger.e("Failed to refresh flag configs.", e)
-        }
+        val flagConfigs = fetchFlagConfigs()
+        storeFlagConfigs(flagConfigs)
+        Logger.d("Refreshed ${flagConfigs.size} flag configs.")
     }
 
     override fun start() {
         lock.once {
-            refresh()
             poller.scheduleAtFixedRate(
                 { refresh() },
                 config.flagConfigPollerIntervalMillis,
                 config.flagConfigPollerIntervalMillis,
                 TimeUnit.MILLISECONDS
             )
+            refresh()
         }
     }
 
