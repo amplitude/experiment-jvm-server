@@ -1,3 +1,10 @@
+## [1.2.2](https://github.com/amplitude/experiment-jvm-server/compare/1.2.1...1.2.2) (2023-10-10)
+
+
+### Bug Fixes
+
+* Catch error in flag poller for local evaluation ([#13](https://github.com/amplitude/experiment-jvm-server/issues/13)) ([5084ed2](https://github.com/amplitude/experiment-jvm-server/commit/5084ed287cb1865c48c05ad6d08965bae8eb0bd0))
+
 ## [1.2.1](https://github.com/amplitude/experiment-jvm-server/compare/1.2.0...1.2.1) (2023-09-19)
 
 
