@@ -44,7 +44,6 @@ internal class FlagConfigServiceImpl(
 
     override fun start() {
         lock.once {
-            refresh()
             poller.scheduleAtFixedRate(
                 {
                     try {
@@ -57,6 +56,7 @@ internal class FlagConfigServiceImpl(
                 config.flagConfigPollerIntervalMillis,
                 TimeUnit.MILLISECONDS
             )
+            refresh()
         }
     }
 
