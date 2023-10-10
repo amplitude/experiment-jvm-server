@@ -45,7 +45,13 @@ internal class FlagConfigServiceImpl(
     override fun start() {
         lock.once {
             poller.scheduleAtFixedRate(
-                { refresh() },
+                {
+                    try {
+                        refresh()
+                    } catch (e: Exception) {
+                        Logger.e("Failed to refresh flag configs.", e)
+                    }
+                },
                 config.flagConfigPollerIntervalMillis,
                 config.flagConfigPollerIntervalMillis,
                 TimeUnit.MILLISECONDS
