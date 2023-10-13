@@ -3,6 +3,7 @@
 package com.amplitude.experiment
 
 import com.amplitude.Amplitude
+import com.amplitude.Options
 import com.amplitude.experiment.assignment.AmplitudeAssignmentService
 import com.amplitude.experiment.assignment.Assignment
 import com.amplitude.experiment.assignment.AssignmentService
@@ -115,6 +116,7 @@ class LocalEvaluationClient internal constructor(
                 setEventUploadThreshold(config.assignmentConfiguration.eventUploadThreshold)
                 setEventUploadPeriodMillis(config.assignmentConfiguration.eventUploadPeriodMillis)
                 useBatchMode(config.assignmentConfiguration.useBatchMode)
+                setOptions(Options().setMinIdLength(1))
             },
             InMemoryAssignmentFilter(config.assignmentConfiguration.filterCapacity),
             metricsWrapper
