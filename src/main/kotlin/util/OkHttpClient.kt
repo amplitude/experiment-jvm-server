@@ -15,6 +15,11 @@ private val json = Json {
     ignoreUnknownKeys = true
 }
 
+internal data class HttpErrorResponseException(
+    val request: Request?,
+    val response: Response,
+) : IOException("$request - error response: $response")
+
 private fun OkHttpClient.submit(
     request: Request,
 ): CompletableFuture<Response> {
@@ -25,7 +30,7 @@ private fun OkHttpClient.submit(
             try {
                 if (!response.isSuccessful) {
                     response.close()
-                    throw IOException("$request - error response: $response")
+                    throw HttpErrorResponseException(request, response)
                 }
                 future.complete(response)
             } catch (e: Exception) {
@@ -90,7 +95,7 @@ internal inline fun <reified T> OkHttpClient.get(
     headers: Map<String, String>? = null,
     queries: Map<String, String>? = null,
 ): T {
-    return get(serverUrl, path, headers, queries) { response ->
+    return this.get(serverUrl, path, headers, queries) { response ->
         val body = response.body?.string() ?: throw IOException("null response body")
         json.decodeFromString(body)
     }

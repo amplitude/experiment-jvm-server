@@ -10,5 +10,6 @@ object Versions {
     const val evaluationSerialization = "1.1.1"
     const val amplitudeAnalytics = "1.10.3"
     const val mockito = "4.8.1"
+    const val mockk = "1.13.8"
     const val apacheCommons = "1.10.0"
 }
