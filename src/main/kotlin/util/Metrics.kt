@@ -72,6 +72,11 @@ internal class LocalEvaluationMetricsWrapper(
         executor.execute { metrics.onCohortDescriptionsFetchFailure(exception) }
     }
 
+    override fun onCohortDescriptionsOriginFallback() {
+        val metrics = metrics ?: return
+        executor.execute { metrics.onCohortDescriptionsOriginFallback() }
+    }
+
     override fun onCohortDownload() {
         val metrics = metrics ?: return
         executor.execute { metrics.onCohortDownload() }
@@ -80,5 +85,20 @@ internal class LocalEvaluationMetricsWrapper(
     override fun onCohortDownloadFailure(exception: Exception) {
         val metrics = metrics ?: return
         executor.execute { metrics.onCohortDownloadFailure(exception) }
+    }
+
+    override fun onCohortDownloadOriginFallback() {
+        val metrics = metrics ?: return
+        executor.execute { metrics.onCohortDownloadOriginFallback() }
+    }
+
+    override fun onCohortMembership() {
+        val metrics = metrics ?: return
+        executor.execute { metrics.onCohortMembership() }
+    }
+
+    override fun onCohortMembershipFailure(exception: Exception) {
+        val metrics = metrics ?: return
+        executor.execute { metrics.onCohortMembershipFailure(exception) }
     }
 }
