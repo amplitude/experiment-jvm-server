@@ -14,6 +14,6 @@ internal class ProxyCohortMembershipApi(
     private val httpClient: OkHttpClient,
 ) : CohortMembershipApi {
     override fun getCohortsForUser(userId: String): Set<String> {
-        return httpClient.get<Set<String>>(serverUrl, "/sdk/v1/deployments/$deploymentKey/users/$userId/cohorts")
+        return httpClient.get<Set<String>>(serverUrl, "sdk/v1/deployments/$deploymentKey/users/$userId/cohorts")
     }
 }

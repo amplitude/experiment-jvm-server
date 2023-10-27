@@ -1,6 +1,8 @@
 package com.amplitude.experiment.cohort
 
+import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.util.HttpErrorResponseException
+import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.get
 import kotlinx.serialization.SerialName
@@ -45,6 +47,61 @@ internal data class GetCohortAsyncResponse(
 internal interface CohortDownloadApi {
     fun getCohortDescriptions(cohortIds: Set<String>): List<CohortDescription>
     fun getCohortMembers(cohortDescription: CohortDescription): Set<String>
+}
+
+internal class DynamicCohortDownloadApi(
+    private val directApi: DirectCohortDownloadApiV5,
+    private val proxyApi: ProxyCohortDownloadApi,
+    private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper()
+): CohortDownloadApi {
+    override fun getCohortDescriptions(cohortIds: Set<String>): List<CohortDescription> {
+        return try {
+            proxyApi.getCohortDescriptions(cohortIds)
+        } catch (e: Exception) {
+            metrics.onCohortDescriptionsOriginFallback()
+            directApi.getCohortDescriptions(cohortIds)
+        }
+    }
+
+    override fun getCohortMembers(cohortDescription: CohortDescription): Set<String> {
+        return try {
+            proxyApi.getCohortMembers(cohortDescription)
+        } catch (e: Exception) {
+            metrics.onCohortDownloadOriginFallback()
+            directApi.getCohortMembers(cohortDescription)
+        }
+    }
+}
+
+internal class ProxyCohortDownloadApi(
+    private val deploymentKey: String,
+    proxyServerUrl: String,
+    httpClient: OkHttpClient,
+): CohortDownloadApi {
+    private val httpClient: OkHttpClient = httpClient.newBuilder()
+        .readTimeout(10, TimeUnit.SECONDS)
+        .build()
+    private val proxyServerUrl = proxyServerUrl.toHttpUrl()
+
+    override fun getCohortDescriptions(cohortIds: Set<String>): List<CohortDescription> {
+        val result = mutableListOf<CohortDescription>()
+        for (cohortId in cohortIds) {
+            result += httpClient.get<CohortDescription>(
+                serverUrl = proxyServerUrl,
+                path = "sdk/v2/cohorts/$cohortId/description",
+                headers = mapOf("Authorization" to "Api-Key $deploymentKey"),
+            )
+        }
+        return result
+    }
+
+    override fun getCohortMembers(cohortDescription: CohortDescription): Set<String> {
+        return httpClient.get<Set<String>>(
+            serverUrl = proxyServerUrl,
+            path = "sdk/v2/cohorts/${cohortDescription.id}/description",
+            headers = mapOf("Authorization" to "Api-Key $deploymentKey"),
+        )
+    }
 }
 
 internal class DirectCohortDownloadApiV5(

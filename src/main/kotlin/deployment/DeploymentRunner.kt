@@ -8,6 +8,8 @@ import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.cohort.CohortStorage
 import com.amplitude.experiment.cohort.CohortSyncService
 import com.amplitude.experiment.cohort.DirectCohortDownloadApiV5
+import com.amplitude.experiment.cohort.DynamicCohortDownloadApi
+import com.amplitude.experiment.cohort.ProxyCohortDownloadApi
 import com.amplitude.experiment.flag.FlagConfigApi
 import com.amplitude.experiment.flag.FlagConfigStorage
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
@@ -20,6 +22,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 internal class DeploymentRunner(
+    private val deploymentKey: String,
     private val config: LocalEvaluationConfig,
     private val httpClient: OkHttpClient,
     private val flagConfigApi: FlagConfigApi,
@@ -29,11 +32,24 @@ internal class DeploymentRunner(
 ) {
 
     private val cohortService = config.cohortSyncConfiguration?.let {
-        val cohortDownloadApi = DirectCohortDownloadApiV5(
+        val directCohortDownloadApi = DirectCohortDownloadApiV5(
             config.cohortSyncConfiguration.apiKey,
             config.cohortSyncConfiguration.secretKey,
             httpClient
         )
+        val cohortDownloadApi = if (config.proxyConfiguration != null) {
+            val proxyCohortDownloadApi = ProxyCohortDownloadApi(
+                deploymentKey,
+                config.proxyConfiguration.proxyUrl,
+                httpClient
+            )
+            DynamicCohortDownloadApi(
+                directCohortDownloadApi,
+                proxyCohortDownloadApi,
+            )
+        } else {
+            directCohortDownloadApi
+        }
         CohortSyncService(
             config = config.cohortSyncConfiguration,
             cohortDownloadApi = cohortDownloadApi,

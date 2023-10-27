@@ -3,9 +3,12 @@
 package com.amplitude.experiment.cohort
 
 import com.amplitude.experiment.ExperimentalApi
+import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.ProxyConfiguration
 import com.amplitude.experiment.util.Cache
+import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
+import com.amplitude.experiment.util.wrapMetrics
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
@@ -20,7 +23,8 @@ internal interface CohortStorage {
 
 internal class ProxyCohortStorage(
     proxyConfig: ProxyConfiguration,
-    private val cohortMembershipApi: CohortMembershipApi
+    private val cohortMembershipApi: CohortMembershipApi,
+    private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper()
 ) : CohortStorage {
 
     private val cohortCache = Cache<String, Set<String>>(
@@ -36,8 +40,13 @@ internal class ProxyCohortStorage(
         } else {
             cohortCache[userId]
                 ?: try {
-                    cohortMembershipApi.getCohortsForUser(userId).also { proxyCohortMemberships ->
-                        cohortCache[userId] = proxyCohortMemberships
+                    wrapMetrics(
+                        metric = metrics::onCohortMembership,
+                        failure = metrics::onCohortMembershipFailure
+                    ) {
+                        cohortMembershipApi.getCohortsForUser(userId).also { proxyCohortMemberships ->
+                            cohortCache[userId] = proxyCohortMemberships
+                        }
                     }
                 } catch (e: Exception) {
                     Logger.e("Failed to get cohort membership from proxy.", e)
