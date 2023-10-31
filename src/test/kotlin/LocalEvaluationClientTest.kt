@@ -3,11 +3,7 @@
 package com.amplitude.experiment
 
 import com.amplitude.experiment.util.LocalEvaluationMetricsCounter
-import com.amplitude.experiment.util.Logger
-import com.amplitude.experiment.util.SystemLogger
 import org.junit.Assert
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import kotlin.system.measureNanoTime
 import kotlin.test.Test
 
@@ -21,7 +17,7 @@ class LocalEvaluationClientTest {
         client.start()
         val variants = client.evaluate(ExperimentUser(userId = "test_user"))
         val variant = variants["sdk-local-evaluation-ci-test"]
-        Assert.assertEquals(variant, Variant(value = "on", payload = "payload"))
+        Assert.assertEquals(Variant(key = "on", value = "on", payload = "payload"), variant?.copy(metadata = null))
     }
 
     @Test
@@ -33,7 +29,7 @@ class LocalEvaluationClientTest {
             flagKeys = listOf("sdk-local-evaluation-ci-test")
         )
         val variant = variants["sdk-local-evaluation-ci-test"]
-        Assert.assertEquals(Variant(value = "on", payload = "payload"), variant)
+        Assert.assertEquals(Variant(key = "on", value = "on", payload = "payload"), variant?.copy(metadata = null))
     }
 
     @Test
@@ -111,7 +107,7 @@ class LocalEvaluationClientTest {
         client.start()
         val variants = client.evaluate(ExperimentUser(userId = "user_id", deviceId = "device_id"))
         val variant = variants["sdk-ci-local-dependencies-test"]
-        Assert.assertEquals(variant, Variant(value = "control", payload = null))
+        Assert.assertEquals(variant?.copy(metadata = null), Variant(key = "control", value = "control", payload = null))
     }
 
     @Test
@@ -123,7 +119,7 @@ class LocalEvaluationClientTest {
             listOf("sdk-ci-local-dependencies-test")
         )
         val variant = variants["sdk-ci-local-dependencies-test"]
-        Assert.assertEquals(variant, Variant(value = "control", payload = null))
+        Assert.assertEquals(variant?.copy(metadata = null), Variant(key = "control", value = "control", payload = null))
     }
 
     @Test

@@ -70,7 +70,7 @@ internal class DeploymentRunner(
             flagConfigApi.getFlagConfigs()
         }
         cohortService?.refresh(flagConfigs.getCohortIds())
-        flagConfigStorage.putFlagConfigs(flagConfigs)
+        flagConfigStorage.putFlagConfigs(flagConfigs.associateBy { it.key })
         Logger.d("Refreshed ${flagConfigs.size} flag configs.")
     }
 

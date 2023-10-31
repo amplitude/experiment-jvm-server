@@ -1,70 +1,45 @@
 package com.amplitude.experiment.flag
 
 import com.amplitude.experiment.LIBRARY_VERSION
-import com.amplitude.experiment.evaluation.FlagConfig
-import com.amplitude.experiment.evaluation.serialization.SerialFlagConfig
-import com.amplitude.experiment.util.Logger
+import com.amplitude.experiment.LocalEvaluationMetrics
+import com.amplitude.experiment.evaluation.EvaluationFlag
+import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.get
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 
 internal interface FlagConfigApi {
-    fun getFlagConfigs(): List<FlagConfig>
+    fun getFlagConfigs(): List<EvaluationFlag>
 }
 
-internal class HybridFlagConfigApi(
-    private val directApi: FlagConfigApi,
-    private val proxyApi: FlagConfigApi?,
-) : FlagConfigApi {
-
-    constructor(
-        deploymentKey: String,
-        directUrl: HttpUrl,
-        proxyUrl: HttpUrl?,
-        httpClient: OkHttpClient,
-    ) : this(
-        directApi = DirectFlagConfigApi(deploymentKey, directUrl, httpClient),
-        proxyApi = proxyUrl?.let { ProxyFlagConfigApi(deploymentKey, proxyUrl, httpClient) },
-    )
-
-    override fun getFlagConfigs(): List<FlagConfig> {
-        if (proxyApi != null) {
-            try {
-                return proxyApi.getFlagConfigs()
-            } catch (e: Exception) {
-                Logger.e("Failed to get flag configs from proxy api.", e)
-            }
-        }
-        return directApi.getFlagConfigs()
-    }
-}
-
-internal class DirectFlagConfigApi(
+internal class FlagConfigApiV2(
     private val deploymentKey: String,
     private val serverUrl: HttpUrl,
+    private val proxyUrl: HttpUrl?,
     private val httpClient: OkHttpClient,
+    private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper()
 ) : FlagConfigApi {
 
-    override fun getFlagConfigs(): List<FlagConfig> {
-        val response = httpClient.get<List<SerialFlagConfig>>(
-            serverUrl, "sdk/v1/flags",
+    override fun getFlagConfigs(): List<EvaluationFlag> {
+        return if (proxyUrl != null) {
+            try {
+                getFlagConfigs(proxyUrl)
+            } catch (e: Exception) {
+                metrics.onFlagConfigFetchOriginFallback(e)
+                getFlagConfigs(serverUrl)
+            }
+        } else {
+            getFlagConfigs(serverUrl)
+        }
+    }
+
+    private fun getFlagConfigs(url: HttpUrl): List<EvaluationFlag> {
+        return httpClient.get<List<EvaluationFlag>>(
+            url, "sdk/v2/flags",
             headers = mapOf(
                 "Authorization" to "Api-Key $deploymentKey",
                 "X-Amp-Exp-Library" to "experiment-jvm-server/$LIBRARY_VERSION"
             )
         )
-        return response.map { it.convert() }
-    }
-}
-
-internal class ProxyFlagConfigApi(
-    private val deploymentKey: String,
-    private val serverUrl: HttpUrl,
-    private val httpClient: OkHttpClient,
-) : FlagConfigApi {
-
-    override fun getFlagConfigs(): List<FlagConfig> {
-        val response = httpClient.get<List<SerialFlagConfig>>(serverUrl, "/sdk/v1/deployments/$deploymentKey/flags")
-        return response.map { it.convert() }
     }
 }

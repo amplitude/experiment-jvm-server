@@ -15,10 +15,15 @@ open class LocalEvaluationMetricsCounter : LocalEvaluationMetrics {
     var assignmentEventFailure = 0
     var flagConfigFetch = 0
     var flagConfigFetchFailure = 0
+    var flagConfigFetchOriginFallback = 0
     var cohortDescriptionsFetch = 0
     var cohortDescriptionsFetchFailure = 0
+    var cohortDescriptionsFetchOriginFallback = 0
     var cohortDownload = 0
     var cohortDownloadFailure = 0
+    var cohortDownloadOriginFallback = 0
+    var cohortMembership = 0
+    var cohortMembershipFailure = 0
 
     override fun onEvaluation() {
         evaluation++
@@ -52,12 +57,20 @@ open class LocalEvaluationMetricsCounter : LocalEvaluationMetrics {
         flagConfigFetchFailure++
     }
 
+    override fun onFlagConfigFetchOriginFallback(exception: Exception) {
+        flagConfigFetchOriginFallback++
+    }
+
     override fun onCohortDescriptionsFetch() {
         cohortDescriptionsFetch++
     }
 
     override fun onCohortDescriptionsFetchFailure(exception: Exception) {
         cohortDescriptionsFetchFailure++
+    }
+
+    override fun onCohortDescriptionsFetchOriginFallback(exception: Exception) {
+        cohortDescriptionsFetchOriginFallback++
     }
 
     override fun onCohortDownload() {
@@ -68,7 +81,19 @@ open class LocalEvaluationMetricsCounter : LocalEvaluationMetrics {
         cohortDownloadFailure++
     }
 
+    override fun onCohortDownloadOriginFallback(exception: Exception) {
+        cohortDownloadOriginFallback++
+    }
+
+    override fun onCohortMembership() {
+        cohortMembership++
+    }
+
+    override fun onCohortMembershipFailure(exception: Exception) {
+        cohortMembershipFailure++
+    }
+
     override fun toString(): String {
-        return "LocalEvaluationMetricsCounter(evaluation=$evaluation, evaluationFailure=$evaluationFailure, assignment=$assignment, assignmentFilter=$assignmentFilter, assignmentEvent=$assignmentEvent, assignmentEventFailure=$assignmentEventFailure, flagConfigFetch=$flagConfigFetch, flagConfigFetchFailure=$flagConfigFetchFailure, cohortDescriptionsFetch=$cohortDescriptionsFetch, cohortDescriptionsFetchFailure=$cohortDescriptionsFetchFailure, cohortDownload=$cohortDownload, cohortDownloadFailure=$cohortDownloadFailure)"
+        return "LocalEvaluationMetricsCounter(evaluation=$evaluation, evaluationFailure=$evaluationFailure, assignment=$assignment, assignmentFilter=$assignmentFilter, assignmentEvent=$assignmentEvent, assignmentEventFailure=$assignmentEventFailure, flagConfigFetch=$flagConfigFetch, flagConfigFetchFailure=$flagConfigFetchFailure, flagConfigFetchOriginFallback=$flagConfigFetchOriginFallback, cohortDescriptionsFetch=$cohortDescriptionsFetch, cohortDescriptionsFetchFailure=$cohortDescriptionsFetchFailure, cohortDescriptionsFetchOriginFallback=$cohortDescriptionsFetchOriginFallback, cohortDownload=$cohortDownload, cohortDownloadFailure=$cohortDownloadFailure, cohortDownloadOriginFallback=$cohortDownloadOriginFallback, cohortMembership=$cohortMembership, cohortMembershipFailure=$cohortMembershipFailure)"
     }
 }

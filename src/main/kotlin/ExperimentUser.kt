@@ -1,5 +1,7 @@
 package com.amplitude.experiment
 
+import com.amplitude.experiment.evaluation.EvaluationContext
+
 /**
  * The user to fetch experiment/flag variants for. This is an immutable object
  * that can be created using an [ExperimentUser.Builder]. Example usage:
@@ -37,6 +39,8 @@ data class ExperimentUser internal constructor(
     @JvmField val library: String? = null,
     @JvmField val userProperties: Map<String, Any?>? = null,
     @JvmField val cohortIds: Set<String>? = null,
+    @JvmField val groups: Map<String, Set<String>>? = null,
+    @JvmField val groupProperties: Map<String, Map<String, Map<String, Any?>>>? = null,
 ) {
 
     /**
@@ -63,6 +67,8 @@ data class ExperimentUser internal constructor(
             .library(this.library)
             .userProperties(this.userProperties)
             .cohortIds(this.cohortIds)
+            .groups(this.groups)
+            .groupProperties(this.groupProperties)
     }
 
     companion object {
@@ -90,6 +96,8 @@ data class ExperimentUser internal constructor(
         private var library: String? = null
         private var userProperties: MutableMap<String, Any?>? = null
         private var cohortIds: Set<String>? = null
+        private var groups: MutableMap<String, Set<String>>? = null
+        private var groupProperties: MutableMap<String, MutableMap<String, MutableMap<String, Any?>>>? = null
 
         fun userId(userId: String?) = apply { this.userId = userId }
         fun deviceId(deviceId: String?) = apply { this.deviceId = deviceId }
@@ -120,6 +128,29 @@ data class ExperimentUser internal constructor(
             this.cohortIds = cohortIds
         }
 
+        fun groups(groups: Map<String, Set<String>>?) = apply {
+            this.groups = groups?.toMutableMap()
+        }
+
+        fun group(groupType: String, groupName: String) = apply {
+            this.groups = (this.groups ?: mutableMapOf()).apply { put(groupType, setOf(groupName)) }
+        }
+
+        fun groupProperties(groupProperties: Map<String, Map<String, Map<String, Any?>>>?) = apply {
+            this.groupProperties = groupProperties?.mapValues { groupTypes ->
+                groupTypes.value.toMutableMap().mapValues { groupNames ->
+                    groupNames.value.toMutableMap()
+                }.toMutableMap()
+            }?.toMutableMap()
+        }
+
+        fun groupProperty(groupType: String, groupName: String, key: String, value: Any?) = apply {
+            this.groupProperties = (this.groupProperties ?: mutableMapOf()).apply {
+                getOrPut(groupType) { mutableMapOf(groupName to mutableMapOf()) }
+                    .getOrPut(groupName) { mutableMapOf(key to value) }[key] = value
+            }
+        }
+
         fun build(): ExperimentUser {
             return ExperimentUser(
                 userId = userId,
@@ -139,7 +170,10 @@ data class ExperimentUser internal constructor(
                 library = library,
                 userProperties = userProperties,
                 cohortIds = cohortIds,
+                groups = groups,
+                groupProperties = groupProperties,
             )
         }
     }
 }
+

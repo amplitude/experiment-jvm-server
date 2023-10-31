@@ -58,7 +58,7 @@ internal class DynamicCohortDownloadApi(
         return try {
             proxyApi.getCohortDescriptions(cohortIds)
         } catch (e: Exception) {
-            metrics.onCohortDescriptionsOriginFallback()
+            metrics.onCohortDescriptionsFetchOriginFallback(e)
             directApi.getCohortDescriptions(cohortIds)
         }
     }
@@ -67,7 +67,7 @@ internal class DynamicCohortDownloadApi(
         return try {
             proxyApi.getCohortMembers(cohortDescription)
         } catch (e: Exception) {
-            metrics.onCohortDownloadOriginFallback()
+            metrics.onCohortDownloadOriginFallback(e)
             directApi.getCohortMembers(cohortDescription)
         }
     }

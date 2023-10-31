@@ -4,7 +4,6 @@ package com.amplitude.experiment.cohort
 
 import com.amplitude.experiment.CohortSyncConfiguration
 import com.amplitude.experiment.ExperimentalApi
-import com.amplitude.experiment.util.cohortDescription
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
@@ -231,4 +230,8 @@ class CohortSyncServiceTest {
         assertEquals(cohortDescription("c"), storage.getCohortDescription("c"))
         assertEquals(setOf("a"), storage.getCohortsForUser("1", setOf("a", "c")))
     }
+}
+
+private fun cohortDescription(id: String, lastComputed: Long = 0, size: Int = 0): CohortDescription {
+    return CohortDescription(id = id, lastComputed = lastComputed, size = size)
 }

@@ -11,10 +11,6 @@ import okhttp3.Response
 import okio.IOException
 import java.util.concurrent.CompletableFuture
 
-private val json = Json {
-    ignoreUnknownKeys = true
-}
-
 internal data class HttpErrorResponseException(
     val request: Request?,
     val response: Response,

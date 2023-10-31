@@ -13,7 +13,7 @@ private const val API_KEY = "server-qz35UwzJ5akieoAdIgzM4m9MIiOLXLoz"
 class RemoteEvaluationClientTest {
 
     private val testFlagKey = "sdk-ci-test"
-    private val testVariant = Variant("on", "payload")
+    private val testVariant = Variant(key = "on", value = "on", payload = "payload")
 
     private val testUser = ExperimentUser(userId = "test_user")
 
