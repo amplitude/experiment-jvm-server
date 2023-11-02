@@ -7,7 +7,8 @@ import kotlin.concurrent.write
 
 internal interface FlagConfigStorage {
     fun getFlagConfigs(): Map<String, EvaluationFlag>
-    fun putFlagConfigs(flagConfigs: Map<String, EvaluationFlag>)
+    fun putFlagConfig(flagConfig: EvaluationFlag)
+    fun removeIf(condition: (EvaluationFlag) -> Boolean)
 }
 
 internal class InMemoryFlagConfigStorage : FlagConfigStorage {
@@ -19,10 +20,15 @@ internal class InMemoryFlagConfigStorage : FlagConfigStorage {
         return flagConfigsLock.read { flagConfigs.toMap() }
     }
 
-    override fun putFlagConfigs(flagConfigs: Map<String, EvaluationFlag>) {
+    override fun putFlagConfig(flagConfig: EvaluationFlag) {
+        flagConfigsLock.write {
+            flagConfigs.put(flagConfig.key, flagConfig)
+        }
+    }
+
+    override fun removeIf(condition: (EvaluationFlag) -> Boolean) {
         return flagConfigsLock.write {
-            this.flagConfigs.clear()
-            this.flagConfigs.putAll(flagConfigs)
+            flagConfigs.entries.removeIf { condition(it.value) }
         }
     }
 }

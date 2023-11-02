@@ -8,8 +8,12 @@ import com.amplitude.experiment.assignment.AmplitudeAssignmentService
 import com.amplitude.experiment.assignment.Assignment
 import com.amplitude.experiment.assignment.AssignmentService
 import com.amplitude.experiment.assignment.InMemoryAssignmentFilter
+import com.amplitude.experiment.cohort.CohortLoader
 import com.amplitude.experiment.cohort.CohortStorage
+import com.amplitude.experiment.cohort.DirectCohortDownloadApiV5
+import com.amplitude.experiment.cohort.DynamicCohortDownloadApi
 import com.amplitude.experiment.cohort.InMemoryCohortStorage
+import com.amplitude.experiment.cohort.ProxyCohortDownloadApi
 import com.amplitude.experiment.cohort.ProxyCohortMembershipApi
 import com.amplitude.experiment.cohort.ProxyCohortStorage
 import com.amplitude.experiment.deployment.DeploymentRunner
@@ -43,9 +47,7 @@ class LocalEvaluationClient internal constructor(
     private val cohortStorage: CohortStorage = createCohortStorage()
     private val flagConfigStorage: FlagConfigStorage = InMemoryFlagConfigStorage()
     private val deploymentRunner = DeploymentRunner(
-        deploymentKey,
         config,
-        httpClient,
         FlagConfigApiV2(
             deploymentKey = deploymentKey,
             serverUrl = config.serverUrl.toHttpUrl(),
@@ -54,6 +56,32 @@ class LocalEvaluationClient internal constructor(
         ),
         flagConfigStorage,
         cohortStorage,
+        config.cohortSyncConfiguration?.let {
+            val directCohortDownloadApi = DirectCohortDownloadApiV5(
+                config.cohortSyncConfiguration.apiKey,
+                config.cohortSyncConfiguration.secretKey,
+                httpClient
+            )
+            val cohortDownloadApi = if (config.proxyConfiguration != null) {
+                val proxyCohortDownloadApi = ProxyCohortDownloadApi(
+                    deploymentKey,
+                    config.proxyConfiguration.proxyUrl,
+                    httpClient
+                )
+                DynamicCohortDownloadApi(
+                    directCohortDownloadApi,
+                    proxyCohortDownloadApi,
+                )
+            } else {
+                directCohortDownloadApi
+            }
+            CohortLoader(
+                maxCohortSize = config.cohortSyncConfiguration.maxCohortSize,
+                cohortDownloadApi = cohortDownloadApi,
+                cohortStorage = cohortStorage,
+                metrics = metricsWrapper
+            )
+        },
         metricsWrapper
     )
 

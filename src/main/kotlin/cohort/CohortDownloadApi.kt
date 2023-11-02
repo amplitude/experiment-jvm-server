@@ -45,7 +45,7 @@ internal data class GetCohortAsyncResponse(
 )
 
 internal interface CohortDownloadApi {
-    fun getCohortDescriptions(cohortIds: Set<String>): List<CohortDescription>
+    fun getCohortDescription(cohortId: String): CohortDescription
     fun getCohortMembers(cohortDescription: CohortDescription): Set<String>
 }
 
@@ -54,12 +54,12 @@ internal class DynamicCohortDownloadApi(
     private val proxyApi: ProxyCohortDownloadApi,
     private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper()
 ): CohortDownloadApi {
-    override fun getCohortDescriptions(cohortIds: Set<String>): List<CohortDescription> {
+    override fun getCohortDescription(cohortId: String): CohortDescription {
         return try {
-            proxyApi.getCohortDescriptions(cohortIds)
+            proxyApi.getCohortDescription(cohortId)
         } catch (e: Exception) {
             metrics.onCohortDescriptionsFetchOriginFallback(e)
-            directApi.getCohortDescriptions(cohortIds)
+            directApi.getCohortDescription(cohortId)
         }
     }
 
@@ -83,16 +83,12 @@ internal class ProxyCohortDownloadApi(
         .build()
     private val proxyServerUrl = proxyServerUrl.toHttpUrl()
 
-    override fun getCohortDescriptions(cohortIds: Set<String>): List<CohortDescription> {
-        val result = mutableListOf<CohortDescription>()
-        for (cohortId in cohortIds) {
-            result += httpClient.get<CohortDescription>(
-                serverUrl = proxyServerUrl,
-                path = "sdk/v2/cohorts/$cohortId/description",
-                headers = mapOf("Authorization" to "Api-Key $deploymentKey"),
-            )
-        }
-        return result
+    override fun getCohortDescription(cohortId: String): CohortDescription {
+        return httpClient.get<CohortDescription>(
+            serverUrl = proxyServerUrl,
+            path = "sdk/v2/cohorts/$cohortId/description",
+            headers = mapOf("Authorization" to "Api-Key $deploymentKey"),
+        )
     }
 
     override fun getCohortMembers(cohortDescription: CohortDescription): Set<String> {
@@ -121,18 +117,14 @@ internal class DirectCohortDownloadApiV5(
         setHeader()
     }.build()
 
-    override fun getCohortDescriptions(cohortIds: Set<String>): List<CohortDescription> {
+    override fun getCohortDescription(cohortId: String): CohortDescription {
         return semaphore.limit {
-            val result = mutableListOf<CohortDescription>()
-            for (cohortId in cohortIds) {
-                val response = getCohortInfo(cohortId)
-                result += CohortDescription(
-                    id = response.cohortId,
-                    lastComputed = response.lastComputed,
-                    size = response.size
-                )
-            }
-            result
+            val response = getCohortInfo(cohortId)
+            CohortDescription(
+                id = response.cohortId,
+                lastComputed = response.lastComputed,
+                size = response.size
+            )
         }
     }
 
