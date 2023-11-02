@@ -77,23 +77,6 @@ class RemoteEvaluationClientTest {
             Assert.assertTrue(duration in 2500..2599)
         }
     }
-
-    // @Test
-    // fun test() {
-    //     val client = RemoteEvaluationClient(API_KEY, RemoteEvaluationConfig())
-    //     val sem = Semaphore(2)
-    //     while(true) {
-    //         sem.acquire()
-    //         val start = System.nanoTime()
-    //         client.fetch(testUser).handle { _, throwable ->
-    //             throwable?.printStackTrace()
-    //             sem.release()
-    //             val end = System.nanoTime()
-    //             val dur = (end - start) / 1000.0 / 1000.0
-    //             println(String.format("%.2fms", dur))
-    //         }
-    //     }
-    // }
 }
 
 @Suppress("SameParameterValue")
