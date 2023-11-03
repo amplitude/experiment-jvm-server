@@ -94,7 +94,7 @@ internal class ProxyCohortDownloadApi(
     override fun getCohortMembers(cohortDescription: CohortDescription): Set<String> {
         return httpClient.get<Set<String>>(
             serverUrl = proxyServerUrl,
-            path = "sdk/v2/cohorts/${cohortDescription.id}/description",
+            path = "sdk/v2/cohorts/${cohortDescription.id}/members",
             headers = mapOf("Authorization" to "Api-Key $deploymentKey"),
         )
     }

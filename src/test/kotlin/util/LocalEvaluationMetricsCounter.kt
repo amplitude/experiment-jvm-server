@@ -46,6 +46,7 @@ open class LocalEvaluationMetricsCounter : LocalEvaluationMetrics {
     }
 
     override fun onAssignmentEventFailure(exception: Exception) {
+        Logger.e("onAssignmentEventFailure", exception)
         assignmentEventFailure++
     }
 
@@ -54,10 +55,12 @@ open class LocalEvaluationMetricsCounter : LocalEvaluationMetrics {
     }
 
     override fun onFlagConfigFetchFailure(exception: Exception) {
+        Logger.e("onFlagConfigFetchFailure", exception)
         flagConfigFetchFailure++
     }
 
     override fun onFlagConfigFetchOriginFallback(exception: Exception) {
+        Logger.e("onFlagConfigFetchOriginFallback", exception)
         flagConfigFetchOriginFallback++
     }
 
@@ -66,10 +69,12 @@ open class LocalEvaluationMetricsCounter : LocalEvaluationMetrics {
     }
 
     override fun onCohortDescriptionsFetchFailure(exception: Exception) {
+        Logger.e("onCohortDescriptionsFetchFailure", exception)
         cohortDescriptionsFetchFailure++
     }
 
     override fun onCohortDescriptionsFetchOriginFallback(exception: Exception) {
+        Logger.e("onCohortDescriptionsFetchOriginFallback", exception)
         cohortDescriptionsFetchOriginFallback++
     }
 
@@ -78,10 +83,12 @@ open class LocalEvaluationMetricsCounter : LocalEvaluationMetrics {
     }
 
     override fun onCohortDownloadFailure(exception: Exception) {
+        Logger.e("onCohortDownloadFailure", exception)
         cohortDownloadFailure++
     }
 
     override fun onCohortDownloadOriginFallback(exception: Exception) {
+        Logger.e("onCohortDownloadOriginFallback", exception)
         cohortDownloadOriginFallback++
     }
 
@@ -90,6 +97,7 @@ open class LocalEvaluationMetricsCounter : LocalEvaluationMetrics {
     }
 
     override fun onCohortMembershipFailure(exception: Exception) {
+        Logger.e("onCohortMembershipFailure", exception)
         cohortMembershipFailure++
     }
 

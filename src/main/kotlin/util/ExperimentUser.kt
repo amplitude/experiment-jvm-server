@@ -47,6 +47,7 @@ internal fun ExperimentUser.toMap(): Map<String, Any?> {
         "carrier" to carrier,
         "library" to library,
         "user_properties" to userProperties,
+        "cohort_ids" to cohortIds,
         "groups" to groups,
         "group_properties" to groupProperties
     ).filterValues { it != null }

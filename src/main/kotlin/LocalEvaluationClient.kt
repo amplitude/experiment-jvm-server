@@ -53,6 +53,7 @@ class LocalEvaluationClient internal constructor(
             serverUrl = config.serverUrl.toHttpUrl(),
             proxyUrl = config.proxyConfiguration?.proxyUrl?.toHttpUrl(),
             httpClient = httpClient,
+            metrics = metricsWrapper,
         ),
         flagConfigStorage,
         cohortStorage,
@@ -69,8 +70,9 @@ class LocalEvaluationClient internal constructor(
                     httpClient
                 )
                 DynamicCohortDownloadApi(
-                    directCohortDownloadApi,
-                    proxyCohortDownloadApi,
+                    directApi = directCohortDownloadApi,
+                    proxyApi = proxyCohortDownloadApi,
+                    metrics = metricsWrapper
                 )
             } else {
                 directCohortDownloadApi
