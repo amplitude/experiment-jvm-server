@@ -38,7 +38,7 @@ internal class CohortLoader(
                     val cohortMembers = downloadCohorts(cohortDescription)
                     cohortStorage.putCohort(cohortDescription, cohortMembers)
                 }
-            }, executor).thenRun { jobs.remove(cohortId) }
+            }, executor).whenComplete { _, _ ->  jobs.remove(cohortId) }
         }
     }
 
