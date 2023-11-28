@@ -1,3 +1,10 @@
+## [1.2.3](https://github.com/amplitude/experiment-jvm-server/compare/1.2.2...1.2.3) (2023-11-28)
+
+
+### Bug Fixes
+
+* Flag segment serialization error ([#15](https://github.com/amplitude/experiment-jvm-server/issues/15)) ([8c6b47e](https://github.com/amplitude/experiment-jvm-server/commit/8c6b47e8df9a42d5b4092fa4db05af1588ce473c))
+
 ## [1.2.2](https://github.com/amplitude/experiment-jvm-server/compare/1.2.1...1.2.2) (2023-10-10)
 
 
