@@ -57,7 +57,7 @@ class LocalEvaluationClient internal constructor(
 
     @JvmOverloads
     fun evaluate(user: ExperimentUser, flagKeys: List<String> = listOf()): Map<String, Variant> {
-        val flagConfigs = flagConfigService.getFlagConfigs()
+        val flagConfigs = flagConfigService.getFlagConfigs().toList()
         val flagResults = evaluation.evaluate(flagConfigs, user.toSerialExperimentUser().convert())
         val assignmentResults = mutableMapOf<String, FlagResult>()
         val results = flagResults.filter { entry ->
