@@ -28,16 +28,15 @@ class CohortDownloadApiTest {
         )
 
         val asyncRequestStatusResponse = response(200)
-        val asyncRequestMembers = setOf("user")
-        val api = spyk(DirectCohortDownloadApiV5("api","secret", OkHttpClient(), 10L))
+        val api = spyk(DirectCohortDownloadApiV5("api", "secret", OkHttpClient(), 10L))
         every { api.getCohortAsyncRequest(cohort) }.returns(asyncRequestResponse)
         every { api.getCohortAsyncRequestStatus(asyncRequestResponse.requestId) }.returns(asyncRequestStatusResponse)
-        every { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId) }.returns(asyncRequestMembers)
+        every { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId, USER_GROUP_TYPE) }.returns(setOf("user"))
         val members = api.getCohortMembers(cohort)
         Assert.assertEquals(setOf("user"), members)
         verify(exactly = 1) { api.getCohortAsyncRequest(cohort) }
         verify(exactly = 1) { api.getCohortAsyncRequestStatus(asyncRequestResponse.requestId) }
-        verify(exactly = 1) { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId) }
+        verify(exactly = 1) { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId, USER_GROUP_TYPE) }
     }
 
     @Test
@@ -54,8 +53,7 @@ class CohortDownloadApiTest {
 
         val asyncRequestStatus202Response = response(202)
         val asyncRequestStatus200Response = response(200)
-        val asyncRequestMembers = setOf("user")
-        val api = spyk(DirectCohortDownloadApiV5("api","secret", OkHttpClient(), 10L))
+        val api = spyk(DirectCohortDownloadApiV5("api", "secret", OkHttpClient(), 10L))
         every { api.getCohortAsyncRequest(cohort) }.returns(asyncRequestResponse)
         every { api.getCohortAsyncRequestStatus(asyncRequestResponse.requestId) }.returnsMany(
             asyncRequestStatus202Response,
@@ -69,12 +67,12 @@ class CohortDownloadApiTest {
             asyncRequestStatus202Response,
             asyncRequestStatus200Response
         )
-        every { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId) }.returns(asyncRequestMembers)
+        every { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId, USER_GROUP_TYPE) }.returns(setOf("user"))
         val members = api.getCohortMembers(cohort)
         Assert.assertEquals(setOf("user"), members)
         verify(exactly = 1) { api.getCohortAsyncRequest(cohort) }
         verify(exactly = 10) { api.getCohortAsyncRequestStatus(asyncRequestResponse.requestId) }
-        verify(exactly = 1) { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId) }
+        verify(exactly = 1) { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId, USER_GROUP_TYPE) }
     }
 
     @Test
@@ -90,20 +88,19 @@ class CohortDownloadApiTest {
         )
         val asyncRequestStatus503Response = response(503)
         val asyncRequestStatus200Response = response(200)
-        val asyncRequestMembers = setOf("user")
-        val api = spyk(DirectCohortDownloadApiV5("api","secret", OkHttpClient(), 10L))
+        val api = spyk(DirectCohortDownloadApiV5("api", "secret", OkHttpClient(), 10L))
         every { api.getCohortAsyncRequest(cohort) }.returns(asyncRequestResponse)
         every { api.getCohortAsyncRequestStatus(asyncRequestResponse.requestId) }.returnsMany(
             asyncRequestStatus503Response,
             asyncRequestStatus503Response,
             asyncRequestStatus200Response
         )
-        every { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId) }.returns(asyncRequestMembers)
+        every { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId, USER_GROUP_TYPE) }.returns(setOf("user"))
         val members = api.getCohortMembers(cohort)
         Assert.assertEquals(setOf("user"), members)
         verify(exactly = 1) { api.getCohortAsyncRequest(cohort) }
         verify(exactly = 3) { api.getCohortAsyncRequestStatus(asyncRequestResponse.requestId) }
-        verify(exactly = 1) { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId) }
+        verify(exactly = 1) { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId, USER_GROUP_TYPE) }
     }
 
     @Test
@@ -118,11 +115,10 @@ class CohortDownloadApiTest {
             requestId = "4321",
         )
         val asyncRequestStatusResponse = response(503)
-        val asyncRequestMembers = setOf("user")
-        val api = spyk(DirectCohortDownloadApiV5("api","secret", OkHttpClient(), 10L))
+        val api = spyk(DirectCohortDownloadApiV5("api", "secret", OkHttpClient(), 10L))
         every { api.getCohortAsyncRequest(cohort) }.returns(asyncRequestResponse)
         every { api.getCohortAsyncRequestStatus(asyncRequestResponse.requestId) }.returns(asyncRequestStatusResponse)
-        every { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId) }.returns(asyncRequestMembers)
+        every { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId, USER_GROUP_TYPE) }.returns(setOf("user"))
         try {
             api.getCohortMembers(cohort)
             Assert.fail("expected failure")
@@ -131,7 +127,7 @@ class CohortDownloadApiTest {
         }
         verify(exactly = 1) { api.getCohortAsyncRequest(cohort) }
         verify(exactly = 3) { api.getCohortAsyncRequestStatus(asyncRequestResponse.requestId) }
-        verify(exactly = 0) { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId) }
+        verify(exactly = 0) { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId, USER_GROUP_TYPE) }
     }
 
     @Test
@@ -147,8 +143,7 @@ class CohortDownloadApiTest {
         )
         val asyncRequestStatus429Response = response(429)
         val asyncRequestStatus200Response = response(200)
-        val asyncRequestMembers = setOf("user")
-        val api = spyk(DirectCohortDownloadApiV5("api","secret", OkHttpClient(), 10L))
+        val api = spyk(DirectCohortDownloadApiV5("api", "secret", OkHttpClient(), 10L))
         every { api.getCohortAsyncRequest(cohort) }.returns(asyncRequestResponse)
         every { api.getCohortAsyncRequestStatus(asyncRequestResponse.requestId) }.returnsMany(
             asyncRequestStatus429Response,
@@ -162,12 +157,37 @@ class CohortDownloadApiTest {
             asyncRequestStatus429Response,
             asyncRequestStatus200Response
         )
-        every { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId) }.returns(asyncRequestMembers)
+        every { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId, USER_GROUP_TYPE) }.returns(setOf("user"))
         val members = api.getCohortMembers(cohort)
         Assert.assertEquals(setOf("user"), members)
         verify(exactly = 1) { api.getCohortAsyncRequest(cohort) }
         verify(exactly = 10) { api.getCohortAsyncRequestStatus(asyncRequestResponse.requestId) }
-        verify(exactly = 1) { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId) }
+        verify(exactly = 1) { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId, USER_GROUP_TYPE) }
+    }
+
+    @Test
+    fun `group cohort download success`() {
+        val cohort = CohortDescription(
+            id = "1234",
+            lastComputed = 0L,
+            size = 1,
+            groupType = "org name"
+        )
+        val asyncRequestResponse = GetCohortAsyncResponse(
+            cohortId = "1234",
+            requestId = "4321",
+        )
+
+        val asyncRequestStatusResponse = response(200)
+        val api = spyk(DirectCohortDownloadApiV5("api", "secret", OkHttpClient(), 10L))
+        every { api.getCohortAsyncRequest(cohort) }.returns(asyncRequestResponse)
+        every { api.getCohortAsyncRequestStatus(asyncRequestResponse.requestId) }.returns(asyncRequestStatusResponse)
+        every { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId, "org name") }.returns(setOf("group"))
+        val members = api.getCohortMembers(cohort)
+        Assert.assertEquals(setOf("group"), members)
+        verify(exactly = 1) { api.getCohortAsyncRequest(cohort) }
+        verify(exactly = 1) { api.getCohortAsyncRequestStatus(asyncRequestResponse.requestId) }
+        verify(exactly = 1) { api.getCohortAsyncRequestMembers(asyncRequestResponse.requestId, "org name") }
     }
 
     // Util

@@ -2,6 +2,8 @@
 
 package com.amplitude.experiment
 
+import com.amplitude.Middleware
+
 /**
  * Configuration options. This is an immutable object that can be created using
  * a [LocalEvaluationConfig.Builder]. Example usage:
@@ -167,6 +169,7 @@ data class AssignmentConfiguration(
     val eventUploadThreshold: Int = 10,
     val eventUploadPeriodMillis: Int = 10000,
     val useBatchMode: Boolean = true,
+    val middleware: List<Middleware> = listOf(),
 )
 
 @ExperimentalApi

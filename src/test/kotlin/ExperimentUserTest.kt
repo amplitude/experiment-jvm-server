@@ -60,11 +60,17 @@ class ExperimentUserTest {
                     put("group", buildJsonArray { add("group") })
                 },
                 "group_properties" to buildJsonObject {
-                    put("group", buildJsonObject {
-                        put("group", buildJsonObject {
-                            put("group", JsonPrimitive("group"))
-                        })
-                    })
+                    put(
+                        "group",
+                        buildJsonObject {
+                            put(
+                                "group",
+                                buildJsonObject {
+                                    put("group", JsonPrimitive("group"))
+                                }
+                            )
+                        }
+                    )
                 }
             )
         )

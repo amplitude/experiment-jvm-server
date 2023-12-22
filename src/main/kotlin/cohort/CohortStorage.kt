@@ -15,10 +15,11 @@ import kotlin.concurrent.write
 
 internal interface CohortStorage {
     fun getCohortsForUser(userId: String, cohortIds: Set<String>): Set<String>
+    fun getCohortsForGroup(groupType: String, groupName: String, cohortIds: Set<String>): Set<String>
     fun getCohortDescription(cohortId: String): CohortDescription?
     fun getCohortDescriptions(): Map<String, CohortDescription>
-    fun putCohort(cohortDescription: CohortDescription, userIds: Set<String>)
-    fun deleteCohort(cohortId: String)
+    fun putCohort(cohortDescription: CohortDescription, members: Set<String>)
+    fun deleteCohort(groupType: String, cohortId: String)
 }
 
 internal class ProxyCohortStorage(
@@ -56,6 +57,11 @@ internal class ProxyCohortStorage(
         }
     }
 
+    override fun getCohortsForGroup(groupType: String, groupName: String, cohortIds: Set<String>): Set<String> {
+        // TODO Group cohorts are not yet supported by the proxy.
+        return setOf()
+    }
+
     override fun getCohortDescription(cohortId: String): CohortDescription? {
         return inMemoryStorage.getCohortDescription(cohortId)
     }
@@ -64,25 +70,30 @@ internal class ProxyCohortStorage(
         return inMemoryStorage.getCohortDescriptions()
     }
 
-    override fun putCohort(cohortDescription: CohortDescription, userIds: Set<String>) {
-        inMemoryStorage.putCohort(cohortDescription, userIds)
+    override fun putCohort(cohortDescription: CohortDescription, members: Set<String>) {
+        inMemoryStorage.putCohort(cohortDescription, members)
     }
 
-    override fun deleteCohort(cohortId: String) {
-        inMemoryStorage.deleteCohort(cohortId)
+    override fun deleteCohort(groupType: String, cohortId: String) {
+        inMemoryStorage.deleteCohort(groupType, cohortId)
     }
 }
 
 internal class InMemoryCohortStorage : CohortStorage {
     private val lock = ReentrantReadWriteLock()
-    private val cohortStore = mutableMapOf<String, Set<String>>()
+    private val cohortStore = mutableMapOf<String, MutableMap<String, Set<String>>>()
     private val descriptionStore = mutableMapOf<String, CohortDescription>()
 
     override fun getCohortsForUser(userId: String, cohortIds: Set<String>): Set<String> {
+        return getCohortsForGroup(USER_GROUP_TYPE, userId, cohortIds)
+    }
+
+    override fun getCohortsForGroup(groupType: String, groupName: String, cohortIds: Set<String>): Set<String> {
         val result = mutableSetOf<String>()
         lock.read {
-            for (entry in cohortStore.entries) {
-                if (cohortIds.contains(entry.key) && entry.value.contains(userId)) {
+            val groupTypeCohorts = cohortStore[groupType] ?: return result
+            for (entry in groupTypeCohorts.entries) {
+                if (cohortIds.contains(entry.key) && entry.value.contains(groupName)) {
                     result.add(entry.key)
                 }
             }
@@ -102,17 +113,18 @@ internal class InMemoryCohortStorage : CohortStorage {
         }
     }
 
-    override fun putCohort(cohortDescription: CohortDescription, userIds: Set<String>) {
+    override fun putCohort(cohortDescription: CohortDescription, members: Set<String>) {
         lock.write {
-            cohortStore[cohortDescription.id] = userIds.toMutableSet()
+            cohortStore.getOrPut(
+                cohortDescription.groupType
+            ) { mutableMapOf() }[cohortDescription.id] = members
             descriptionStore[cohortDescription.id] = cohortDescription
         }
     }
 
-    override fun deleteCohort(cohortId: String) {
+    override fun deleteCohort(groupType: String, cohortId: String) {
         lock.write {
-            cohortStore.remove(cohortId)
-            descriptionStore.remove(cohortId)
+            cohortStore[groupType]?.remove(cohortId)
         }
     }
 }

@@ -7,16 +7,12 @@ import com.amplitude.experiment.LocalEvaluationConfig
 import com.amplitude.experiment.cohort.CohortDownloadApi
 import com.amplitude.experiment.cohort.CohortLoader
 import com.amplitude.experiment.cohort.CohortStorage
-import com.amplitude.experiment.cohort.InMemoryCohortStorage
 import com.amplitude.experiment.evaluation.EvaluationCondition
 import com.amplitude.experiment.evaluation.EvaluationFlag
 import com.amplitude.experiment.evaluation.EvaluationOperator
 import com.amplitude.experiment.evaluation.EvaluationSegment
 import com.amplitude.experiment.flag.FlagConfigApi
 import com.amplitude.experiment.flag.FlagConfigStorage
-import com.amplitude.experiment.flag.InMemoryFlagConfigStorage
-import okio.IOException
-import org.junit.Assert
 import org.junit.Test
 import org.mockito.Mockito
 import kotlin.test.fail
@@ -28,13 +24,19 @@ class DeploymentRunnerTest {
     val flag = EvaluationFlag(
         key = "flag",
         variants = mapOf(),
-        segments = listOf(EvaluationSegment(
-            conditions = listOf(listOf(EvaluationCondition(
-                selector = listOf("context", "user", "cohort_ids"),
-                op = EvaluationOperator.SET_CONTAINS_ANY,
-                values = setOf(COHORT_ID),
-            ))),
-        ))
+        segments = listOf(
+            EvaluationSegment(
+                conditions = listOf(
+                    listOf(
+                        EvaluationCondition(
+                            selector = listOf("context", "user", "cohort_ids"),
+                            op = EvaluationOperator.SET_CONTAINS_ANY,
+                            values = setOf(COHORT_ID),
+                        )
+                    )
+                ),
+            )
+        )
     )
 
     @Test
@@ -46,7 +48,8 @@ class DeploymentRunnerTest {
         val cohortLoader = CohortLoader(100, cohortDownloadApi, cohortStorage)
         val runner = DeploymentRunner(
             LocalEvaluationConfig(),
-            flagApi, flagConfigStorage,
+            flagApi,
+            flagConfigStorage,
             cohortStorage,
             cohortLoader
         )

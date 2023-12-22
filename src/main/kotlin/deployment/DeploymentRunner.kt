@@ -5,14 +5,14 @@ package com.amplitude.experiment.deployment
 import com.amplitude.experiment.ExperimentalApi
 import com.amplitude.experiment.LocalEvaluationConfig
 import com.amplitude.experiment.LocalEvaluationMetrics
-import com.amplitude.experiment.cohort.CohortStorage
 import com.amplitude.experiment.cohort.CohortLoader
+import com.amplitude.experiment.cohort.CohortStorage
 import com.amplitude.experiment.flag.FlagConfigApi
 import com.amplitude.experiment.flag.FlagConfigStorage
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.Once
-import com.amplitude.experiment.util.getCohortIds
+import com.amplitude.experiment.util.getAllCohortIds
 import com.amplitude.experiment.util.wrapMetrics
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
@@ -47,7 +47,7 @@ internal class DeploymentRunner(
         if (cohortLoader != null) {
             poller.scheduleWithFixedDelay(
                 {
-                    val cohortIds = flagConfigStorage.getFlagConfigs().values.getCohortIds()
+                    val cohortIds = flagConfigStorage.getFlagConfigs().values.getAllCohortIds()
                     for (cohortId in cohortIds) {
                         cohortLoader.loadCohort(cohortId)
                     }
@@ -78,7 +78,7 @@ internal class DeploymentRunner(
         // Load cohorts for each flag if applicable and put the flag in storage.
         val futures = mutableListOf<CompletableFuture<*>>()
         for (flagConfig in flagConfigs) {
-            val cohortIds = flagConfig.getCohortIds()
+            val cohortIds = flagConfig.getAllCohortIds()
             if (cohortLoader != null && cohortIds.isNotEmpty()) {
                 for (cohortId in cohortIds) {
                     futures += cohortLoader.loadCohort(cohortId).thenRun {
@@ -91,11 +91,14 @@ internal class DeploymentRunner(
         }
         futures.forEach { it.join() }
         // Delete unused cohorts
-        val flagCohortIds = flagConfigStorage.getFlagConfigs().values.toList().getCohortIds()
-        val storageCohortIds = cohortStorage.getCohortDescriptions().keys
-        val deletedCohortIds = storageCohortIds - flagCohortIds
+        val flagCohortIds = flagConfigStorage.getFlagConfigs().values.toList().getAllCohortIds()
+        val storageCohorts = cohortStorage.getCohortDescriptions()
+        val deletedCohortIds = storageCohorts.keys - flagCohortIds
         for (deletedCohortId in deletedCohortIds) {
-            cohortStorage.deleteCohort(deletedCohortId)
+            val deletedCohortDescription = storageCohorts[deletedCohortId]
+            if (deletedCohortDescription != null) {
+                cohortStorage.deleteCohort(deletedCohortDescription.groupType, deletedCohortId)
+            }
         }
         Logger.d("Refreshed ${flagConfigs.size} flag configs.")
     }

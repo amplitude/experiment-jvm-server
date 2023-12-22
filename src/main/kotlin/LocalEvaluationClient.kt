@@ -16,6 +16,7 @@ import com.amplitude.experiment.cohort.InMemoryCohortStorage
 import com.amplitude.experiment.cohort.ProxyCohortDownloadApi
 import com.amplitude.experiment.cohort.ProxyCohortMembershipApi
 import com.amplitude.experiment.cohort.ProxyCohortStorage
+import com.amplitude.experiment.cohort.USER_GROUP_TYPE
 import com.amplitude.experiment.deployment.DeploymentRunner
 import com.amplitude.experiment.evaluation.EvaluationEngine
 import com.amplitude.experiment.evaluation.EvaluationEngineImpl
@@ -27,9 +28,8 @@ import com.amplitude.experiment.flag.InMemoryFlagConfigStorage
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.filterDefaultVariants
-import com.amplitude.experiment.util.getCohortIds
+import com.amplitude.experiment.util.getGroupedCohortIds
 import com.amplitude.experiment.util.toEvaluationContext
-import com.amplitude.experiment.util.toVariant
 import com.amplitude.experiment.util.toVariants
 import com.amplitude.experiment.util.wrapMetrics
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -131,12 +131,30 @@ class LocalEvaluationClient internal constructor(
     }
 
     private fun enrichUser(user: ExperimentUser, flagConfigs: Map<String, EvaluationFlag>): ExperimentUser {
-        val cohortIds = flagConfigs.values.getCohortIds()
-        return if (user.userId == null || cohortIds.isEmpty()) {
+        val groupedCohortIds = flagConfigs.values.getGroupedCohortIds()
+        return if (user.userId == null || groupedCohortIds.isEmpty()) {
             user
         } else {
             user.copyToBuilder().apply {
-                cohortIds(cohortStorage.getCohortsForUser(user.userId, cohortIds))
+                val userCohortsIds = groupedCohortIds[USER_GROUP_TYPE]
+                if (!userCohortsIds.isNullOrEmpty()) {
+                    cohortIds(cohortStorage.getCohortsForUser(user.userId, userCohortsIds))
+                }
+                if (user.groups != null) {
+                    for (group in user.groups) {
+                        val groupType = group.key
+                        val groupName = group.value.firstOrNull() ?: continue
+                        val cohortIds = groupedCohortIds[groupType]
+                        if (cohortIds.isNullOrEmpty()) {
+                            continue
+                        }
+                        groupCohortIds(
+                            groupType,
+                            groupName,
+                            cohortStorage.getCohortsForGroup(groupType, groupName, cohortIds)
+                        )
+                    }
+                }
             }.build()
         }
     }
@@ -150,6 +168,9 @@ class LocalEvaluationClient internal constructor(
                 setEventUploadPeriodMillis(config.assignmentConfiguration.eventUploadPeriodMillis)
                 useBatchMode(config.assignmentConfiguration.useBatchMode)
                 setOptions(Options().setMinIdLength(1))
+                for (middleware in config.assignmentConfiguration.middleware) {
+                    addEventMiddleware(middleware)
+                }
             },
             InMemoryAssignmentFilter(config.assignmentConfiguration.filterCapacity),
             metricsWrapper

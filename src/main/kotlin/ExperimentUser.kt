@@ -1,7 +1,5 @@
 package com.amplitude.experiment
 
-import com.amplitude.experiment.evaluation.EvaluationContext
-
 /**
  * The user to fetch experiment/flag variants for. This is an immutable object
  * that can be created using an [ExperimentUser.Builder]. Example usage:
@@ -41,6 +39,7 @@ data class ExperimentUser internal constructor(
     @JvmField val cohortIds: Set<String>? = null,
     @JvmField val groups: Map<String, Set<String>>? = null,
     @JvmField val groupProperties: Map<String, Map<String, Map<String, Any?>>>? = null,
+    @JvmField val groupCohortIds: Map<String, Map<String, Set<String>>>? = null,
 ) {
 
     /**
@@ -69,6 +68,7 @@ data class ExperimentUser internal constructor(
             .cohortIds(this.cohortIds)
             .groups(this.groups)
             .groupProperties(this.groupProperties)
+            .groupCohortIds(this.groupCohortIds)
     }
 
     companion object {
@@ -98,6 +98,7 @@ data class ExperimentUser internal constructor(
         private var cohortIds: Set<String>? = null
         private var groups: MutableMap<String, Set<String>>? = null
         private var groupProperties: MutableMap<String, MutableMap<String, MutableMap<String, Any?>>>? = null
+        private var groupCohortIds: MutableMap<String, MutableMap<String, Set<String>>>? = null
 
         fun userId(userId: String?) = apply { this.userId = userId }
         fun deviceId(deviceId: String?) = apply { this.deviceId = deviceId }
@@ -151,6 +152,19 @@ data class ExperimentUser internal constructor(
             }
         }
 
+        internal fun groupCohortIds(groupCohortIds: Map<String, Map<String, Set<String>>>?) = apply {
+            this.groupCohortIds = groupCohortIds?.mapValues { groupTypes ->
+                groupTypes.value.toMutableMap()
+            }?.toMutableMap()
+        }
+
+        fun groupCohortIds(groupType: String, groupName: String, cohortIds: Set<String>) = apply {
+            this.groupCohortIds = (this.groupCohortIds ?: mutableMapOf()).apply {
+                val groupNames = getOrPut(groupType) { mutableMapOf() }
+                groupNames[groupName] = cohortIds
+            }
+        }
+
         fun build(): ExperimentUser {
             return ExperimentUser(
                 userId = userId,
@@ -172,8 +186,8 @@ data class ExperimentUser internal constructor(
                 cohortIds = cohortIds,
                 groups = groups,
                 groupProperties = groupProperties,
+                groupCohortIds = groupCohortIds,
             )
         }
     }
 }
-

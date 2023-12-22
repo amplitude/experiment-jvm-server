@@ -1,7 +1,6 @@
 package com.amplitude.experiment.util
 
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.HttpUrl
@@ -67,7 +66,7 @@ internal fun OkHttpClient.get(
     queries: Map<String, String>? = null,
 ): Response {
     val request = newGet(serverUrl, path, headers, queries)
-    return submit(request).thenApply { it.apply{ close() } }.get()
+    return submit(request).thenApply { it.apply { close() } }.get()
 }
 
 internal inline fun <reified T> OkHttpClient.get(

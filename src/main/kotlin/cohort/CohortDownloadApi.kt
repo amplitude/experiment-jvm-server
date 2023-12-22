@@ -13,6 +13,7 @@ import okhttp3.Response
 import okio.IOException
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVParser
+import java.lang.IllegalArgumentException
 import java.lang.Thread.sleep
 import java.util.Base64
 import java.util.concurrent.Semaphore
@@ -34,6 +35,7 @@ internal data class SerialCohortInfoResponse(
     @SerialName("size") val size: Int = Int.MAX_VALUE,
     @SerialName("description") val description: String? = null,
     @SerialName("last_computed") val lastComputed: Long = 0,
+    @SerialName("group_type") val groupType: String = USER_GROUP_TYPE,
 )
 
 @Serializable
@@ -53,7 +55,7 @@ internal class DynamicCohortDownloadApi(
     private val directApi: DirectCohortDownloadApiV5,
     private val proxyApi: ProxyCohortDownloadApi,
     private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper()
-): CohortDownloadApi {
+) : CohortDownloadApi {
     override fun getCohortDescription(cohortId: String): CohortDescription {
         return try {
             proxyApi.getCohortDescription(cohortId)
@@ -77,7 +79,7 @@ internal class ProxyCohortDownloadApi(
     private val deploymentKey: String,
     proxyServerUrl: String,
     httpClient: OkHttpClient,
-): CohortDownloadApi {
+) : CohortDownloadApi {
     private val httpClient: OkHttpClient = httpClient.newBuilder()
         .readTimeout(10, TimeUnit.SECONDS)
         .build()
@@ -123,7 +125,8 @@ internal class DirectCohortDownloadApiV5(
             CohortDescription(
                 id = response.cohortId,
                 lastComputed = response.lastComputed,
-                size = response.size
+                size = response.size,
+                groupType = response.groupType,
             )
         }
     }
@@ -157,7 +160,7 @@ internal class DirectCohortDownloadApiV5(
                 }
                 sleep(requestStatusDelay)
             }
-            return getCohortAsyncRequestMembers(initialResponse.requestId)
+            return getCohortAsyncRequestMembers(initialResponse.requestId, cohortDescription.groupType)
         }
     }
 
@@ -179,19 +182,36 @@ internal class DirectCohortDownloadApiV5(
     internal fun getCohortAsyncRequestStatus(requestId: String): Response =
         httpClient.get(
             serverUrl = cdnServerUrl,
-            path = "api/5/cohorts/request-status/${requestId}",
+            path = "api/5/cohorts/request-status/$requestId",
             headers = mapOf("Authorization" to "Basic $basicAuth"),
         )
 
-    internal fun getCohortAsyncRequestMembers(requestId: String): Set<String> =
+    internal fun getCohortAsyncRequestMembers(requestId: String, groupType: String): Set<String> =
         httpClient.get(
             serverUrl = cdnServerUrl,
-            path = "api/5/cohorts/request/${requestId}/file",
+            path = "api/5/cohorts/request/$requestId/file",
             headers = mapOf("Authorization" to "Basic $basicAuth"),
         ) { response ->
             val csv = CSVParser.parse(response.body?.byteStream(), Charsets.UTF_8, csvFormat)
-            csv.map { it.get("user_id") }.filterNot { it.isNullOrEmpty() }.toSet()
-                .also { Logger.d("getCohortMembers: end - resultSize=${it.size}") }
+            if (groupType == USER_GROUP_TYPE) {
+                csv.map { it.get("user_id") }.filterNot { it.isNullOrEmpty() }.toSet()
+                    .also { Logger.d("getCohortMembers: end - resultSize=${it.size}") }
+            } else {
+                csv.map {
+                    try {
+                        // CSV returned from API has all strings prefixed with a tab character
+                        it.get("\tgroup_value")
+                    } catch (e: IllegalArgumentException) {
+                        it.get("group_value")
+                    }
+                }.filterNot {
+                    it.isNullOrEmpty()
+                }.map {
+                    // CSV returned from API has all strings prefixed with a tab character
+                    it.removePrefix("\t")
+                }.toSet()
+                    .also { Logger.d("getCohortMembers: end - resultSize=${it.size}") }
+            }
         }
 }
 

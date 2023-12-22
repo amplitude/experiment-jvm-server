@@ -15,8 +15,6 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
-import kotlin.jvm.JvmField
-import kotlin.jvm.JvmSynthetic
 
 internal val json = Json {
     ignoreUnknownKeys = true

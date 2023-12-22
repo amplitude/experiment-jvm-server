@@ -7,7 +7,6 @@ import com.amplitude.experiment.util.backoff
 import com.amplitude.experiment.util.filterDefaultVariants
 import com.amplitude.experiment.util.json
 import com.amplitude.experiment.util.toJson
-import com.amplitude.experiment.util.toVariant
 import com.amplitude.experiment.util.toVariants
 import kotlinx.serialization.decodeFromString
 import okhttp3.Call

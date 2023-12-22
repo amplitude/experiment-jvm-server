@@ -40,4 +40,3 @@ internal fun EvaluationVariant.isDefaultVariant(): Boolean {
 internal fun Variant.isDefaultVariant(): Boolean {
     return metadata?.get("default") as? Boolean ?: false
 }
-
