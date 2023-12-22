@@ -41,7 +41,7 @@ class LocalEvaluationClient internal constructor(
 ) {
 
     private val metricsWrapper = LocalEvaluationMetricsWrapper(config.metrics)
-    private val evaluation: EvaluationEngine = EvaluationEngineImpl()
+    private val evaluation: EvaluationEngine = EvaluationEngineImpl(null)
     private val httpClient = OkHttpClient()
     private val assignmentService: AssignmentService? = createAssignmentService(deploymentKey)
     private val cohortStorage: CohortStorage = createCohortStorage()
