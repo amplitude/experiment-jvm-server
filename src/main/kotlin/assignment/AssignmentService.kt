@@ -74,7 +74,7 @@ internal fun Assignment.toAmplitudeEvent(): Event {
     }
     event.eventProperties = JSONObject().apply {
         for ((flagKey, variant) in this@toAmplitudeEvent.results) {
-            val version = variant.metadata?.get("version")
+            val version = variant.metadata?.get("flagVersion")
             val segmentName = variant.metadata?.get("segmentName")
             val details = "v$version rule:$segmentName"
             put("$flagKey.variant", variant.key)
