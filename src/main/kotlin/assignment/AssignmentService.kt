@@ -69,6 +69,9 @@ internal fun Assignment.toAmplitudeEvent(): Event {
         this.user.userId,
         this.user.deviceId
     )
+    if (!user.groups.isNullOrEmpty()) {
+        event.groups = JSONObject(user.groups)
+    }
     event.eventProperties = JSONObject().apply {
         for ((flagKey, variant) in this@toAmplitudeEvent.results) {
             val version = variant.metadata?.get("version")
