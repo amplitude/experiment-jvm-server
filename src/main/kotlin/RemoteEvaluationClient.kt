@@ -1,14 +1,13 @@
 package com.amplitude.experiment
 
-import com.amplitude.experiment.evaluation.serialization.SerialVariant
+import com.amplitude.experiment.evaluation.EvaluationVariant
 import com.amplitude.experiment.util.BackoffConfig
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.backoff
-import com.amplitude.experiment.util.toSerialExperimentUser
+import com.amplitude.experiment.util.json
+import com.amplitude.experiment.util.toJson
 import com.amplitude.experiment.util.toVariant
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.HttpUrl
@@ -21,10 +20,6 @@ import okhttp3.Response
 import okio.IOException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
-
-private val json = Json {
-    ignoreUnknownKeys = true
-}
 
 class RemoteEvaluationClient internal constructor(
     private val apiKey: String,
@@ -69,11 +64,12 @@ class RemoteEvaluationClient internal constructor(
         val libraryUser = user.copyToBuilder().library("experiment-jvm-server/$LIBRARY_VERSION").build()
         Logger.d("Fetch variants for user: $libraryUser")
         // Build request to fetch variants for the user
-        val body = json.encodeToString(libraryUser.toSerialExperimentUser())
+        val body = libraryUser.toJson()
             .toByteArray(Charsets.UTF_8)
             .toRequestBody("application/json".toMediaType())
         val url = serverUrl.newBuilder()
-            .addPathSegments("sdk/vardata")
+            .addPathSegments("sdk/v2/vardata")
+            .addQueryParameter("v", "0")
             .build()
         val request = Request.Builder()
             .post(body)
@@ -109,6 +105,6 @@ class RemoteEvaluationClient internal constructor(
 }
 
 internal fun parseRemoteResponse(jsonString: String): Map<String, Variant> =
-    json.decodeFromString<HashMap<String, SerialVariant>>(
+    json.decodeFromString<HashMap<String, EvaluationVariant>>(
         jsonString
     ).mapValues { it.value.toVariant() }

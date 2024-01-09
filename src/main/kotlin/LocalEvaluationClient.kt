@@ -1,23 +1,23 @@
 package com.amplitude.experiment
 
 import com.amplitude.Amplitude
+import com.amplitude.Options
 import com.amplitude.experiment.assignment.AmplitudeAssignmentService
 import com.amplitude.experiment.assignment.Assignment
 import com.amplitude.experiment.assignment.AssignmentService
 import com.amplitude.experiment.assignment.InMemoryAssignmentFilter
 import com.amplitude.experiment.evaluation.EvaluationEngine
 import com.amplitude.experiment.evaluation.EvaluationEngineImpl
-import com.amplitude.experiment.evaluation.FLAG_TYPE_HOLDOUT_GROUP
-import com.amplitude.experiment.evaluation.FLAG_TYPE_MUTUAL_EXCLUSION_GROUP
-import com.amplitude.experiment.evaluation.FlagResult
-import com.amplitude.experiment.evaluation.serialization.SerialVariant
+import com.amplitude.experiment.evaluation.topologicalSort
 import com.amplitude.experiment.flag.FlagConfigApiImpl
 import com.amplitude.experiment.flag.FlagConfigService
 import com.amplitude.experiment.flag.FlagConfigServiceConfig
 import com.amplitude.experiment.flag.FlagConfigServiceImpl
+import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.Once
-import com.amplitude.experiment.util.toSerialExperimentUser
-import com.amplitude.experiment.util.toVariant
+import com.amplitude.experiment.util.filterDefaultVariants
+import com.amplitude.experiment.util.toEvaluationContext
+import com.amplitude.experiment.util.toVariants
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
@@ -28,7 +28,7 @@ class LocalEvaluationClient internal constructor(
 ) {
     private val startLock = Once()
     private val httpClient = OkHttpClient()
-    private val assignmentService: AssignmentService? = createAssignmentService()
+    private val assignmentService: AssignmentService? = createAssignmentService(apiKey)
     private val serverUrl: HttpUrl = config.serverUrl.toHttpUrl()
     private val evaluation: EvaluationEngine = EvaluationEngineImpl()
     private val flagConfigService: FlagConfigService = FlagConfigServiceImpl(
@@ -42,36 +42,39 @@ class LocalEvaluationClient internal constructor(
         }
     }
 
-    private fun createAssignmentService(): AssignmentService? {
+    private fun createAssignmentService(deploymentKey: String): AssignmentService? {
         if (config.assignmentConfiguration == null) return null
         return AmplitudeAssignmentService(
-            Amplitude.getInstance().apply {
+            Amplitude.getInstance(deploymentKey).apply {
                 init(config.assignmentConfiguration.apiKey)
                 setEventUploadThreshold(config.assignmentConfiguration.eventUploadThreshold)
                 setEventUploadPeriodMillis(config.assignmentConfiguration.eventUploadPeriodMillis)
                 useBatchMode(config.assignmentConfiguration.useBatchMode)
+                setOptions(Options().setMinIdLength(1))
             },
-            InMemoryAssignmentFilter(config.assignmentConfiguration.cacheCapacity),
+            InMemoryAssignmentFilter(config.assignmentConfiguration.cacheCapacity)
         )
+    }
+    @JvmOverloads
+    @Deprecated(
+        "Use the evaluateV2 method. EvaluateV2 returns variant objects with default values (e.g. null/off) if the user is evaluated, but not assigned a variant.",
+        ReplaceWith("evaluateV2(user, flagKeys)")
+    )
+    fun evaluate(user: ExperimentUser, flagKeys: List<String> = listOf()): Map<String, Variant> {
+        return evaluateV2(user, flagKeys.toSet()).filterDefaultVariants()
     }
 
     @JvmOverloads
-    fun evaluate(user: ExperimentUser, flagKeys: List<String> = listOf()): Map<String, Variant> {
+    fun evaluateV2(user: ExperimentUser, flagKeys: Set<String> = setOf()): Map<String, Variant> {
         val flagConfigs = flagConfigService.getFlagConfigs()
-        val flagResults = evaluation.evaluate(flagConfigs, user.toSerialExperimentUser().convert())
-        val assignmentResults = mutableMapOf<String, FlagResult>()
-        val results = flagResults.filter { entry ->
-            val isVariant = !entry.value.isDefaultVariant
-            val isIncluded = (flagKeys.isEmpty() || flagKeys.contains(entry.key))
-            val isDeployed = entry.value.deployed
-            if (isIncluded || entry.value.type == FLAG_TYPE_MUTUAL_EXCLUSION_GROUP || entry.value.type == FLAG_TYPE_HOLDOUT_GROUP) {
-                assignmentResults[entry.key] = entry.value
-            }
-            isVariant && isIncluded && isDeployed
-        }.map { entry ->
-            entry.key to SerialVariant(entry.value.variant).toVariant()
-        }.toMap()
-        assignmentService?.track(Assignment(user, assignmentResults))
-        return results
+        val sortedFlagConfigs = topologicalSort(flagConfigs, flagKeys)
+        if (sortedFlagConfigs.isEmpty()) {
+            return mapOf()
+        }
+        val evaluationResults = evaluation.evaluate(user.toEvaluationContext(), sortedFlagConfigs)
+        Logger.d("evaluate - user=$user, result=$evaluationResults")
+        val variants = evaluationResults.toVariants()
+        assignmentService?.track(Assignment(user, variants))
+        return variants
     }
 }

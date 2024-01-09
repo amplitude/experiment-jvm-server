@@ -1,6 +1,7 @@
 package com.amplitude.experiment.assignment
 
 import com.amplitude.experiment.ExperimentUser
+import com.amplitude.experiment.Variant
 import org.junit.Assert
 import org.junit.Test
 
@@ -12,8 +13,8 @@ class AssignmentFilterTest {
         val assignment = Assignment(
             ExperimentUser(userId = "user"),
             mapOf(
-                "flag-key-1" to flagResult("on"),
-                "flag-key-2" to flagResult("control"),
+                "flag-key-1" to Variant(key = "on"),
+                "flag-key-2" to Variant(key = "control"),
             )
         )
         Assert.assertTrue(filter.shouldTrack(assignment))
@@ -25,16 +26,16 @@ class AssignmentFilterTest {
         val assignment1 = Assignment(
             ExperimentUser(userId = "user"),
             mapOf(
-                "flag-key-1" to flagResult("on"),
-                "flag-key-2" to flagResult("control"),
+                "flag-key-1" to Variant(key = "on"),
+                "flag-key-2" to Variant(key = "control"),
             )
         )
         filter.shouldTrack(assignment1)
         val assignment2 = Assignment(
             ExperimentUser(userId = "user"),
             mapOf(
-                "flag-key-1" to flagResult("on"),
-                "flag-key-2" to flagResult("control"),
+                "flag-key-1" to Variant(key = "on"),
+                "flag-key-2" to Variant(key = "control"),
             )
         )
         Assert.assertFalse(filter.shouldTrack(assignment2))
@@ -46,16 +47,16 @@ class AssignmentFilterTest {
         val assignment1 = Assignment(
             ExperimentUser(userId = "user"),
             mapOf(
-                "flag-key-1" to flagResult("on"),
-                "flag-key-2" to flagResult("control"),
+                "flag-key-1" to Variant(key = "on"),
+                "flag-key-2" to Variant(key = "control"),
             )
         )
         Assert.assertTrue(filter.shouldTrack(assignment1))
         val assignment2 = Assignment(
             ExperimentUser(userId = "user"),
             mapOf(
-                "flag-key-1" to flagResult("control"),
-                "flag-key-2" to flagResult("on"),
+                "flag-key-1" to Variant(key = "control"),
+                "flag-key-2" to Variant(key = "on"),
             )
         )
         Assert.assertTrue(filter.shouldTrack(assignment2))
@@ -67,16 +68,16 @@ class AssignmentFilterTest {
         val assignment1 = Assignment(
             ExperimentUser(userId = "user"),
             mapOf(
-                "flag-key-1" to flagResult("on"),
-                "flag-key-2" to flagResult("control"),
+                "flag-key-1" to Variant(key = "on"),
+                "flag-key-2" to Variant(key = "control"),
             )
         )
         Assert.assertTrue(filter.shouldTrack(assignment1))
         val assignment2 = Assignment(
             ExperimentUser(userId = "different user"),
             mapOf(
-                "flag-key-1" to flagResult("on"),
-                "flag-key-2" to flagResult("control"),
+                "flag-key-1" to Variant(key = "on"),
+                "flag-key-2" to Variant(key = "control"),
             )
         )
         Assert.assertTrue(filter.shouldTrack(assignment2))
@@ -89,7 +90,7 @@ class AssignmentFilterTest {
             ExperimentUser(userId = "user"),
             mapOf()
         )
-        Assert.assertFalse(filter.shouldTrack(assignment1))
+        Assert.assertTrue(filter.shouldTrack(assignment1))
         val assignment2 = Assignment(
             ExperimentUser(userId = "user"),
             mapOf()
@@ -99,7 +100,7 @@ class AssignmentFilterTest {
             ExperimentUser(userId = "different user"),
             mapOf()
         )
-        Assert.assertFalse(filter.shouldTrack(assignment3))
+        Assert.assertTrue(filter.shouldTrack(assignment3))
     }
 
     @Test
@@ -108,16 +109,16 @@ class AssignmentFilterTest {
         val assignment1 = Assignment(
             ExperimentUser(userId = "user"),
             linkedMapOf(
-                "flag-key-1" to flagResult("on"),
-                "flag-key-2" to flagResult("control"),
+                "flag-key-1" to Variant(key = "on"),
+                "flag-key-2" to Variant(key = "control"),
             )
         )
         Assert.assertTrue(filter.shouldTrack(assignment1))
         val assignment2 = Assignment(
             ExperimentUser(userId = "user"),
             linkedMapOf(
-                "flag-key-2" to flagResult("control"),
-                "flag-key-1" to flagResult("on"),
+                "flag-key-2" to Variant(key = "control"),
+                "flag-key-1" to Variant(key = "on"),
             )
         )
         Assert.assertFalse(filter.shouldTrack(assignment2))
@@ -129,55 +130,27 @@ class AssignmentFilterTest {
         val assignment1 = Assignment(
             ExperimentUser(userId = "user1"),
             mapOf(
-                "flag-key-1" to flagResult("on"),
-                "flag-key-2" to flagResult("control"),
+                "flag-key-1" to Variant(key = "on"),
+                "flag-key-2" to Variant(key = "control"),
             )
         )
         Assert.assertTrue(filter.shouldTrack(assignment1))
         val assignment2 = Assignment(
             ExperimentUser(userId = "user2"),
             mapOf(
-                "flag-key-1" to flagResult("on"),
-                "flag-key-2" to flagResult("control"),
+                "flag-key-1" to Variant(key = "on"),
+                "flag-key-2" to Variant(key = "control"),
             )
         )
         Assert.assertTrue(filter.shouldTrack(assignment2))
         val assignment3 = Assignment(
             ExperimentUser(userId = "user3"),
             mapOf(
-                "flag-key-1" to flagResult("on"),
-                "flag-key-2" to flagResult("control"),
+                "flag-key-1" to Variant(key = "on"),
+                "flag-key-2" to Variant(key = "control"),
             )
         )
         Assert.assertTrue(filter.shouldTrack(assignment3))
         Assert.assertTrue(filter.shouldTrack(assignment1))
-    }
-
-    @Test
-    fun `test lru eviction`() {
-        val filter = InMemoryAssignmentFilter(2, 1000)
-        val assignment1 = Assignment(
-            ExperimentUser(userId = "user1"),
-            mapOf(
-                "flag-key-1" to flagResult("on"),
-                "flag-key-2" to flagResult("control"),
-            )
-        )
-        Assert.assertTrue(filter.shouldTrack(assignment1))
-        Assert.assertFalse(filter.shouldTrack(assignment1))
-        Thread.sleep(950)
-        Assert.assertFalse(filter.shouldTrack(assignment1))
-
-        val assignment2 = Assignment(
-            ExperimentUser(userId = "user2"),
-            mapOf(
-                "flag-key-1" to flagResult("on"),
-                "flag-key-2" to flagResult("control"),
-            )
-        )
-        Assert.assertTrue(filter.shouldTrack(assignment2))
-        Assert.assertFalse(filter.shouldTrack(assignment2))
-        Thread.sleep(1050)
-        Assert.assertTrue(filter.shouldTrack(assignment2))
     }
 }

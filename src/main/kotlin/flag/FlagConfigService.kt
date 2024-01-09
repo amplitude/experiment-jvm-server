@@ -1,6 +1,6 @@
 package com.amplitude.experiment.flag
 
-import com.amplitude.experiment.evaluation.FlagConfig
+import com.amplitude.experiment.evaluation.EvaluationFlag
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.Once
 import java.util.concurrent.Executors
@@ -13,13 +13,10 @@ internal data class FlagConfigServiceConfig(
     val flagConfigPollerIntervalMillis: Long,
 )
 
-internal typealias FlagConfigInterceptor = (List<FlagConfig>) -> Unit
-
 internal interface FlagConfigService {
     fun start()
     fun stop()
-    fun getFlagConfigs(): List<FlagConfig>
-    fun addFlagConfigInterceptor(listener: FlagConfigInterceptor)
+    fun getFlagConfigs(): Map<String, EvaluationFlag>
 }
 
 internal class FlagConfigServiceImpl(
@@ -30,10 +27,8 @@ internal class FlagConfigServiceImpl(
     private val lock = Once()
     private val poller = Executors.newSingleThreadScheduledExecutor()
 
-    private val interceptorsLock = ReentrantReadWriteLock()
-    private val interceptors: MutableSet<FlagConfigInterceptor> = mutableSetOf()
     private val flagConfigsLock = ReentrantReadWriteLock()
-    private val flagConfigs: MutableList<FlagConfig> = mutableListOf()
+    private val flagConfigs: MutableMap<String, EvaluationFlag> = mutableMapOf()
 
     private fun refresh() {
         Logger.d("Refreshing flag configs.")
@@ -64,32 +59,20 @@ internal class FlagConfigServiceImpl(
         poller.shutdown()
     }
 
-    override fun getFlagConfigs(): List<FlagConfig> {
+    override fun getFlagConfigs(): Map<String, EvaluationFlag> {
         return flagConfigsLock.read {
             flagConfigs
         }
     }
 
-    override fun addFlagConfigInterceptor(listener: FlagConfigInterceptor) {
-        interceptorsLock.write {
-            interceptors += listener
-        }
+    private fun fetchFlagConfigs(): List<EvaluationFlag> {
+        return flagConfigApi.getFlagConfigs(GetFlagConfigsRequest).get()
     }
 
-    private fun fetchFlagConfigs(): List<FlagConfig> {
-        return flagConfigApi.getFlagConfigs(GetFlagConfigsRequest).get().apply {
-            interceptorsLock.read {
-                interceptors.forEach { interceptor ->
-                    interceptor.invoke(this)
-                }
-            }
-        }
-    }
-
-    private fun storeFlagConfigs(flagConfigs: List<FlagConfig>) {
+    private fun storeFlagConfigs(flagConfigs: List<EvaluationFlag>) {
         flagConfigsLock.write {
             this.flagConfigs.clear()
-            this.flagConfigs.addAll(flagConfigs)
+            this.flagConfigs.putAll(flagConfigs.associateBy { it.key })
         }
     }
 }

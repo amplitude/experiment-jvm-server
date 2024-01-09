@@ -1,6 +1,7 @@
 package com.amplitude.experiment.assignment
 
 import com.amplitude.experiment.ExperimentUser
+import com.amplitude.experiment.Variant
 import org.junit.Assert
 import org.junit.Test
 
@@ -10,15 +11,20 @@ class AssignmentServiceTest {
     fun `test assignment to amplitude event`() {
         val user = ExperimentUser(userId = "user", deviceId = "device")
         val results = mapOf(
-            "flag-key-1" to flagResult(
-                variant = "on",
-                description = "description-1",
-                isDefaultVariant = false
+            "flag-key-1" to Variant(
+                key = "on",
+                value = "on",
+                metadata = mapOf(
+                    "segmentName" to "Segment",
+                    "flagVersion" to 13,
+                )
             ),
-            "flag-key-2" to flagResult(
-                variant = "off",
-                description = "description-2",
-                isDefaultVariant = true
+            "flag-key-2" to Variant(
+                key = "off",
+                metadata = mapOf(
+                    "segmentName" to "All Other Users",
+                    "flagVersion" to 12,
+                )
             ),
         )
         val assignment = Assignment(user, results)
@@ -29,9 +35,10 @@ class AssignmentServiceTest {
         val eventProperties = event.eventProperties
         Assert.assertEquals(4, eventProperties.length())
         Assert.assertEquals("on", eventProperties.get("flag-key-1.variant"))
-        Assert.assertEquals("description-1", eventProperties.get("flag-key-1.details"))
+        Assert.assertEquals("v13 rule:Segment", eventProperties.get("flag-key-1.details"))
         Assert.assertEquals("off", eventProperties.get("flag-key-2.variant"))
-        Assert.assertEquals("description-2", eventProperties.get("flag-key-2.details"))
+        Assert.assertEquals("v12 rule:All Other Users", eventProperties.get("flag-key-2.details"))
+
         val userProperties = event.userProperties
         Assert.assertEquals(2, userProperties.length())
         Assert.assertEquals(1, userProperties.getJSONObject("\$set").length())

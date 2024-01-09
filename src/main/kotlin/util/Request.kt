@@ -10,10 +10,6 @@ import okhttp3.Response
 import okio.IOException
 import java.util.concurrent.CompletableFuture
 
-private val json = Json {
-    ignoreUnknownKeys = true
-}
-
 internal inline fun <reified T> OkHttpClient.request(
     request: Request,
 ): CompletableFuture<T> {
