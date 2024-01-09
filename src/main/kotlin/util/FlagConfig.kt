@@ -13,7 +13,9 @@ internal fun Collection<EvaluationFlag>.getAllCohortIds(): Set<String> {
 internal fun Collection<EvaluationFlag>.getGroupedCohortIds(): Map<String, Set<String>> {
     val cohortIds = mutableMapOf<String, MutableSet<String>>()
     for (flag in this) {
-        cohortIds += flag.getGroupedCohortIds()
+        for (entry in flag.getGroupedCohortIds()) {
+            cohortIds.getOrPut(entry.key) { mutableSetOf() } += entry.value
+        }
     }
     return cohortIds
 }
