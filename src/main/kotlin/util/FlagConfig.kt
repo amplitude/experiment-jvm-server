@@ -27,7 +27,9 @@ internal fun EvaluationFlag.getAllCohortIds(): Set<String> {
 internal fun EvaluationFlag.getGroupedCohortIds(): Map<String, MutableSet<String>> {
     val cohortIds = mutableMapOf<String, MutableSet<String>>()
     for (segment in this.segments) {
-        cohortIds += segment.getGroupedCohortConditionIds()
+        for (entry in segment.getGroupedCohortConditionIds()) {
+            cohortIds.getOrPut(entry.key) { mutableSetOf() } += entry.value
+        }
     }
     return cohortIds
 }
