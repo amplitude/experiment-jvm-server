@@ -1,3 +1,17 @@
+## [1.2.4](https://github.com/amplitude/experiment-jvm-server/compare/1.2.3...1.2.4) (2023-11-29)
+
+
+### Bug Fixes
+
+* local evaluation flag config ConcurrentModificationException ([#16](https://github.com/amplitude/experiment-jvm-server/issues/16)) ([7c5353f](https://github.com/amplitude/experiment-jvm-server/commit/7c5353f2c9d24e3ef9a9ec00bdc40b5953f9c1d2))
+
+## [1.2.3](https://github.com/amplitude/experiment-jvm-server/compare/1.2.2...1.2.3) (2023-11-28)
+
+
+### Bug Fixes
+
+* Flag segment serialization error ([#15](https://github.com/amplitude/experiment-jvm-server/issues/15)) ([8c6b47e](https://github.com/amplitude/experiment-jvm-server/commit/8c6b47e8df9a42d5b4092fa4db05af1588ce473c))
+
 ## [1.2.2](https://github.com/amplitude/experiment-jvm-server/compare/1.2.1...1.2.2) (2023-10-10)
 
 
