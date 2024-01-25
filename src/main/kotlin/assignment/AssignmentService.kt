@@ -17,26 +17,10 @@ internal interface AssignmentService {
     fun track(assignment: Assignment)
 }
 
-class EventTrackingException(
-    event: Event,
-    status: Int,
-    message: String?
-) : Exception(
-    "Failed to track event to amplitude: event=${event.eventType}, status=$status, msg=$message"
-)
-
 internal class AmplitudeAssignmentService(
     private val amplitude: Amplitude,
     private val assignmentFilter: AssignmentFilter,
 ) : AssignmentService {
-
-    init {
-        amplitude.setCallbacks(object : AmplitudeCallbacks() {
-            override fun onLogEventServerResponse(event: Event?, status: Int, message: String?) {
-                if (event == null) return
-            }
-        })
-    }
 
     override fun track(assignment: Assignment) {
         if (assignmentFilter.shouldTrack(assignment)) {
