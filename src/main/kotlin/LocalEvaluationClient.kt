@@ -66,7 +66,7 @@ class LocalEvaluationClient internal constructor(
 
     @JvmOverloads
     fun evaluateV2(user: ExperimentUser, flagKeys: Set<String> = setOf()): Map<String, Variant> {
-        val flagConfigs = flagConfigService.getFlagConfigs().toList()
+        val flagConfigs = flagConfigService.getFlagConfigs().toMap()
         val sortedFlagConfigs = topologicalSort(flagConfigs, flagKeys)
         if (sortedFlagConfigs.isEmpty()) {
             return mapOf()

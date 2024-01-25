@@ -24,6 +24,7 @@ class AssignmentServiceTest {
                 metadata = mapOf(
                     "segmentName" to "All Other Users",
                     "flagVersion" to 12,
+                    "default" to true,
                 )
             ),
         )
