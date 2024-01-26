@@ -1,7 +1,11 @@
 package com.amplitude.experiment
 
+import com.amplitude.experiment.util.FetchException
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.SystemLogger
+import io.mockk.every
+import io.mockk.spyk
+import io.mockk.verify
 import org.junit.Assert
 import java.util.Date
 import java.util.concurrent.CancellationException
@@ -84,6 +88,7 @@ class RemoteEvaluationClientTest {
         }
     }
 
+
     // @Test
     // fun test() {
     //     val client = RemoteEvaluationClient(API_KEY, RemoteEvaluationConfig())
@@ -100,6 +105,41 @@ class RemoteEvaluationClientTest {
     //         }
     //     }
     // }
+
+    @Test
+    fun `fetch retry with different response codes`() {
+        // Response code, error message, and whether retry should be called
+        val testData = listOf(
+            Triple(300, "Fetch Exception 300", 2),
+            Triple(400, "Fetch Exception 400", 1),
+            Triple(429, "Fetch Exception 429", 2),
+            Triple(500, "Fetch Exception 500", 2),
+            Triple(0, "Other Exception", 2)
+        )
+
+        testData.forEach { (responseCode, errorMessage, fetchCalls) ->
+            val config = RemoteEvaluationConfig(fetchRetries = 1, debug = true)
+            val client = spyk(RemoteEvaluationClient("apiKey", config), recordPrivateCalls = true)
+            // Mock the private method to throw FetchException or other exceptions
+            every { client["doFetch"](any<ExperimentUser>(), any<Long>()) } answers {
+                val future = CompletableFuture<Map<String, Variant>>()
+                if (responseCode == 0) {
+                    future.completeExceptionally(Exception(errorMessage))
+                } else {
+                    future.completeExceptionally(FetchException(responseCode, errorMessage))
+                }
+                future
+            }
+
+            try {
+                client.fetch(ExperimentUser("test_user")).get()
+            } catch (t: Throwable) {
+                println(t.toString())
+            }
+
+            verify(exactly = fetchCalls) { client["doFetch"](any<ExperimentUser>(), any<Long>()) }
+        }
+    }
 }
 
 @Suppress("SameParameterValue")

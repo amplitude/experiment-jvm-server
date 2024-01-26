@@ -9,5 +9,5 @@ object Versions {
     const val evaluationCore = "1.1.1"
     const val evaluationSerialization = "1.1.1"
     const val amplitudeAnalytics = "1.12.0"
-    const val mockito = "4.8.1"
+    const val mockk = "1.13.9"
 }
