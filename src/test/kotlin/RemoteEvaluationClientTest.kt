@@ -134,7 +134,7 @@ class RemoteEvaluationClientTest {
             try {
                 client.fetch(ExperimentUser("test_user")).get()
             } catch (t: Throwable) {
-                println(t.toString())
+                // catch exception
             }
 
             verify(exactly = fetchCalls) { client["doFetch"](any<ExperimentUser>(), any<Long>()) }
