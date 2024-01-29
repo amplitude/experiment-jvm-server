@@ -1,3 +1,10 @@
+## [1.2.5](https://github.com/amplitude/experiment-jvm-server/compare/1.2.4...1.2.5) (2024-01-29)
+
+
+### Bug Fixes
+
+* Improve remote evaluation fetch retry logic ([#17](https://github.com/amplitude/experiment-jvm-server/issues/17)) ([5fe439f](https://github.com/amplitude/experiment-jvm-server/commit/5fe439f6cb4fc9b55ace986105efdd707ebcf676))
+
 ## [1.2.4](https://github.com/amplitude/experiment-jvm-server/compare/1.2.3...1.2.4) (2023-11-29)
 
 
