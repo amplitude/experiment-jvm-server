@@ -88,7 +88,6 @@ class RemoteEvaluationClientTest {
         }
     }
 
-
     // @Test
     // fun test() {
     //     val client = RemoteEvaluationClient(API_KEY, RemoteEvaluationConfig())
