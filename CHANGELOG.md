@@ -1,3 +1,10 @@
+## [1.2.7](https://github.com/amplitude/experiment-jvm-server/compare/1.2.6...1.2.7) (2024-02-07)
+
+
+### Bug Fixes
+
+* add serverUrl field to AssignmentConfiguration ([#22](https://github.com/amplitude/experiment-jvm-server/issues/22)) ([eb0b251](https://github.com/amplitude/experiment-jvm-server/commit/eb0b25150563ceb1d3649d932887decc3d6ec2c4))
+
 ## [1.2.6](https://github.com/amplitude/experiment-jvm-server/compare/1.2.5...1.2.6) (2024-01-31)
 
 
