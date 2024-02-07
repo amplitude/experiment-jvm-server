@@ -6,4 +6,5 @@ data class AssignmentConfiguration(
     val eventUploadThreshold: Int = 10,
     val eventUploadPeriodMillis: Int = 10000,
     val useBatchMode: Boolean = true,
+    val serverUrl: String = "https://api2.amplitude.com/2/httpapi",
 )

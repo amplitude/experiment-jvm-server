@@ -50,6 +50,7 @@ class LocalEvaluationClient internal constructor(
                 setEventUploadThreshold(config.assignmentConfiguration.eventUploadThreshold)
                 setEventUploadPeriodMillis(config.assignmentConfiguration.eventUploadPeriodMillis)
                 useBatchMode(config.assignmentConfiguration.useBatchMode)
+                setServerUrl(config.assignmentConfiguration.serverUrl)
             },
             InMemoryAssignmentFilter(config.assignmentConfiguration.cacheCapacity),
         )
