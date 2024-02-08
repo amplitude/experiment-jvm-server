@@ -23,6 +23,8 @@ class RemoteEvaluationConfig internal constructor(
     val fetchRetryBackoffScalar: Double = Defaults.FETCH_RETRY_BACKOFF_SCALAR,
 //    @JvmField
 //    val fetchRetryTimeoutMillis: Long = Defaults.FETCH_RETRY_TIMEOUT_MILLIS,
+    @JvmField
+    val deploymentKey: String? = Defaults.DEPLOYMENT_KEY,
 ) {
 
     /**
@@ -49,18 +51,22 @@ class RemoteEvaluationConfig internal constructor(
          * 500
          */
         const val FETCH_TIMEOUT_MILLIS = 500L
+
         /**
          * 1
          */
         const val FETCH_RETRIES = 1
+
         /**
          * 0
          */
         const val FETCH_RETRY_BACKOFF_MIN_MILLIS = 0L
+
         /**
          * 10000
          */
         const val FETCH_RETRY_BACKOFF_MAX_MILLIS = 10000L
+
         /**
          * 1
          */
@@ -69,6 +75,10 @@ class RemoteEvaluationConfig internal constructor(
 //         * 500
 //         */
 //        const val FETCH_RETRY_TIMEOUT_MILLIS = 500L
+        /**
+         * null
+         */
+        val DEPLOYMENT_KEY = null
     }
 
     companion object {
@@ -88,6 +98,7 @@ class RemoteEvaluationConfig internal constructor(
         private var fetchRetryBackoffMaxMillis = Defaults.FETCH_RETRY_BACKOFF_MAX_MILLIS
         private var fetchRetryBackoffScalar = Defaults.FETCH_RETRY_BACKOFF_SCALAR
 //        private var fetchRetryTimeoutMillis = Defaults.FETCH_RETRY_TIMEOUT_MILLIS
+        private var deploymentKey: String? = Defaults.DEPLOYMENT_KEY
 
         fun debug(debug: Boolean) = apply {
             this.debug = debug
@@ -121,6 +132,10 @@ class RemoteEvaluationConfig internal constructor(
 //            this.fetchRetryTimeoutMillis = fetchRetryTimeoutMillis
 //        }
 
+        fun deploymentKey(deploymentKey: String) = apply {
+            this.deploymentKey = deploymentKey
+        }
+
         fun build(): RemoteEvaluationConfig {
             return RemoteEvaluationConfig(
                 debug = debug,
@@ -129,16 +144,17 @@ class RemoteEvaluationConfig internal constructor(
                 fetchRetries = fetchRetries,
                 fetchRetryBackoffMinMillis = fetchRetryBackoffMinMillis,
                 fetchRetryBackoffMaxMillis = fetchRetryBackoffMaxMillis,
-                fetchRetryBackoffScalar = fetchRetryBackoffScalar
+                fetchRetryBackoffScalar = fetchRetryBackoffScalar,
 //                fetchRetryTimeoutMillis = fetchRetryTimeoutMillis,
+                deploymentKey = deploymentKey
             )
         }
     }
 
     override fun toString(): String {
         return "ExperimentConfig(debug=$debug, serverUrl='$serverUrl', fetchTimeoutMillis=$fetchTimeoutMillis, " +
-            "fetchRetries=$fetchRetries, fetchRetryBackoffMinMillis=$fetchRetryBackoffMinMillis, " +
-            "fetchRetryBackoffMaxMillis=$fetchRetryBackoffMaxMillis, " +
-            "fetchRetryBackoffScalar=$fetchRetryBackoffScalar)"
+                "fetchRetries=$fetchRetries, fetchRetryBackoffMinMillis=$fetchRetryBackoffMinMillis, " +
+                "fetchRetryBackoffMaxMillis=$fetchRetryBackoffMaxMillis, " +
+                "fetchRetryBackoffScalar=$fetchRetryBackoffScalar)"
     }
 }

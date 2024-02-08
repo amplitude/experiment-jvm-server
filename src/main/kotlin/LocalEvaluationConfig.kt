@@ -17,6 +17,8 @@ class LocalEvaluationConfig internal constructor(
     val flagConfigPollerRequestTimeoutMillis: Long = Defaults.FLAG_CONFIG_POLLER_REQUEST_TIMEOUT_MILLIS,
     @JvmField
     val assignmentConfiguration: AssignmentConfiguration? = Defaults.ASSIGNMENT_CONFIGURATION,
+    @JvmField
+    val deploymentKey: String? = Defaults.DEPLOYMENT_KEY,
 ) {
 
     /**
@@ -53,6 +55,11 @@ class LocalEvaluationConfig internal constructor(
          * null
          */
         val ASSIGNMENT_CONFIGURATION: AssignmentConfiguration? = null
+
+        /**
+         * null
+         */
+        val DEPLOYMENT_KEY: String? = null
     }
 
     companion object {
@@ -69,6 +76,7 @@ class LocalEvaluationConfig internal constructor(
         private var flagConfigPollerIntervalMillis = Defaults.FLAG_CONFIG_POLLER_INTERVAL_MILLIS
         private var flagConfigPollerRequestTimeoutMillis = Defaults.FLAG_CONFIG_POLLER_REQUEST_TIMEOUT_MILLIS
         private var assignmentConfiguration = Defaults.ASSIGNMENT_CONFIGURATION
+        private var deploymentKey = Defaults.DEPLOYMENT_KEY
 
         fun debug(debug: Boolean) = apply {
             this.debug = debug
@@ -90,6 +98,10 @@ class LocalEvaluationConfig internal constructor(
             this.assignmentConfiguration = assignmentConfiguration
         }
 
+        fun deploymentKey(deploymentKey: String) = apply {
+            this.deploymentKey = deploymentKey
+        }
+
         fun build(): LocalEvaluationConfig {
             return LocalEvaluationConfig(
                 debug = debug,
@@ -97,6 +109,7 @@ class LocalEvaluationConfig internal constructor(
                 flagConfigPollerIntervalMillis = flagConfigPollerIntervalMillis,
                 flagConfigPollerRequestTimeoutMillis = flagConfigPollerRequestTimeoutMillis,
                 assignmentConfiguration = assignmentConfiguration,
+                deploymentKey = deploymentKey,
             )
         }
     }
