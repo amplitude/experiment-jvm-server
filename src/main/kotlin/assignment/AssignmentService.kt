@@ -1,7 +1,6 @@
 package com.amplitude.experiment.assignment
 
 import com.amplitude.Amplitude
-import com.amplitude.AmplitudeCallbacks
 import com.amplitude.Event
 import org.json.JSONObject
 

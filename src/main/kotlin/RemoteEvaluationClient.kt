@@ -2,6 +2,7 @@ package com.amplitude.experiment
 
 import com.amplitude.experiment.evaluation.EvaluationVariant
 import com.amplitude.experiment.util.BackoffConfig
+import com.amplitude.experiment.util.FetchException
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.backoff
 import com.amplitude.experiment.util.json
@@ -39,7 +40,7 @@ class RemoteEvaluationClient internal constructor(
     fun fetch(user: ExperimentUser): CompletableFuture<Map<String, Variant>> {
         return doFetch(user, config.fetchTimeoutMillis).handle { variants, t ->
             if (t != null || variants == null) {
-                if (retry) {
+                if (retry && shouldRetryFetch(t)) {
                     backoff(backoffConfig) {
                         doFetch(user, config.fetchTimeoutMillis)
                     }
@@ -86,7 +87,7 @@ class RemoteEvaluationClient internal constructor(
                     Logger.d("Received fetch response: $response")
                     val variants = response.use {
                         if (!response.isSuccessful) {
-                            throw IOException("fetch error response: $response")
+                            throw FetchException(response.code, "fetch error response: $response")
                         }
                         parseRemoteResponse(response.body?.string() ?: "")
                     }
@@ -108,3 +109,10 @@ internal fun parseRemoteResponse(jsonString: String): Map<String, Variant> =
     json.decodeFromString<HashMap<String, EvaluationVariant>>(
         jsonString
     ).mapValues { it.value.toVariant() }
+
+private fun shouldRetryFetch(t: Throwable): Boolean {
+    if (t is FetchException) {
+        return t.statusCode < 400 || t.statusCode >= 500 || t.statusCode == 429
+    }
+    return true
+}

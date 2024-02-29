@@ -1,7 +1,6 @@
 package com.amplitude.experiment.util
 
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient

@@ -1,3 +1,24 @@
+## [1.2.7](https://github.com/amplitude/experiment-jvm-server/compare/1.2.6...1.2.7) (2024-02-07)
+
+
+### Bug Fixes
+
+* add serverUrl field to AssignmentConfiguration ([#22](https://github.com/amplitude/experiment-jvm-server/issues/22)) ([eb0b251](https://github.com/amplitude/experiment-jvm-server/commit/eb0b25150563ceb1d3649d932887decc3d6ec2c4))
+
+## [1.2.6](https://github.com/amplitude/experiment-jvm-server/compare/1.2.5...1.2.6) (2024-01-31)
+
+
+### Bug Fixes
+
+* update OkHttp to 4.12.0 ([#19](https://github.com/amplitude/experiment-jvm-server/issues/19)) ([03db9cf](https://github.com/amplitude/experiment-jvm-server/commit/03db9cf8c97141684ae6edc3fa2d8d73bae050fe))
+
+## [1.2.5](https://github.com/amplitude/experiment-jvm-server/compare/1.2.4...1.2.5) (2024-01-29)
+
+
+### Bug Fixes
+
+* Improve remote evaluation fetch retry logic ([#17](https://github.com/amplitude/experiment-jvm-server/issues/17)) ([5fe439f](https://github.com/amplitude/experiment-jvm-server/commit/5fe439f6cb4fc9b55ace986105efdd707ebcf676))
+
 ## [1.2.4](https://github.com/amplitude/experiment-jvm-server/compare/1.2.3...1.2.4) (2023-11-29)
 
 

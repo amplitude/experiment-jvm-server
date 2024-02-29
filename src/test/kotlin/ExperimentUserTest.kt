@@ -58,7 +58,6 @@ class ExperimentUserTest {
                 },
                 "groups" to buildJsonObject {
                     put("group", buildJsonArray { add("group") })
-
                 },
                 "group_properties" to buildJsonObject {
                     put(
