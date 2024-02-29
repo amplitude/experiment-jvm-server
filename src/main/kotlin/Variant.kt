@@ -1,8 +1,12 @@
 package com.amplitude.experiment
 
+import com.amplitude.experiment.evaluation.EvaluationVariant
+
 data class Variant @JvmOverloads constructor(
     @JvmField val value: String? = null,
     @JvmField val payload: Any? = null,
+    @JvmField val key: String? = null,
+    @JvmField val metadata: Map<String, Any?>? = null,
 ) {
     companion object {
         /**
@@ -24,4 +28,15 @@ data class Variant @JvmOverloads constructor(
         @JvmStatic
         fun valueEquals(variant: Variant?, value: String?) = variant?.value == value
     }
+}
+
+internal fun Variant.isNullOrEmpty(): Boolean =
+    this.key == null && this.value == null && this.payload == null && this.metadata == null
+
+internal fun EvaluationVariant.isDefaultVariant(): Boolean {
+    return metadata?.get("default") as? Boolean ?: false
+}
+
+internal fun Variant.isDefaultVariant(): Boolean {
+    return metadata?.get("default") as? Boolean ?: false
 }

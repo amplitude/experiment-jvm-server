@@ -1,28 +1,16 @@
 package com.amplitude.experiment
 
 import com.amplitude.experiment.ExperimentUser.Companion.builder
-import com.amplitude.experiment.util.Logger
-import com.amplitude.experiment.util.SystemLogger
-import com.amplitude.experiment.util.toSerialExperimentUser
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import com.amplitude.experiment.util.toJson
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import org.junit.Assert
 import kotlin.test.Test
 
-private val json = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    coerceInputValues = true
-}
-
 class ExperimentUserTest {
-
-    init {
-        Logger.implementation = SystemLogger(true)
-    }
 
     @Test
     fun `user to json`() {
@@ -43,6 +31,8 @@ class ExperimentUserTest {
             .carrier("carrier")
             .library("library")
             .userProperty("userPropertyKey", "value")
+            .group("group", "group")
+            .groupProperty("group", "group", "group", "group")
             .build()
 
         // Ordering matters here, based on toJson() extension function
@@ -66,10 +56,26 @@ class ExperimentUserTest {
                 "user_properties" to buildJsonObject {
                     put("userPropertyKey", JsonPrimitive("value"))
                 },
+                "groups" to buildJsonObject {
+                    put("group", buildJsonArray { add("group") })
+                },
+                "group_properties" to buildJsonObject {
+                    put(
+                        "group",
+                        buildJsonObject {
+                            put(
+                                "group",
+                                buildJsonObject {
+                                    put("group", JsonPrimitive("group"))
+                                }
+                            )
+                        }
+                    )
+                }
             )
         )
         println(expected.toString())
-        println(json.encodeToString(user.toSerialExperimentUser()))
-        Assert.assertEquals(expected.toString(), json.encodeToString(user.toSerialExperimentUser()))
+        println(user.toJson())
+        Assert.assertEquals(expected.toString(), user.toJson())
     }
 }

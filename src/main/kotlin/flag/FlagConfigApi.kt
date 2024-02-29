@@ -1,8 +1,7 @@
 package com.amplitude.experiment.flag
 
 import com.amplitude.experiment.LIBRARY_VERSION
-import com.amplitude.experiment.evaluation.FlagConfig
-import com.amplitude.experiment.evaluation.serialization.SerialFlagConfig
+import com.amplitude.experiment.evaluation.EvaluationFlag
 import com.amplitude.experiment.util.request
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -11,7 +10,7 @@ import java.util.concurrent.CompletableFuture
 
 internal object GetFlagConfigsRequest
 
-internal typealias GetFlagConfigsResponse = List<FlagConfig>
+internal typealias GetFlagConfigsResponse = List<EvaluationFlag>
 
 internal interface FlagConfigApi {
     fun getFlagConfigs(request: GetFlagConfigsRequest): CompletableFuture<GetFlagConfigsResponse>
@@ -25,17 +24,16 @@ internal class FlagConfigApiImpl(
 
     override fun getFlagConfigs(request: GetFlagConfigsRequest): CompletableFuture<GetFlagConfigsResponse> {
         val url = serverUrl.newBuilder()
-            .addPathSegments("sdk/v1/flags")
+            .addPathSegments("sdk/v2/flags")
+            .addQueryParameter("v", "0")
             .build()
-        return httpClient.request<List<SerialFlagConfig>>(
+        return httpClient.request<List<EvaluationFlag>>(
             Request.Builder()
                 .get()
                 .url(url)
                 .addHeader("Authorization", "Api-Key $deploymentKey")
                 .addHeader("X-Amp-Exp-Library", "experiment-jvm-server/$LIBRARY_VERSION")
                 .build()
-        ).thenApply { result ->
-            result.map { it.convert() }
-        }
+        )
     }
 }

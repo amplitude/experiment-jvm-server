@@ -1,6 +1,7 @@
 package com.amplitude.experiment
 
 import org.junit.Assert
+import kotlin.system.measureNanoTime
 import kotlin.test.Test
 
 private const val API_KEY = "server-qz35UwzJ5akieoAdIgzM4m9MIiOLXLoz"
@@ -13,7 +14,7 @@ class LocalEvaluationClientTest {
         client.start()
         val variants = client.evaluate(ExperimentUser(userId = "test_user"))
         val variant = variants["sdk-local-evaluation-ci-test"]
-        Assert.assertEquals(variant, Variant(value = "on", payload = "payload"))
+        Assert.assertEquals(Variant(key = "on", value = "on", payload = "payload"), variant?.copy(metadata = null))
     }
 
     @Test
@@ -25,7 +26,7 @@ class LocalEvaluationClientTest {
             flagKeys = listOf("sdk-local-evaluation-ci-test")
         )
         val variant = variants["sdk-local-evaluation-ci-test"]
-        Assert.assertEquals(variant, Variant(value = "on", payload = "payload"))
+        Assert.assertEquals(Variant(key = "on", value = "on", payload = "payload"), variant?.copy(metadata = null))
     }
 
     @Test
@@ -41,12 +42,69 @@ class LocalEvaluationClientTest {
     }
 
     @Test
+    fun `test evaluate, benchmark 1 flag evaluation`() {
+        val client = LocalEvaluationClient(API_KEY)
+        client.start()
+        val duration = measureNanoTime {
+            client.evaluate(ExperimentUser(userId = "test_user"), listOf("sdk-local-evaluation-ci-test"))
+        }
+        val millis = duration / 1000.0 / 1000.0
+        println("1 flag: $millis")
+        Assert.assertTrue(millis < 20)
+    }
+
+    @Test
+    fun `test evaluate, benchmark 10 flag evaluations`() {
+        val client = LocalEvaluationClient(API_KEY)
+        client.start()
+        var total = 0L
+        repeat(10) {
+            total += measureNanoTime {
+                client.evaluate(ExperimentUser(userId = "test_user"), listOf("sdk-local-evaluation-ci-test"))
+            }
+        }
+        val millis = total / 1000.0 / 1000.0
+        println("10 flags: $millis")
+        Assert.assertTrue(millis < 40)
+    }
+
+    @Test
+    fun `test evaluate, benchmark 100 flag evaluation`() {
+        val client = LocalEvaluationClient(API_KEY)
+        client.start()
+        var total = 0L
+        repeat(100) {
+            total += measureNanoTime {
+                client.evaluate(ExperimentUser(userId = "test_user"), listOf("sdk-local-evaluation-ci-test"))
+            }
+        }
+        val millis = total / 1000.0 / 1000.0
+        println("100 flags: $millis")
+        Assert.assertTrue(millis < 80)
+    }
+
+    @Test
+    fun `test evaluate, benchmark 1000 flag evaluation`() {
+        val client = LocalEvaluationClient(API_KEY)
+        client.start()
+        var total = 0L
+        repeat(1000) {
+            total += measureNanoTime {
+                client.evaluate(ExperimentUser(userId = "test_user"), listOf("sdk-local-evaluation-ci-test"))
+            }
+        }
+        val millis = total / 1000.0 / 1000.0
+        println("1000 flags: $millis")
+        Assert.assertTrue(millis < 160)
+    }
+
+    @Test
     fun `test evaluate, with dependencies, should return variant`() {
         val client = LocalEvaluationClient(API_KEY)
         client.start()
         val variants = client.evaluate(ExperimentUser(userId = "user_id", deviceId = "device_id"))
         val variant = variants["sdk-ci-local-dependencies-test"]
-        Assert.assertEquals(variant, Variant(value = "control", payload = null))
+        Assert.assertEquals(variant?.copy(metadata = null), Variant(key = "control", value = "control", payload = null))
     }
 
     @Test
@@ -58,7 +116,7 @@ class LocalEvaluationClientTest {
             listOf("sdk-ci-local-dependencies-test")
         )
         val variant = variants["sdk-ci-local-dependencies-test"]
-        Assert.assertEquals(variant, Variant(value = "control", payload = null))
+        Assert.assertEquals(variant?.copy(metadata = null), Variant(key = "control", value = "control", payload = null))
     }
 
     @Test
