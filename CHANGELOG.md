@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/amplitude/experiment-jvm-server/compare/1.2.7...1.3.0) (2024-02-29)
+
+
+### Features
+
+* evaluation v2 ([#18](https://github.com/amplitude/experiment-jvm-server/issues/18)) ([51ab836](https://github.com/amplitude/experiment-jvm-server/commit/51ab836d9ba923969f479c257471c1754365dbb8))
+
 ## [1.2.7](https://github.com/amplitude/experiment-jvm-server/compare/1.2.6...1.2.7) (2024-02-07)
 
 
