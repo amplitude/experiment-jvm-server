@@ -23,7 +23,7 @@ private fun OkHttpClient.submit(
     call.enqueue(object : Callback {
         override fun onResponse(call: Call, response: Response) {
             try {
-                if (!response.isSuccessful) {
+                if (response.code !in 200..399) {
                     response.close()
                     throw HttpErrorResponseException(request, response)
                 }
@@ -42,12 +42,14 @@ private fun OkHttpClient.submit(
 
 private fun newGet(
     serverUrl: HttpUrl,
-    path: String,
+    path: String? = null,
     headers: Map<String, String>? = null,
     queries: Map<String, String>? = null,
 ): Request {
     val url = serverUrl.newBuilder().apply {
-        addPathSegments(path)
+        if (path != null) {
+            addPathSegments(path)
+        }
         queries?.forEach {
             addQueryParameter(it.key, it.value)
         }
@@ -61,7 +63,7 @@ private fun newGet(
 
 internal fun OkHttpClient.get(
     serverUrl: HttpUrl,
-    path: String,
+    path: String? = null,
     headers: Map<String, String>? = null,
     queries: Map<String, String>? = null,
 ): Response {
@@ -71,7 +73,7 @@ internal fun OkHttpClient.get(
 
 internal inline fun <reified T> OkHttpClient.get(
     serverUrl: HttpUrl,
-    path: String,
+    path: String? = null,
     headers: Map<String, String>? = null,
     queries: Map<String, String>? = null,
     crossinline block: (Response) -> T,
@@ -86,7 +88,7 @@ internal inline fun <reified T> OkHttpClient.get(
 
 internal inline fun <reified T> OkHttpClient.get(
     serverUrl: HttpUrl,
-    path: String,
+    path: String? = null,
     headers: Map<String, String>? = null,
     queries: Map<String, String>? = null,
 ): T {

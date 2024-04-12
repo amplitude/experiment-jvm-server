@@ -7,17 +7,20 @@ import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.get
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Response
 import okio.IOException
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVParser
+import java.io.InputStream
 import java.lang.IllegalArgumentException
 import java.lang.Thread.sleep
 import java.util.Base64
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
+import kotlin.IllegalStateException
 
 /*
  * Based on the Behavioral Cohort API:
@@ -45,6 +48,11 @@ internal data class GetCohortAsyncResponse(
     @SerialName("request_id")
     val requestId: String,
 )
+
+internal class CachedCohortDownloadException(
+    val members: Set<String>,
+    override val cause: Exception,
+) : Exception("Initial cohort download failed, but fallback on cache succeeded.")
 
 internal interface CohortDownloadApi {
     fun getCohortDescription(cohortId: String): CohortDescription
@@ -109,12 +117,13 @@ internal class DirectCohortDownloadApiV5(
     private val requestStatusDelay: Long = 5000
 ) : CohortDownloadApi {
 
-    private val httpClient: OkHttpClient = httpClient.newBuilder()
+    internal val httpClient: OkHttpClient = httpClient.newBuilder()
+        .followRedirects(false)
         .readTimeout(10, TimeUnit.SECONDS)
         .build()
-    private val cdnServerUrl = CDN_COHORT_SYNC_URL.toHttpUrl()
+    internal val cdnServerUrl = CDN_COHORT_SYNC_URL.toHttpUrl()
     private val semaphore = Semaphore(5, true)
-    private val basicAuth = Base64.getEncoder().encodeToString("$apiKey:$secretKey".toByteArray(Charsets.UTF_8))
+    internal val basicAuth = Base64.getEncoder().encodeToString("$apiKey:$secretKey".toByteArray(Charsets.UTF_8))
     private val csvFormat = CSVFormat.RFC4180.builder().apply {
         setHeader()
     }.build()
@@ -132,35 +141,45 @@ internal class DirectCohortDownloadApiV5(
     }
 
     override fun getCohortMembers(cohortDescription: CohortDescription): Set<String> {
-        return semaphore.limit {
-            Logger.d("getCohortMembers: start - $cohortDescription")
-            val initialResponse = getCohortAsyncRequest(cohortDescription)
-            Logger.d("getCohortMembers: requestId=${initialResponse.requestId}")
-            // Poll until the cohort is ready for download
-            var errors = 0
-            while (true) {
-                try {
-                    val statusResponse = getCohortAsyncRequestStatus(initialResponse.requestId)
-                    Logger.d("getCohortMembers: status=${statusResponse.code}")
-                    if (statusResponse.code == 200) {
-                        break
-                    } else if (statusResponse.code != 202) {
-                        // Handle successful, but unexpected response codes
-                        throw HttpErrorResponseException(null, statusResponse)
+        return try {
+            semaphore.limit {
+                Logger.d("getCohortMembers: start - $cohortDescription")
+                val initialResponse = getCohortAsyncRequest(cohortDescription)
+                Logger.d("getCohortMembers: requestId=${initialResponse.requestId}")
+                // Poll until the cohort is ready for download
+                var errors = 0
+                while (true) {
+                    try {
+                        val statusResponse = getCohortAsyncRequestStatus(initialResponse.requestId)
+                        Logger.d("getCohortMembers: status=${statusResponse.code}")
+                        if (statusResponse.code == 200) {
+                            break
+                        } else if (statusResponse.code != 202) {
+                            // Handle successful, but unexpected response codes
+                            throw HttpErrorResponseException(null, statusResponse)
+                        }
+                    } catch (e: IOException) {
+                        // Don't count 429 response towards the errors count
+                        if (e !is HttpErrorResponseException || e.response.code != 429) {
+                            errors++
+                        }
+                        Logger.d("getCohortMembers: request-status error $errors - $e")
+                        if (errors >= 3) {
+                            throw e
+                        }
                     }
-                } catch (e: IOException) {
-                    // Don't count 429 response towards the errors count
-                    if (e !is HttpErrorResponseException || e.response.code != 429) {
-                        errors++
-                    }
-                    Logger.d("getCohortMembers: request-status error $errors - $e")
-                    if (errors >= 3) {
-                        throw e
-                    }
+                    sleep(requestStatusDelay)
                 }
-                sleep(requestStatusDelay)
+                val location = getCohortAsyncRequestLocation(initialResponse.requestId)
+                return getCohortAsyncRequestMembers(cohortDescription.id, cohortDescription.groupType, location)
             }
-            return getCohortAsyncRequestMembers(initialResponse.requestId, cohortDescription.groupType)
+        } catch (e: Exception) {
+            try {
+                val cachedMembers = getCachedCohortMembers(cohortDescription.id, cohortDescription.groupType)
+                throw CachedCohortDownloadException(cachedMembers, e)
+            } catch (e2: Exception) {
+                throw e2
+            }
         }
     }
 
@@ -186,33 +205,72 @@ internal class DirectCohortDownloadApiV5(
             headers = mapOf("Authorization" to "Basic $basicAuth"),
         )
 
-    internal fun getCohortAsyncRequestMembers(requestId: String, groupType: String): Set<String> =
+    internal fun getCohortAsyncRequestLocation(requestId: String): HttpUrl =
         httpClient.get(
             serverUrl = cdnServerUrl,
             path = "api/5/cohorts/request/$requestId/file",
             headers = mapOf("Authorization" to "Basic $basicAuth"),
         ) { response ->
-            val csv = CSVParser.parse(response.body?.byteStream(), Charsets.UTF_8, csvFormat)
-            if (groupType == USER_GROUP_TYPE) {
-                csv.map { it.get("user_id") }.filterNot { it.isNullOrEmpty() }.toSet()
-                    .also { Logger.d("getCohortMembers: end - resultSize=${it.size}") }
-            } else {
-                csv.map {
-                    try {
-                        // CSV returned from API has all strings prefixed with a tab character
-                        it.get("\tgroup_value")
-                    } catch (e: IllegalArgumentException) {
-                        it.get("group_value")
-                    }
-                }.filterNot {
-                    it.isNullOrEmpty()
-                }.map {
-                    // CSV returned from API has all strings prefixed with a tab character
-                    it.removePrefix("\t")
-                }.toSet()
-                    .also { Logger.d("getCohortMembers: end - resultSize=${it.size}") }
-            }
+            val location = response.headers["location"]
+                ?: throw IllegalStateException("Cohort response location must not be null")
+            location.toHttpUrl()
         }
+    internal fun getCohortAsyncRequestMembers(
+        cohortId: String,
+        groupType: String,
+        location: HttpUrl
+    ): Set<String> {
+        val url = location.newBuilder().host(cdnServerUrl.host).build()
+        return httpClient.get(
+            serverUrl = url,
+            headers = mapOf(
+                "X-Amp-Authorization" to "Basic $basicAuth",
+                "X-Cohort-ID" to cohortId,
+            ),
+        ) { response ->
+            val inputStream = response.body?.byteStream()
+                ?: throw IllegalStateException("Cohort response body must not be null.")
+            parseCsvResponse(inputStream, groupType)
+        }
+    }
+
+    internal fun getCachedCohortMembers(cohortId: String, groupType: String): Set<String> {
+        return httpClient.get(
+            serverUrl = cdnServerUrl,
+            path = "/cohorts",
+            headers = mapOf(
+                "X-Amp-Authorization" to "Basic $basicAuth",
+                "X-Cohort-ID" to cohortId,
+            ),
+        ) { response ->
+            val inputStream = response.body?.byteStream()
+                ?: throw IllegalStateException("Cohort response body must not be null.")
+            parseCsvResponse(inputStream, groupType)
+        }
+    }
+
+    internal fun parseCsvResponse(inputStream: InputStream, groupType: String): Set<String> {
+        val csv = CSVParser.parse(inputStream, Charsets.UTF_8, csvFormat)
+        return if (groupType == USER_GROUP_TYPE) {
+            csv.map { it.get("user_id") }.filterNot { it.isNullOrEmpty() }.toSet()
+                .also { Logger.d("getCohortMembers: end - resultSize=${it.size}") }
+        } else {
+            csv.map {
+                try {
+                    // CSV returned from API has all strings prefixed with a tab character
+                    it.get("\tgroup_value")
+                } catch (e: IllegalArgumentException) {
+                    it.get("group_value")
+                }
+            }.filterNot {
+                it.isNullOrEmpty()
+            }.map {
+                // CSV returned from API has all strings prefixed with a tab character
+                it.removePrefix("\t")
+            }.toSet()
+                .also { Logger.d("getCohortMembers: end - resultSize=${it.size}") }
+        }
+    }
 }
 
 private inline fun <reified T> Semaphore.limit(block: () -> T): T {

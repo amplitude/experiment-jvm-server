@@ -195,6 +195,7 @@ interface LocalEvaluationMetrics {
     fun onCohortDescriptionsFetchOriginFallback(exception: Exception)
     fun onCohortDownload()
     fun onCohortDownloadFailure(exception: Exception)
+    fun onCohortDownloadFailureCachedFallback(exception: Exception)
     fun onCohortDownloadOriginFallback(exception: Exception)
     fun onCohortMembership()
     fun onCohortMembershipFailure(exception: Exception)

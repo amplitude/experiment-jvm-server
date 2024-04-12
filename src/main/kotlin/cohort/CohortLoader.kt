@@ -62,7 +62,12 @@ internal class CohortLoader(
             metric = metrics::onCohortDownload,
             failure = metrics::onCohortDownloadFailure,
         ) {
-            cohortDownloadApi.getCohortMembers(cohortDescription)
+            try {
+                cohortDownloadApi.getCohortMembers(cohortDescription)
+            } catch (e: CachedCohortDownloadException) {
+                metrics.onCohortDownloadFailureCachedFallback(e.cause)
+                e.members
+            }
         }
     }
 }

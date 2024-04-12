@@ -92,6 +92,11 @@ internal class LocalEvaluationMetricsWrapper(
         executor.execute { metrics.onCohortDownloadFailure(exception) }
     }
 
+    override fun onCohortDownloadFailureCachedFallback(exception: Exception) {
+        val metrics = metrics ?: return
+        executor.execute { metrics.onCohortDownloadFailureCachedFallback(exception) }
+    }
+
     override fun onCohortDownloadOriginFallback(exception: Exception) {
         val metrics = metrics ?: return
         executor.execute { metrics.onCohortDownloadOriginFallback(exception) }

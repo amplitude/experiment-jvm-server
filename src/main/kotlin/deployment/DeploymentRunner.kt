@@ -47,9 +47,13 @@ internal class DeploymentRunner(
         if (cohortLoader != null) {
             poller.scheduleWithFixedDelay(
                 {
-                    val cohortIds = flagConfigStorage.getFlagConfigs().values.getAllCohortIds()
-                    for (cohortId in cohortIds) {
-                        cohortLoader.loadCohort(cohortId)
+                    try {
+                        val cohortIds = flagConfigStorage.getFlagConfigs().values.getAllCohortIds()
+                        for (cohortId in cohortIds) {
+                            cohortLoader.loadCohort(cohortId)
+                        }
+                    } catch (t: Throwable) {
+                        Logger.e("Refresh cohorts failed.", t)
                     }
                 },
                 60,
