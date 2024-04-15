@@ -4,7 +4,7 @@ import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.SystemLogger
 import java.util.concurrent.Executors
 
-internal const val LIBRARY_VERSION = "1.2.0-proxy.6"
+internal const val LIBRARY_VERSION = "1.2.0-proxy.7"
 
 object Experiment {
 
