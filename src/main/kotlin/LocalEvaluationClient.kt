@@ -132,31 +132,27 @@ class LocalEvaluationClient internal constructor(
 
     private fun enrichUser(user: ExperimentUser, flagConfigs: Map<String, EvaluationFlag>): ExperimentUser {
         val groupedCohortIds = flagConfigs.values.getGroupedCohortIds()
-        return if (user.userId == null || groupedCohortIds.isEmpty()) {
-            user
-        } else {
-            user.copyToBuilder().apply {
-                val userCohortsIds = groupedCohortIds[USER_GROUP_TYPE]
-                if (!userCohortsIds.isNullOrEmpty()) {
-                    cohortIds(cohortStorage.getCohortsForUser(user.userId, userCohortsIds))
-                }
-                if (user.groups != null) {
-                    for (group in user.groups) {
-                        val groupType = group.key
-                        val groupName = group.value.firstOrNull() ?: continue
-                        val cohortIds = groupedCohortIds[groupType]
-                        if (cohortIds.isNullOrEmpty()) {
-                            continue
-                        }
-                        groupCohortIds(
-                            groupType,
-                            groupName,
-                            cohortStorage.getCohortsForGroup(groupType, groupName, cohortIds)
-                        )
+        return user.copyToBuilder().apply {
+            val userCohortsIds = groupedCohortIds[USER_GROUP_TYPE]
+            if (!userCohortsIds.isNullOrEmpty() && user.userId != null) {
+                cohortIds(cohortStorage.getCohortsForUser(user.userId, userCohortsIds))
+            }
+            if (user.groups != null) {
+                for (group in user.groups) {
+                    val groupType = group.key
+                    val groupName = group.value.firstOrNull() ?: continue
+                    val cohortIds = groupedCohortIds[groupType]
+                    if (cohortIds.isNullOrEmpty()) {
+                        continue
                     }
+                    groupCohortIds(
+                        groupType,
+                        groupName,
+                        cohortStorage.getCohortsForGroup(groupType, groupName, cohortIds)
+                    )
                 }
-            }.build()
-        }
+            }
+        }.build()
     }
 
     private fun createAssignmentService(deploymentKey: String): AssignmentService? {
