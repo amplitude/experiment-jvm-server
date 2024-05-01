@@ -58,8 +58,23 @@ internal class ProxyCohortStorage(
     }
 
     override fun getCohortsForGroup(groupType: String, groupName: String, cohortIds: Set<String>): Set<String> {
-        // TODO Group cohorts are not yet supported by the proxy.
-        return setOf()
+        val localCohortIds = inMemoryStorage.getCohortDescriptions().keys
+        return if (localCohortIds.containsAll(cohortIds)) {
+            inMemoryStorage.getCohortsForGroup(groupType, groupName, cohortIds)
+        } else {
+            try {
+                wrapMetrics(
+                    metric = metrics::onCohortMembership,
+                    failure = metrics::onCohortMembershipFailure
+                ) {
+                    throw IllegalStateException("Evaluation proxy does not support group cohorts.")
+                }
+            } catch (e: Exception) {
+                Logger.e("Failed to get cohort membership from proxy.", e)
+                // Fall back on in memory storage in the case of proxy failure.
+                inMemoryStorage.getCohortsForGroup(groupType, groupName, cohortIds)
+            }
+        }
     }
 
     override fun getCohortDescription(cohortId: String): CohortDescription? {
