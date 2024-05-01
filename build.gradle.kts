@@ -33,7 +33,7 @@ dependencies {
 // Publishing
 
 group = "com.amplitude"
-version = "1.2.0-proxy.8"
+version = "1.2.0-proxy.9"
 
 nexusPublishing {
     repositories {
