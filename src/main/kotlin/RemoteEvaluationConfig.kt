@@ -1,5 +1,7 @@
 package com.amplitude.experiment
 
+import java.net.Proxy
+
 /**
  * Configuration options. This is an immutable object that can be created using
  * a [RemoteEvaluationConfig.Builder]. Example usage:
@@ -21,8 +23,8 @@ class RemoteEvaluationConfig internal constructor(
     val fetchRetryBackoffMaxMillis: Long = Defaults.FETCH_RETRY_BACKOFF_MAX_MILLIS,
     @JvmField
     val fetchRetryBackoffScalar: Double = Defaults.FETCH_RETRY_BACKOFF_SCALAR,
-//    @JvmField
-//    val fetchRetryTimeoutMillis: Long = Defaults.FETCH_RETRY_TIMEOUT_MILLIS,
+    @JvmField
+    val httpProxy: Proxy? = Defaults.HTTP_PROXY,
 ) {
 
     /**
@@ -49,26 +51,31 @@ class RemoteEvaluationConfig internal constructor(
          * 500
          */
         const val FETCH_TIMEOUT_MILLIS = 500L
+
         /**
          * 1
          */
         const val FETCH_RETRIES = 1
+
         /**
          * 0
          */
         const val FETCH_RETRY_BACKOFF_MIN_MILLIS = 0L
+
         /**
          * 10000
          */
         const val FETCH_RETRY_BACKOFF_MAX_MILLIS = 10000L
+
         /**
          * 1
          */
         const val FETCH_RETRY_BACKOFF_SCALAR = 1.0
-//        /**
-//         * 500
-//         */
-//        const val FETCH_RETRY_TIMEOUT_MILLIS = 500L
+
+        /**
+         * null
+         */
+        val HTTP_PROXY: Proxy? = null
     }
 
     companion object {
@@ -87,7 +94,7 @@ class RemoteEvaluationConfig internal constructor(
         private var fetchRetryBackoffMinMillis = Defaults.FETCH_RETRY_BACKOFF_MIN_MILLIS
         private var fetchRetryBackoffMaxMillis = Defaults.FETCH_RETRY_BACKOFF_MAX_MILLIS
         private var fetchRetryBackoffScalar = Defaults.FETCH_RETRY_BACKOFF_SCALAR
-//        private var fetchRetryTimeoutMillis = Defaults.FETCH_RETRY_TIMEOUT_MILLIS
+        private var httpProxy = Defaults.HTTP_PROXY
 
         fun debug(debug: Boolean) = apply {
             this.debug = debug
@@ -117,9 +124,9 @@ class RemoteEvaluationConfig internal constructor(
             this.fetchRetryBackoffScalar = fetchRetryBackoffScalar
         }
 
-//        fun fetchRetryTimeoutMillis(fetchRetryTimeoutMillis: Long) = apply {
-//            this.fetchRetryTimeoutMillis = fetchRetryTimeoutMillis
-//        }
+        fun httpProxy(httpProxy: Proxy) = apply {
+            this.httpProxy = httpProxy
+        }
 
         fun build(): RemoteEvaluationConfig {
             return RemoteEvaluationConfig(
@@ -129,16 +136,17 @@ class RemoteEvaluationConfig internal constructor(
                 fetchRetries = fetchRetries,
                 fetchRetryBackoffMinMillis = fetchRetryBackoffMinMillis,
                 fetchRetryBackoffMaxMillis = fetchRetryBackoffMaxMillis,
-                fetchRetryBackoffScalar = fetchRetryBackoffScalar
-//                fetchRetryTimeoutMillis = fetchRetryTimeoutMillis,
+                fetchRetryBackoffScalar = fetchRetryBackoffScalar,
+                httpProxy = httpProxy
             )
         }
     }
 
     override fun toString(): String {
         return "ExperimentConfig(debug=$debug, serverUrl='$serverUrl', fetchTimeoutMillis=$fetchTimeoutMillis, " +
-            "fetchRetries=$fetchRetries, fetchRetryBackoffMinMillis=$fetchRetryBackoffMinMillis, " +
-            "fetchRetryBackoffMaxMillis=$fetchRetryBackoffMaxMillis, " +
-            "fetchRetryBackoffScalar=$fetchRetryBackoffScalar)"
+                "fetchRetries=$fetchRetries, fetchRetryBackoffMinMillis=$fetchRetryBackoffMinMillis, " +
+                "fetchRetryBackoffMaxMillis=$fetchRetryBackoffMaxMillis, " +
+                "fetchRetryBackoffScalar=$fetchRetryBackoffScalar), " +
+                "httpProxy=${httpProxy}"
     }
 }
