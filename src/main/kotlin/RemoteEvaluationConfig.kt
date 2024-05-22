@@ -144,9 +144,9 @@ class RemoteEvaluationConfig internal constructor(
 
     override fun toString(): String {
         return "ExperimentConfig(debug=$debug, serverUrl='$serverUrl', fetchTimeoutMillis=$fetchTimeoutMillis, " +
-                "fetchRetries=$fetchRetries, fetchRetryBackoffMinMillis=$fetchRetryBackoffMinMillis, " +
-                "fetchRetryBackoffMaxMillis=$fetchRetryBackoffMaxMillis, " +
-                "fetchRetryBackoffScalar=$fetchRetryBackoffScalar), " +
-                "httpProxy=${httpProxy}"
+            "fetchRetries=$fetchRetries, fetchRetryBackoffMinMillis=$fetchRetryBackoffMinMillis, " +
+            "fetchRetryBackoffMaxMillis=$fetchRetryBackoffMaxMillis, " +
+            "fetchRetryBackoffScalar=$fetchRetryBackoffScalar), " +
+            "httpProxy=$httpProxy"
     }
 }
