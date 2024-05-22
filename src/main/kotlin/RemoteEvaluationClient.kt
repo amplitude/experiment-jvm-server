@@ -27,7 +27,7 @@ class RemoteEvaluationClient internal constructor(
     private val config: RemoteEvaluationConfig = RemoteEvaluationConfig(),
 ) {
 
-    private val httpClient = OkHttpClient()
+    private val httpClient = OkHttpClient.Builder().proxy(config.httpProxy).build()
     private val retry: Boolean = config.fetchRetries > 0
     private val serverUrl: HttpUrl = config.serverUrl.toHttpUrl()
     private val backoffConfig = BackoffConfig(
