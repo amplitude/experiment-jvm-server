@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/amplitude/experiment-jvm-server/compare/1.3.0...1.3.1) (2024-05-23)
+
+
+### Bug Fixes
+
+* add http proxy config to remote evaluation client ([#27](https://github.com/amplitude/experiment-jvm-server/issues/27)) ([2b00d36](https://github.com/amplitude/experiment-jvm-server/commit/2b00d3660e28b271e3eeb6f81510e291fa9617bf))
+
 # [1.3.0](https://github.com/amplitude/experiment-jvm-server/compare/1.2.7...1.3.0) (2024-02-29)
 
 
