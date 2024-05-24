@@ -2,11 +2,6 @@
 
 package com.amplitude.experiment.cohort
 
-import com.amplitude.experiment.CohortSyncConfiguration
-import com.amplitude.experiment.LocalEvaluationClient
-import com.amplitude.experiment.LocalEvaluationConfig
-import com.amplitude.experiment.util.HttpErrorResponseException
-import com.amplitude.experiment.util.LocalEvaluationMetricsCounter
 import io.mockk.every
 import io.mockk.spyk
 import io.mockk.verify
@@ -116,7 +111,7 @@ class CohortDownloadApiTest {
     }
 
     @Test
-    fun `cohort request status throws after 3 failures`() {
+    fun `cohort request status throws after 3 failures, cache fallback succeeds`() {
         val cohort = CohortDescription(
             id = "1234",
             lastComputed = 0L,
@@ -132,16 +127,19 @@ class CohortDownloadApiTest {
         every { api.getCohortAsyncRequestStatus(asyncRequestResponse.requestId) }.returns(asyncRequestStatusResponse)
         every { api.getCohortAsyncRequestLocation(asyncRequestResponse.requestId) }.returns(location)
         every { api.getCohortAsyncRequestMembers(cohort.id, USER_GROUP_TYPE, location) }.returns(setOf("user"))
+        every { api.getCachedCohortMembers(cohort.id, USER_GROUP_TYPE) }.returns(setOf("user2"))
         try {
             api.getCohortMembers(cohort)
             Assert.fail("expected failure")
-        } catch (e: HttpErrorResponseException) {
+        } catch (e: CachedCohortDownloadException) {
             // expected
+            Assert.assertEquals(setOf("user2"), e.members)
         }
         verify(exactly = 1) { api.getCohortAsyncRequest(cohort) }
         verify(exactly = 3) { api.getCohortAsyncRequestStatus(asyncRequestResponse.requestId) }
         verify(exactly = 0) { api.getCohortAsyncRequestLocation(asyncRequestResponse.requestId) }
         verify(exactly = 0) { api.getCohortAsyncRequestMembers(cohort.id, USER_GROUP_TYPE, location) }
+        verify(exactly = 1) { api.getCachedCohortMembers(cohort.id, USER_GROUP_TYPE)}
     }
 
     @Test
@@ -191,9 +189,13 @@ class CohortDownloadApiTest {
         val api = spyk(DirectCohortDownloadApiV5("api", "secret", OkHttpClient(), 10L))
         every { api.getCohortAsyncRequest(cohort) }.throws(RuntimeException("fail"))
         every { api.getCachedCohortMembers(cohort.id, cohort.groupType) }.returns(setOf("user"))
-        val members = api.getCohortMembers(cohort)
-        Assert.assertEquals(setOf("user"), members)
-        verify(exactly = 1) { api.getCachedCohortMembers(cohort.id, cohort.groupType) }
+        try {
+            val members = api.getCohortMembers(cohort)
+            Assert.fail("exception expected")
+        } catch (e: CachedCohortDownloadException) {
+            Assert.assertEquals(setOf("user"), e.members)
+            verify(exactly = 1) { api.getCachedCohortMembers(cohort.id, cohort.groupType) }
+        }
     }
 
     @Test

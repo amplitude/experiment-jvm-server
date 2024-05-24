@@ -78,7 +78,7 @@ class CacheTest {
     @Test
     fun `test concurrent access`() {
         val n = 100
-        val executor = Executors.newFixedThreadPool(n)
+        val executor = Executors.newFixedThreadPool(n, daemonFactory)
         val cache = Cache<Int, Int>(n)
         val futures = mutableListOf<Future<*>>()
         repeat(n) { i ->

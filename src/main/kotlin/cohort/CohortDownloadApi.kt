@@ -18,7 +18,6 @@ import java.io.InputStream
 import java.lang.IllegalArgumentException
 import java.lang.Thread.sleep
 import java.util.Base64
-import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import kotlin.IllegalStateException
 
@@ -122,60 +121,57 @@ internal class DirectCohortDownloadApiV5(
         .readTimeout(10, TimeUnit.SECONDS)
         .build()
     internal val cdnServerUrl = CDN_COHORT_SYNC_URL.toHttpUrl()
-    private val semaphore = Semaphore(5, true)
     internal val basicAuth = Base64.getEncoder().encodeToString("$apiKey:$secretKey".toByteArray(Charsets.UTF_8))
     private val csvFormat = CSVFormat.RFC4180.builder().apply {
         setHeader()
     }.build()
 
     override fun getCohortDescription(cohortId: String): CohortDescription {
-        return semaphore.limit {
-            val response = getCohortInfo(cohortId)
-            CohortDescription(
-                id = response.cohortId,
-                lastComputed = response.lastComputed,
-                size = response.size,
-                groupType = response.groupType,
-            )
-        }
+        val response = getCohortInfo(cohortId)
+        return CohortDescription(
+            id = response.cohortId,
+            lastComputed = response.lastComputed,
+            size = response.size,
+            groupType = response.groupType,
+        )
     }
 
     override fun getCohortMembers(cohortDescription: CohortDescription): Set<String> {
         return try {
-            semaphore.limit {
-                Logger.d("getCohortMembers: start - $cohortDescription")
-                val initialResponse = getCohortAsyncRequest(cohortDescription)
-                Logger.d("getCohortMembers: requestId=${initialResponse.requestId}")
-                // Poll until the cohort is ready for download
-                var errors = 0
-                while (true) {
-                    try {
-                        val statusResponse = getCohortAsyncRequestStatus(initialResponse.requestId)
-                        Logger.d("getCohortMembers: status=${statusResponse.code}")
-                        if (statusResponse.code == 200) {
-                            break
-                        } else if (statusResponse.code != 202) {
-                            // Handle successful, but unexpected response codes
-                            throw HttpErrorResponseException(null, statusResponse)
-                        }
-                    } catch (e: IOException) {
-                        // Don't count 429 response towards the errors count
-                        if (e !is HttpErrorResponseException || e.response.code != 429) {
-                            errors++
-                        }
-                        Logger.d("getCohortMembers: request-status error $errors - $e")
-                        if (errors >= 3) {
-                            throw e
-                        }
+            Logger.d("getCohortMembers(${cohortDescription.id}): start - $cohortDescription")
+            val initialResponse = getCohortAsyncRequest(cohortDescription)
+            Logger.d("getCohortMembers(${cohortDescription.id}): requestId=${initialResponse.requestId}")
+            // Poll until the cohort is ready for download
+            var errors = 0
+            while (true) {
+                try {
+                    val statusResponse = getCohortAsyncRequestStatus(initialResponse.requestId)
+                    Logger.d("getCohortMembers(${cohortDescription.id}): status=${statusResponse.code}")
+                    if (statusResponse.code == 200) {
+                        break
+                    } else if (statusResponse.code != 202) {
+                        // Handle successful, but unexpected response codes
+                        throw HttpErrorResponseException(null, statusResponse)
                     }
-                    sleep(requestStatusDelay)
+                } catch (e: IOException) {
+                    // Don't count 429 response towards the errors count
+                    if (e !is HttpErrorResponseException || e.response.code != 429) {
+                        errors++
+                    }
+                    Logger.d("getCohortMembers(${cohortDescription.id}): request-status error $errors - $e")
+                    if (errors >= 3) {
+                        throw e
+                    }
                 }
-                val location = getCohortAsyncRequestLocation(initialResponse.requestId)
-                return getCohortAsyncRequestMembers(cohortDescription.id, cohortDescription.groupType, location)
+                sleep(requestStatusDelay)
             }
+            val location = getCohortAsyncRequestLocation(initialResponse.requestId)
+            getCohortAsyncRequestMembers(cohortDescription.id, cohortDescription.groupType, location)
+                .also { Logger.d("getCohortMembers(${cohortDescription.id}): end - resultSize=${it.size}") }
         } catch (e: Exception) {
             try {
                 val cachedMembers = getCachedCohortMembers(cohortDescription.id, cohortDescription.groupType)
+                    .also { Logger.d("getCohortMembers(${cohortDescription.id}): end cached fallback - resultSize=${it.size}") }
                 throw CachedCohortDownloadException(cachedMembers, e)
             } catch (e2: Exception) {
                 throw e2
@@ -253,7 +249,6 @@ internal class DirectCohortDownloadApiV5(
         val csv = CSVParser.parse(inputStream, Charsets.UTF_8, csvFormat)
         return if (groupType == USER_GROUP_TYPE) {
             csv.map { it.get("user_id") }.filterNot { it.isNullOrEmpty() }.toSet()
-                .also { Logger.d("getCohortMembers: end - resultSize=${it.size}") }
         } else {
             csv.map {
                 try {
@@ -268,17 +263,6 @@ internal class DirectCohortDownloadApiV5(
                 // CSV returned from API has all strings prefixed with a tab character
                 it.removePrefix("\t")
             }.toSet()
-                .also { Logger.d("getCohortMembers: end - resultSize=${it.size}") }
         }
     }
-}
-
-private inline fun <reified T> Semaphore.limit(block: () -> T): T {
-    acquire()
-    val result: T = try {
-        block.invoke()
-    } finally {
-        release()
-    }
-    return result
 }

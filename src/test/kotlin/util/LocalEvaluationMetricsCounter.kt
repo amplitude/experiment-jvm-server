@@ -29,7 +29,7 @@ open class LocalEvaluationMetricsCounter : LocalEvaluationMetrics {
     var cohortMembershipFailure = 0
 
     fun start(intervalMillis: Long = 5000) {
-        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(
+        Executors.newScheduledThreadPool(1, daemonFactory).scheduleAtFixedRate(
             {
                 println(toString())
             },

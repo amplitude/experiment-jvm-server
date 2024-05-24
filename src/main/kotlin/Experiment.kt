@@ -2,13 +2,14 @@ package com.amplitude.experiment
 
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.SystemLogger
+import com.amplitude.experiment.util.daemonFactory
 import java.util.concurrent.Executors
 
 internal const val LIBRARY_VERSION = "1.2.0-proxy.9"
 
 object Experiment {
 
-    internal val scheduler = Executors.newSingleThreadScheduledExecutor()
+    internal val scheduler = Executors.newScheduledThreadPool(1, daemonFactory)
 
     private val remoteInstances = mutableMapOf<String, RemoteEvaluationClient>()
     private val localInstances = mutableMapOf<String, LocalEvaluationClient>()

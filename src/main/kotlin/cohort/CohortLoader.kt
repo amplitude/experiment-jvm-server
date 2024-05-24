@@ -6,6 +6,7 @@ import com.amplitude.experiment.ExperimentalApi
 import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
+import com.amplitude.experiment.util.daemonFactory
 import com.amplitude.experiment.util.wrapMetrics
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -22,12 +23,15 @@ internal class CohortLoader(
 
     private val jobs = ConcurrentHashMap<String, CompletableFuture<*>>()
     private val executor = ThreadPoolExecutor(
-        1,
+        32,
         32,
         60,
         TimeUnit.SECONDS,
-        LinkedBlockingQueue()
-    )
+        LinkedBlockingQueue(),
+        daemonFactory,
+    ).apply {
+        allowCoreThreadTimeOut(true)
+    }
 
     fun loadCohort(cohortId: String): CompletableFuture<*> {
         return jobs.getOrPut(cohortId) {

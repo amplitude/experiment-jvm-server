@@ -20,7 +20,7 @@ internal class LocalEvaluationMetricsWrapper(
     private val metrics: LocalEvaluationMetrics? = null
 ) : LocalEvaluationMetrics {
 
-    private val executor = Executors.newSingleThreadExecutor()
+    private val executor = Executors.newFixedThreadPool(1, daemonFactory)
 
     override fun onEvaluation() {
         val metrics = metrics ?: return
