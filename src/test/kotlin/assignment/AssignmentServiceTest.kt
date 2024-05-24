@@ -22,7 +22,7 @@ class AssignmentServiceTest {
                 key = "off",
                 metadata = mapOf(
                     "default" to true,
-                    "flagVersion    " to 1,
+                    "flagVersion" to 1,
                     "segmentName" to "All Other Users",
                 )
             )
