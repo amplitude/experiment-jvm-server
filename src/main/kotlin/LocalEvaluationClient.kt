@@ -81,7 +81,12 @@ class LocalEvaluationClient internal constructor(
                 maxCohortSize = config.cohortSyncConfiguration.maxCohortSize,
                 cohortDownloadApi = cohortDownloadApi,
                 cohortStorage = cohortStorage,
-                metrics = metricsWrapper
+                directCohortDownloadApi = if (config.proxyConfiguration == null) {
+                    directCohortDownloadApi
+                } else {
+                    null
+                },
+                metrics = metricsWrapper,
             )
         },
         metricsWrapper

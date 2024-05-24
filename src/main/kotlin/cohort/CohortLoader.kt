@@ -18,10 +18,13 @@ internal class CohortLoader(
     private val maxCohortSize: Int,
     private val cohortDownloadApi: CohortDownloadApi,
     private val cohortStorage: CohortStorage,
+    // TODO: Remove once dedicated API is implemented.
+    private val directCohortDownloadApi: DirectCohortDownloadApiV5? = null,
     private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper(),
 ) {
 
     private val jobs = ConcurrentHashMap<String, CompletableFuture<*>>()
+    private val cachedJobs = ConcurrentHashMap<String, CompletableFuture<*>>()
     private val executor = ThreadPoolExecutor(
         32,
         32,
@@ -39,10 +42,24 @@ internal class CohortLoader(
                 Logger.d("Loading cohort $cohortId")
                 val cohortDescription = getCohortDescription(cohortId)
                 if (shouldDownloadCohort(cohortDescription)) {
-                    val cohortMembers = downloadCohorts(cohortDescription)
+                    val cohortMembers = downloadCohort(cohortDescription)
                     cohortStorage.putCohort(cohortDescription, cohortMembers)
                 }
             }, executor).whenComplete { _, _ -> jobs.remove(cohortId) }
+        }
+    }
+
+    fun loadCachedCohort(cohortId: String): CompletableFuture<*> {
+        return cachedJobs.getOrPut(cohortId) {
+            CompletableFuture.runAsync({
+                Logger.d("Loading cohort from cache $cohortId")
+                // Cached cohorts should be refreshed, so set last computed to 0.
+                val cohortDescription = getCohortDescription(cohortId).copy(lastComputed = 0)
+                if (shouldDownloadCohort(cohortDescription)) {
+                    val cohortMembers = downloadCachedCohort(cohortDescription)
+                    cohortStorage.putCohort(cohortDescription, cohortMembers)
+                }
+            }, executor).whenComplete { _, _ -> cachedJobs.remove(cohortId) }
         }
     }
 
@@ -61,7 +78,7 @@ internal class CohortLoader(
             cohortDescription.lastComputed > (storageDescription?.lastComputed ?: -1)
     }
 
-    private fun downloadCohorts(cohortDescription: CohortDescription): Set<String> {
+    private fun downloadCohort(cohortDescription: CohortDescription): Set<String> {
         return wrapMetrics(
             metric = metrics::onCohortDownload,
             failure = metrics::onCohortDownloadFailure,
@@ -72,6 +89,16 @@ internal class CohortLoader(
                 metrics.onCohortDownloadFailureCachedFallback(e.cause)
                 e.members
             }
+        }
+    }
+
+    private fun downloadCachedCohort(cohortDescription: CohortDescription): Set<String> {
+        return wrapMetrics(
+            metric = metrics::onCohortDownload,
+            failure = metrics::onCohortDownloadFailure,
+        ) {
+            directCohortDownloadApi?.getCachedCohortMembers(cohortDescription.id, cohortDescription.groupType)
+                ?: cohortDownloadApi.getCohortMembers(cohortDescription)
         }
     }
 }

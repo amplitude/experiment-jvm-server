@@ -233,7 +233,7 @@ internal class DirectCohortDownloadApiV5(
     internal fun getCachedCohortMembers(cohortId: String, groupType: String): Set<String> {
         return httpClient.get(
             serverUrl = cdnServerUrl,
-            path = "/cohorts",
+            path = "cohorts",
             headers = mapOf(
                 "X-Amp-Authorization" to "Basic $basicAuth",
                 "X-Cohort-ID" to cohortId,

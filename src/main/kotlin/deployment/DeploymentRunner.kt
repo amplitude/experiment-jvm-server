@@ -81,6 +81,35 @@ internal class DeploymentRunner(
         // Remove flags that no longer exist.
         val flagKeys = flagConfigs.map { it.key }.toSet()
         flagConfigStorage.removeIf { !flagKeys.contains(it.key) }
+
+        // Load cohorts initial from cache.
+        var fullDownloadAsync = false
+        if (config.proxyConfiguration == null) {
+            val cachedFutures = ConcurrentHashMap<String, CompletableFuture<*>>()
+            for (flagConfig in flagConfigs) {
+                val cohortIds = flagConfig.getAllCohortIds()
+                if (cohortLoader == null || cohortIds.isEmpty()) {
+                    flagConfigStorage.putFlagConfig(flagConfig)
+                    continue
+                }
+                for (cohortId in cohortIds) {
+                    cachedFutures.putIfAbsent(
+                        cohortId,
+                        cohortLoader.loadCachedCohort(cohortId).thenRun {
+                            flagConfigStorage.putFlagConfig(flagConfig)
+                        }
+                    )
+                }
+            }
+            try {
+                cachedFutures.values.forEach { it.join() }
+            } catch (e: Exception) {
+                // One of the cohorts failed to download from the cache.
+                Logger.e("Failed to download a cohort from the cache", e)
+                fullDownloadAsync = true
+            }
+        }
+
         // Load cohorts for each flag if applicable and put the flag in storage.
         val futures = ConcurrentHashMap<String, CompletableFuture<*>>()
         for (flagConfig in flagConfigs) {
@@ -98,7 +127,9 @@ internal class DeploymentRunner(
                 )
             }
         }
-        futures.values.forEach { it.join() }
+        if (fullDownloadAsync) {
+            futures.values.forEach { it.join() }
+        }
         // Delete unused cohorts
         val flagCohortIds = flagConfigStorage.getFlagConfigs().values.toList().getAllCohortIds()
         val storageCohorts = cohortStorage.getCohortDescriptions()
