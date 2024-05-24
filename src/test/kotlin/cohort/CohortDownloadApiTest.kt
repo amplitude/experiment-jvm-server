@@ -139,7 +139,7 @@ class CohortDownloadApiTest {
         verify(exactly = 3) { api.getCohortAsyncRequestStatus(asyncRequestResponse.requestId) }
         verify(exactly = 0) { api.getCohortAsyncRequestLocation(asyncRequestResponse.requestId) }
         verify(exactly = 0) { api.getCohortAsyncRequestMembers(cohort.id, USER_GROUP_TYPE, location) }
-        verify(exactly = 1) { api.getCachedCohortMembers(cohort.id, USER_GROUP_TYPE)}
+        verify(exactly = 1) { api.getCachedCohortMembers(cohort.id, USER_GROUP_TYPE) }
     }
 
     @Test
