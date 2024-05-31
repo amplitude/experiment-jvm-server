@@ -1,3 +1,9 @@
+### 1.2.0-proxy.11
+
+* [fix: use warning log when cached cohort fails; only greedy load from cache on initial refresh](https://github.com/amplitude/experiment-jvm-server/commit/2b12859f9449da2fd52cce0f2f0c4d7e787c7947)
+  * Log a warning instead of error when an initial cached cohort download fails.
+  * Don't re-download cached cohorts after the initial deployment refresh unless as a fallback.
+
 ### 1.2.0-proxy.10
 
 * [fix: optimize startup; attempt to download all cohorts from cache](https://github.com/amplitude/experiment-jvm-server/commit/fbf4c6a5a5e49c8ea3e0227405907c844fc0bf37)
