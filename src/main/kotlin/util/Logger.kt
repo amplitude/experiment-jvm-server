@@ -29,7 +29,7 @@ internal object Logger : ILogger {
     }
 
     override fun w(msg: String, e: Throwable?) {
-        implementation?.w(msg)
+        implementation?.w(msg, e)
     }
 
     override fun e(msg: String, e: Throwable?) {
@@ -68,7 +68,7 @@ internal class SystemLogger(private val debug: Boolean) : ILogger {
         if (e == null) {
             println("[${timestamp()}] WARN: $msg")
         } else {
-            println("[${timestamp()}] WARN: $msg\n${e.printStackTrace()}")
+            println("[${timestamp()}] WARN: $msg - $e")
         }
     }
 
@@ -76,7 +76,7 @@ internal class SystemLogger(private val debug: Boolean) : ILogger {
         if (e == null) {
             println("[${timestamp()}] ERROR: $msg")
         } else {
-            println("[${timestamp()}] ERROR: $msg\n$e")
+            println("[${timestamp()}] ERROR: $msg - $e")
         }
     }
 }

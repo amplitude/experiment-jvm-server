@@ -9,6 +9,7 @@ import com.amplitude.experiment.cohort.CohortLoader
 import com.amplitude.experiment.cohort.CohortStorage
 import com.amplitude.experiment.flag.FlagConfigApi
 import com.amplitude.experiment.flag.FlagConfigStorage
+import com.amplitude.experiment.util.HttpErrorResponseException
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.Once
@@ -17,6 +18,7 @@ import com.amplitude.experiment.util.getAllCohortIds
 import com.amplitude.experiment.util.wrapMetrics
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -33,11 +35,11 @@ internal class DeploymentRunner(
     private val poller = Executors.newScheduledThreadPool(1, daemonFactory)
 
     fun start() = lock.once {
-        refresh()
+        refresh(initial = true)
         poller.scheduleWithFixedDelay(
             {
                 try {
-                    refresh()
+                    refresh(initial = false)
                 } catch (t: Throwable) {
                     Logger.e("Refresh flag configs failed.", t)
                 }
@@ -69,7 +71,7 @@ internal class DeploymentRunner(
         poller.shutdown()
     }
 
-    private fun refresh() {
+    private fun refresh(initial: Boolean) {
         Logger.d("Refreshing flag configs.")
         // Get updated flags from the network.
         val flagConfigs = wrapMetrics(
@@ -83,8 +85,8 @@ internal class DeploymentRunner(
         flagConfigStorage.removeIf { !flagKeys.contains(it.key) }
 
         // Load cohorts initial from cache.
-        var fullDownloadAsync = false
-        if (config.proxyConfiguration == null) {
+        var fullDownloadSync = false
+        if (initial && config.proxyConfiguration == null) {
             val cachedFutures = ConcurrentHashMap<String, CompletableFuture<*>>()
             for (flagConfig in flagConfigs) {
                 val cohortIds = flagConfig.getAllCohortIds()
@@ -104,10 +106,12 @@ internal class DeploymentRunner(
             try {
                 cachedFutures.values.forEach { it.join() }
             } catch (e: Exception) {
-                // One of the cohorts failed to download from the cache.
-                Logger.e("Failed to download a cohort from the cache", e)
-                fullDownloadAsync = true
+                // One or more of the cohorts failed to download from the cache.
+                Logger.w("Failed to download a cohort from the cache", e)
+                fullDownloadSync = true
             }
+        } else {
+            fullDownloadSync = true
         }
 
         // Load cohorts for each flag if applicable and put the flag in storage.
@@ -127,7 +131,7 @@ internal class DeploymentRunner(
                 )
             }
         }
-        if (fullDownloadAsync) {
+        if (fullDownloadSync) {
             futures.values.forEach { it.join() }
         }
         // Delete unused cohorts

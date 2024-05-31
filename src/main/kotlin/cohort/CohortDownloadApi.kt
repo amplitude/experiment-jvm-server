@@ -174,7 +174,7 @@ internal class DirectCohortDownloadApiV5(
                     .also { Logger.d("getCohortMembers(${cohortDescription.id}): end cached fallback - resultSize=${it.size}") }
                 throw CachedCohortDownloadException(cachedMembers, e)
             } catch (e2: Exception) {
-                throw e2
+                throw e
             }
         }
     }
