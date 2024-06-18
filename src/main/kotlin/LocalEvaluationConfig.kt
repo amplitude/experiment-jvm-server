@@ -1,4 +1,8 @@
+@file:OptIn(ExperimentalApi::class)
+
 package com.amplitude.experiment
+
+import com.amplitude.Middleware
 
 /**
  * Configuration options. This is an immutable object that can be created using
@@ -17,6 +21,10 @@ class LocalEvaluationConfig internal constructor(
     val flagConfigPollerRequestTimeoutMillis: Long = Defaults.FLAG_CONFIG_POLLER_REQUEST_TIMEOUT_MILLIS,
     @JvmField
     val assignmentConfiguration: AssignmentConfiguration? = Defaults.ASSIGNMENT_CONFIGURATION,
+    @JvmField
+    val cohortSyncConfiguration: CohortSyncConfiguration? = Defaults.COHORT_SYNC_CONFIGURATION,
+    @JvmField
+    val metrics: LocalEvaluationMetrics? = Defaults.LOCAL_EVALUATION_METRICS,
 ) {
 
     /**
@@ -53,6 +61,16 @@ class LocalEvaluationConfig internal constructor(
          * null
          */
         val ASSIGNMENT_CONFIGURATION: AssignmentConfiguration? = null
+
+        /**
+         * null
+         */
+        val COHORT_SYNC_CONFIGURATION: CohortSyncConfiguration? = null
+
+        /**
+         * null
+         */
+        val LOCAL_EVALUATION_METRICS: LocalEvaluationMetrics? = null
     }
 
     companion object {
@@ -69,6 +87,8 @@ class LocalEvaluationConfig internal constructor(
         private var flagConfigPollerIntervalMillis = Defaults.FLAG_CONFIG_POLLER_INTERVAL_MILLIS
         private var flagConfigPollerRequestTimeoutMillis = Defaults.FLAG_CONFIG_POLLER_REQUEST_TIMEOUT_MILLIS
         private var assignmentConfiguration = Defaults.ASSIGNMENT_CONFIGURATION
+        private var cohortSyncConfiguration = Defaults.COHORT_SYNC_CONFIGURATION
+        private var metrics = Defaults.LOCAL_EVALUATION_METRICS
 
         fun debug(debug: Boolean) = apply {
             this.debug = debug
@@ -90,6 +110,15 @@ class LocalEvaluationConfig internal constructor(
             this.assignmentConfiguration = assignmentConfiguration
         }
 
+        fun enableCohortSync(cohortSyncConfiguration: CohortSyncConfiguration) = apply {
+            this.cohortSyncConfiguration = cohortSyncConfiguration
+        }
+
+        @ExperimentalApi
+        fun metrics(metrics: LocalEvaluationMetrics) = apply {
+            this.metrics = metrics
+        }
+
         fun build(): LocalEvaluationConfig {
             return LocalEvaluationConfig(
                 debug = debug,
@@ -97,14 +126,19 @@ class LocalEvaluationConfig internal constructor(
                 flagConfigPollerIntervalMillis = flagConfigPollerIntervalMillis,
                 flagConfigPollerRequestTimeoutMillis = flagConfigPollerRequestTimeoutMillis,
                 assignmentConfiguration = assignmentConfiguration,
+                cohortSyncConfiguration = cohortSyncConfiguration,
+                metrics = metrics,
             )
         }
     }
 
     override fun toString(): String {
-        return "ExperimentConfig(debug=$debug, serverUrl='$serverUrl', " +
+        return "LocalEvaluationConfig(debug=$debug, serverUrl='$serverUrl', " +
             "flagConfigPollerIntervalMillis=$flagConfigPollerIntervalMillis, " +
-            "flagConfigPollerRequestTimeoutMillis=$flagConfigPollerRequestTimeoutMillis)"
+            "flagConfigPollerRequestTimeoutMillis=$flagConfigPollerRequestTimeoutMillis, " +
+            "assignmentConfiguration=$assignmentConfiguration, " +
+            "cohortSyncConfiguration=$cohortSyncConfiguration, " +
+            "metrics=$metrics)"
     }
 }
 
@@ -115,4 +149,25 @@ data class AssignmentConfiguration(
     val eventUploadPeriodMillis: Int = 10000,
     val useBatchMode: Boolean = true,
     val serverUrl: String = "https://api2.amplitude.com/2/httpapi",
+    val middleware: List<Middleware> = listOf(),
 )
+
+data class CohortSyncConfiguration(
+    val apiKey: String,
+    val secretKey: String,
+    val maxCohortSize: Int = 15000,
+)
+
+@ExperimentalApi
+interface LocalEvaluationMetrics {
+    fun onEvaluation()
+    fun onEvaluationFailure(exception: Exception)
+    fun onAssignment()
+    fun onAssignmentFilter()
+    fun onAssignmentEvent()
+    fun onAssignmentEventFailure(exception: Exception)
+    fun onFlagConfigFetch()
+    fun onFlagConfigFetchFailure(exception: Exception)
+    fun onCohortDownload()
+    fun onCohortDownloadFailure(exception: Exception)
+}
