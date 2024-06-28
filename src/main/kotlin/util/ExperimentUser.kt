@@ -17,6 +17,10 @@ internal fun ExperimentUser.toEvaluationContext(): EvaluationContext {
                 if (!groupProperties.isNullOrEmpty()) {
                     groupNameMap["group_properties"] = groupProperties
                 }
+                val groupCohortIds = this.groupCohortIds?.get(groupType)?.get(groupName)
+                if (!groupCohortIds.isNullOrEmpty()) {
+                    groupNameMap["cohort_ids"] = groupCohortIds
+                }
                 groups[groupType] = groupNameMap
             }
         }

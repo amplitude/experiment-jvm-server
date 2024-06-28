@@ -16,6 +16,10 @@ class LocalEvaluationConfig internal constructor(
     @JvmField
     val serverUrl: String = Defaults.SERVER_URL,
     @JvmField
+    val cohortServerUrl: String = Defaults.COHORT_SERVER_URL,
+    @JvmField
+    val serverZone: ServerZone = Defaults.SERVER_ZONE,
+    @JvmField
     val flagConfigPollerIntervalMillis: Long = Defaults.FLAG_CONFIG_POLLER_INTERVAL_MILLIS,
     @JvmField
     val flagConfigPollerRequestTimeoutMillis: Long = Defaults.FLAG_CONFIG_POLLER_REQUEST_TIMEOUT_MILLIS,
@@ -46,6 +50,16 @@ class LocalEvaluationConfig internal constructor(
          * "https://api.lab.amplitude.com/"
          */
         const val SERVER_URL = "https://api.lab.amplitude.com/"
+
+        /**
+         * "https://api.lab.amplitude.com/"
+         */
+        const val COHORT_SERVER_URL = "https://cohorts-v2.lab.amplitude.com/"
+
+        /**
+         * ServerZone.US
+         */
+        val SERVER_ZONE = ServerZone.US
 
         /**
          * 30,000

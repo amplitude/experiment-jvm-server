@@ -29,7 +29,7 @@ class RemoteEvaluationClient internal constructor(
 
     private val httpClient = OkHttpClient.Builder().proxy(config.httpProxy).build()
     private val retry: Boolean = config.fetchRetries > 0
-    private val serverUrl: HttpUrl = config.serverUrl.toHttpUrl()
+    private val serverUrl: HttpUrl = getServerUrl(config)
     private val backoffConfig = BackoffConfig(
         attempts = config.fetchRetries,
         min = config.fetchRetryBackoffMinMillis,
@@ -115,4 +115,15 @@ private fun shouldRetryFetch(t: Throwable): Boolean {
         return t.statusCode < 400 || t.statusCode >= 500 || t.statusCode == 429
     }
     return true
+}
+
+private fun getServerUrl(config: RemoteEvaluationConfig): HttpUrl {
+    if (config.serverZone == RemoteEvaluationConfig.Defaults.SERVER_ZONE) {
+        return config.serverUrl.toHttpUrl()
+    } else {
+        return when (config.serverZone) {
+            ServerZone.US -> US_SERVER_URL.toHttpUrl()
+            ServerZone.EU -> EU_SERVER_URL.toHttpUrl()
+        }
+    }
 }
