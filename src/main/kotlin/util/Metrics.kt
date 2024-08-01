@@ -75,4 +75,14 @@ internal class LocalEvaluationMetricsWrapper(
         val metrics = metrics ?: return
         executor?.execute { metrics.onCohortDownloadFailure(exception) }
     }
+
+    override fun onProxyCohortMembership() {
+        val metrics = metrics ?: return
+        executor?.execute { metrics.onProxyCohortMembership() }
+    }
+
+    override fun onProxyCohortMembershipFailure(exception: Exception) {
+        val metrics = metrics ?: return
+        executor?.execute { metrics.onProxyCohortMembershipFailure(exception) }
+    }
 }

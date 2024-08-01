@@ -12,7 +12,7 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 internal class CohortLoader(
-    private val cohortDownloadApi: CohortDownloadApi,
+    private val cohortApi: CohortApi,
     private val cohortStorage: CohortStorage,
     private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper()
 ) {
@@ -39,7 +39,7 @@ internal class CohortLoader(
                     metrics::onCohortDownloadFailure
                 ) {
                     try {
-                        val cohort = cohortDownloadApi.getCohort(cohortId, storageCohort)
+                        val cohort = cohortApi.getCohort(cohortId, storageCohort)
                         cohortStorage.putCohort(cohort)
                     } catch (e: CohortNotModifiedException) {
                         // Do nothing

@@ -1,7 +1,7 @@
 package com.amplitude.experiment
 
 import com.amplitude.experiment.cohort.Cohort
-import com.amplitude.experiment.cohort.CohortDownloadApi
+import com.amplitude.experiment.cohort.CohortApi
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert
@@ -151,13 +151,13 @@ class LocalEvaluationClientTest {
         val cohortConfig = LocalEvaluationConfig(
             cohortSyncConfiguration = CohortSyncConfiguration("api", "secret")
         )
-        val cohortDownloadApi = mockk<CohortDownloadApi>().apply {
+        val cohortApi = mockk<CohortApi>().apply {
             every { getCohort(eq("52gz3yi7"), allAny()) } returns Cohort("52gz3yi7", "User", 2, 1722363790000, setOf("1", "2"))
             every { getCohort(eq("mv7fn2bp"), allAny()) } returns Cohort("mv7fn2bp", "User", 1, 1719350216000, setOf("67890", "12345"))
             every { getCohort(eq("s4t57y32"), allAny()) } returns Cohort("s4t57y32", "org name", 1, 1722368285000, setOf("Amplitude Website (Portfolio)"))
             every { getCohort(eq("k1lklnnb"), allAny()) } returns Cohort("k1lklnnb", "org id", 1, 1722466388000, setOf("1"))
         }
-        val client = LocalEvaluationClient(API_KEY, cohortConfig, cohortDownloadApi = cohortDownloadApi)
+        val client = LocalEvaluationClient(API_KEY, cohortConfig, cohortApi = cohortApi)
         client.start()
         val user = ExperimentUser(
             userId = "2333",
@@ -177,13 +177,13 @@ class LocalEvaluationClientTest {
         val cohortConfig = LocalEvaluationConfig(
             cohortSyncConfiguration = CohortSyncConfiguration("api", "secret")
         )
-        val cohortDownloadApi = mockk<CohortDownloadApi>().apply {
+        val cohortApi = mockk<CohortApi>().apply {
             every { getCohort(eq("52gz3yi7"), allAny()) } returns Cohort("52gz3yi7", "User", 2, 1722363790000, setOf("1", "2"))
             every { getCohort(eq("mv7fn2bp"), allAny()) } returns Cohort("mv7fn2bp", "User", 1, 1719350216000, setOf("67890", "12345"))
             every { getCohort(eq("s4t57y32"), allAny()) } returns Cohort("s4t57y32", "org name", 1, 1722368285000, setOf("Amplitude Website (Portfolio)"))
             every { getCohort(eq("k1lklnnb"), allAny()) } returns Cohort("k1lklnnb", "org id", 1, 1722466388000, setOf("1"))
         }
-        val client = LocalEvaluationClient(API_KEY, cohortConfig, cohortDownloadApi = cohortDownloadApi)
+        val client = LocalEvaluationClient(API_KEY, cohortConfig, cohortApi = cohortApi)
         client.start()
         val user = ExperimentUser(
             userId = "12345",
@@ -198,13 +198,13 @@ class LocalEvaluationClientTest {
         val cohortConfig = LocalEvaluationConfig(
             cohortSyncConfiguration = CohortSyncConfiguration("api", "secret")
         )
-        val cohortDownloadApi = mockk<CohortDownloadApi>().apply {
+        val cohortApi = mockk<CohortApi>().apply {
             every { getCohort(eq("52gz3yi7"), allAny()) } returns Cohort("52gz3yi7", "User", 2, 1722363790000, setOf("1", "2"))
             every { getCohort(eq("mv7fn2bp"), allAny()) } returns Cohort("mv7fn2bp", "User", 1, 1719350216000, setOf("67890", "12345"))
             every { getCohort(eq("s4t57y32"), allAny()) } returns Cohort("s4t57y32", "org name", 1, 1722368285000, setOf("Amplitude Website (Portfolio)"))
             every { getCohort(eq("k1lklnnb"), allAny()) } returns Cohort("k1lklnnb", "org id", 1, 1722466388000, setOf("1"))
         }
-        val client = LocalEvaluationClient(API_KEY, cohortConfig, cohortDownloadApi = cohortDownloadApi)
+        val client = LocalEvaluationClient(API_KEY, cohortConfig, cohortApi = cohortApi)
         client.start()
         val user = ExperimentUser(
             userId = "1",
@@ -220,13 +220,13 @@ class LocalEvaluationClientTest {
         val cohortConfig = LocalEvaluationConfig(
             cohortSyncConfiguration = CohortSyncConfiguration("api", "secret")
         )
-        val cohortDownloadApi = mockk<CohortDownloadApi>().apply {
+        val cohortApi = mockk<CohortApi>().apply {
             every { getCohort(eq("52gz3yi7"), allAny()) } returns Cohort("52gz3yi7", "User", 2, 1722363790000, setOf("1", "2"))
             every { getCohort(eq("mv7fn2bp"), allAny()) } returns Cohort("mv7fn2bp", "User", 1, 1719350216000, setOf("67890", "12345"))
             every { getCohort(eq("s4t57y32"), allAny()) } returns Cohort("s4t57y32", "org name", 1, 1722368285000, setOf("Amplitude Website (Portfolio)"))
             every { getCohort(eq("k1lklnnb"), allAny()) } returns Cohort("k1lklnnb", "org id", 1, 1722466388000, setOf("1"))
         }
-        val client = LocalEvaluationClient(API_KEY, cohortConfig, cohortDownloadApi = cohortDownloadApi)
+        val client = LocalEvaluationClient(API_KEY, cohortConfig, cohortApi = cohortApi)
         client.start()
         val user = ExperimentUser(
             userId = "2333",
@@ -243,13 +243,13 @@ class LocalEvaluationClientTest {
         val cohortConfig = LocalEvaluationConfig(
             cohortSyncConfiguration = CohortSyncConfiguration("api", "secret")
         )
-        val cohortDownloadApi = mockk<CohortDownloadApi>().apply {
+        val cohortApi = mockk<CohortApi>().apply {
             every { getCohort(eq("52gz3yi7"), allAny()) } returns Cohort("52gz3yi7", "User", 2, 1722363790000, setOf("1", "2"))
             every { getCohort(eq("mv7fn2bp"), allAny()) } returns Cohort("mv7fn2bp", "User", 1, 1719350216000, setOf("67890", "12345"))
             every { getCohort(eq("s4t57y32"), allAny()) } returns Cohort("s4t57y32", "org name", 1, 1722368285000, setOf("Amplitude Website (Portfolio)"))
             every { getCohort(eq("k1lklnnb"), allAny()) } returns Cohort("k1lklnnb", "org id", 1, 1722466388000, setOf("1"))
         }
-        val client = LocalEvaluationClient(API_KEY, cohortConfig, cohortDownloadApi = cohortDownloadApi)
+        val client = LocalEvaluationClient(API_KEY, cohortConfig, cohortApi = cohortApi)
         client.start()
         val user = ExperimentUser(
             userId = "2333",

@@ -6,8 +6,8 @@ import com.amplitude.experiment.assignment.AmplitudeAssignmentService
 import com.amplitude.experiment.assignment.Assignment
 import com.amplitude.experiment.assignment.AssignmentService
 import com.amplitude.experiment.assignment.InMemoryAssignmentFilter
-import com.amplitude.experiment.cohort.CohortDownloadApi
-import com.amplitude.experiment.cohort.DirectCohortDownloadApi
+import com.amplitude.experiment.cohort.CohortApi
+import com.amplitude.experiment.cohort.DirectCohortApi
 import com.amplitude.experiment.cohort.InMemoryCohortStorage
 import com.amplitude.experiment.deployment.DeploymentRunner
 import com.amplitude.experiment.evaluation.EvaluationEngine
@@ -33,7 +33,7 @@ class LocalEvaluationClient internal constructor(
     apiKey: String,
     private val config: LocalEvaluationConfig = LocalEvaluationConfig(),
     private val httpClient: OkHttpClient = OkHttpClient(),
-    cohortDownloadApi: CohortDownloadApi? = getCohortDownloadApi(config, httpClient)
+    cohortApi: CohortApi? = getCohortDownloadApi(config, httpClient)
 ) {
     private val startLock = Once()
     private val assignmentService: AssignmentService? = createAssignmentService(apiKey)
@@ -52,7 +52,7 @@ class LocalEvaluationClient internal constructor(
         config = config,
         flagConfigApi = flagConfigApi,
         flagConfigStorage = flagConfigStorage,
-        cohortDownloadApi = cohortDownloadApi,
+        cohortApi = cohortApi,
         cohortStorage = cohortStorage,
         metrics = metrics,
     )
@@ -113,17 +113,8 @@ class LocalEvaluationClient internal constructor(
 
     private fun enrichUser(user: ExperimentUser, flagConfigs: List<EvaluationFlag>): ExperimentUser {
         val groupedCohortIds = flagConfigs.getGroupedCohortIds()
-        val allCohortIds = groupedCohortIds.values.flatten().toSet()
         if (cohortStorage == null) {
-            if (groupedCohortIds.isNotEmpty()) {
-                Logger.e("Flags are targeting local evaluation cohorts $allCohortIds, but cohort downloads have not been configured in the SDK on initialization.")
-            }
             return user
-        }
-        for (cohortId in allCohortIds) {
-            if (cohortStorage.getCohort(cohortId) == null) {
-                throw ExperimentException("Targeted cohort $cohortId has not been downloaded indicating an error has occurred.")
-            }
         }
         return user.copyToBuilder().apply {
             val userCohortsIds = groupedCohortIds[USER_GROUP_TYPE]
@@ -151,9 +142,9 @@ class LocalEvaluationClient internal constructor(
 
 }
 
-private fun getCohortDownloadApi(config: LocalEvaluationConfig, httpClient: OkHttpClient): CohortDownloadApi? {
+private fun getCohortDownloadApi(config: LocalEvaluationConfig, httpClient: OkHttpClient): CohortApi? {
     return if (config.cohortSyncConfiguration != null) {
-        DirectCohortDownloadApi(
+        DirectCohortApi(
             apiKey = config.cohortSyncConfiguration.apiKey,
             secretKey = config.cohortSyncConfiguration.secretKey,
             maxCohortSize = config.cohortSyncConfiguration.maxCohortSize,

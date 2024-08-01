@@ -2,7 +2,7 @@ package com.amplitude.experiment.deployment
 
 import com.amplitude.experiment.LocalEvaluationConfig
 import com.amplitude.experiment.LocalEvaluationMetrics
-import com.amplitude.experiment.cohort.CohortDownloadApi
+import com.amplitude.experiment.cohort.CohortApi
 import com.amplitude.experiment.cohort.CohortLoader
 import com.amplitude.experiment.cohort.CohortStorage
 import com.amplitude.experiment.flag.FlagConfigApi
@@ -22,14 +22,14 @@ internal class DeploymentRunner(
     private val config: LocalEvaluationConfig,
     private val flagConfigApi: FlagConfigApi,
     private val flagConfigStorage: FlagConfigStorage,
-    cohortDownloadApi: CohortDownloadApi?,
+    cohortApi: CohortApi?,
     private val cohortStorage: CohortStorage?,
     private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper()
 ) {
     private val lock = Once()
     private val poller = Executors.newScheduledThreadPool(1, daemonFactory)
-    private val cohortLoader = if (cohortDownloadApi != null && cohortStorage != null) {
-        CohortLoader(cohortDownloadApi, cohortStorage)
+    private val cohortLoader = if (cohortApi != null && cohortStorage != null) {
+        CohortLoader(cohortApi, cohortStorage)
     } else {
         null
     }

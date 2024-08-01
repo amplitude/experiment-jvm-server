@@ -37,17 +37,17 @@ internal data class GetCohortResponse(
     )
 }
 
-internal interface CohortDownloadApi {
+internal interface CohortApi {
     fun getCohort(cohortId: String, cohort: Cohort?): Cohort
 }
 
-internal class DirectCohortDownloadApi(
+internal class DirectCohortApi(
     apiKey: String,
     secretKey: String,
     private val maxCohortSize: Int,
     private val serverUrl: HttpUrl,
     private val httpClient: OkHttpClient,
-) : CohortDownloadApi {
+) : CohortApi {
 
     private val token = Base64.getEncoder().encodeToString("$apiKey:$secretKey".toByteArray())
     private val backoffConfig = BackoffConfig(

@@ -20,7 +20,7 @@ class CohortDownloadApiTest {
     private val httpClient = OkHttpClient()
     private val server = MockWebServer()
     private val url = server.url("/")
-    private val api = DirectCohortDownloadApi(apiKey,secretKey, maxCohortSize, url, httpClient)
+    private val api = DirectCohortApi(apiKey,secretKey, maxCohortSize, url, httpClient)
     @Test
     fun `cohort download, success`() {
         val response = cohortResponse("a", setOf("1"))

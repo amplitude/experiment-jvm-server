@@ -1,7 +1,7 @@
 package com.amplitude.experiment.deployment
 
 import com.amplitude.experiment.LocalEvaluationConfig
-import com.amplitude.experiment.cohort.CohortDownloadApi
+import com.amplitude.experiment.cohort.CohortApi
 import com.amplitude.experiment.cohort.CohortStorage
 import com.amplitude.experiment.evaluation.EvaluationCondition
 import com.amplitude.experiment.evaluation.EvaluationFlag
@@ -38,14 +38,14 @@ class DeploymentRunnerTest {
     @Test
     fun `test start throws if first flag config load fails`() {
         val flagApi = Mockito.mock(FlagConfigApi::class.java)
-        val cohortDownloadApi = Mockito.mock(CohortDownloadApi::class.java)
+        val cohortApi = Mockito.mock(CohortApi::class.java)
         val flagConfigStorage = Mockito.mock(FlagConfigStorage::class.java)
         val cohortStorage = Mockito.mock(CohortStorage::class.java)
         val runner = DeploymentRunner(
             LocalEvaluationConfig(),
             flagApi,
             flagConfigStorage,
-            cohortDownloadApi,
+            cohortApi,
             cohortStorage,
         )
         Mockito.`when`(flagApi.getFlagConfigs()).thenThrow(RuntimeException("test"))
@@ -67,17 +67,17 @@ class DeploymentRunnerTest {
     @Test
     fun `test start does not throw if first cohort load fails`() {
         val flagApi = Mockito.mock(FlagConfigApi::class.java)
-        val cohortDownloadApi = Mockito.mock(CohortDownloadApi::class.java)
+        val cohortApi = Mockito.mock(CohortApi::class.java)
         val flagConfigStorage = Mockito.mock(FlagConfigStorage::class.java)
         val cohortStorage = Mockito.mock(CohortStorage::class.java)
         val runner = DeploymentRunner(
             LocalEvaluationConfig(),
             flagApi, flagConfigStorage,
-            cohortDownloadApi,
+            cohortApi,
             cohortStorage,
         )
         Mockito.`when`(flagApi.getFlagConfigs()).thenReturn(listOf(flag))
-        Mockito.`when`(cohortDownloadApi.getCohort(COHORT_ID, null)).thenThrow(RuntimeException("test"))
+        Mockito.`when`(cohortApi.getCohort(COHORT_ID, null)).thenThrow(RuntimeException("test"))
         runner.start()
     }
 }

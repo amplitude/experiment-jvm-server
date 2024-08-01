@@ -28,6 +28,8 @@ class LocalEvaluationConfig internal constructor(
     @JvmField
     val cohortSyncConfiguration: CohortSyncConfiguration? = Defaults.COHORT_SYNC_CONFIGURATION,
     @JvmField
+    val evaluationProxyConfiguration: EvaluationProxyConfiguration? = Defaults.EVALUATION_PROXY_CONFIGURATION,
+    @JvmField
     val metrics: LocalEvaluationMetrics? = Defaults.LOCAL_EVALUATION_METRICS,
 ) {
 
@@ -84,6 +86,11 @@ class LocalEvaluationConfig internal constructor(
         /**
          * null
          */
+        val EVALUATION_PROXY_CONFIGURATION: EvaluationProxyConfiguration? = null
+
+        /**
+         * null
+         */
         val LOCAL_EVALUATION_METRICS: LocalEvaluationMetrics? = null
     }
 
@@ -102,6 +109,7 @@ class LocalEvaluationConfig internal constructor(
         private var flagConfigPollerRequestTimeoutMillis = Defaults.FLAG_CONFIG_POLLER_REQUEST_TIMEOUT_MILLIS
         private var assignmentConfiguration = Defaults.ASSIGNMENT_CONFIGURATION
         private var cohortSyncConfiguration = Defaults.COHORT_SYNC_CONFIGURATION
+        private var evaluationProxyConfiguration = Defaults.EVALUATION_PROXY_CONFIGURATION
         private var metrics = Defaults.LOCAL_EVALUATION_METRICS
 
         fun debug(debug: Boolean) = apply {
@@ -128,6 +136,10 @@ class LocalEvaluationConfig internal constructor(
             this.cohortSyncConfiguration = cohortSyncConfiguration
         }
 
+        fun enableEvaluationProxy(evaluationProxyConfiguration: EvaluationProxyConfiguration) = apply {
+            this.evaluationProxyConfiguration = evaluationProxyConfiguration
+        }
+
         @ExperimentalApi
         fun metrics(metrics: LocalEvaluationMetrics) = apply {
             this.metrics = metrics
@@ -141,6 +153,7 @@ class LocalEvaluationConfig internal constructor(
                 flagConfigPollerRequestTimeoutMillis = flagConfigPollerRequestTimeoutMillis,
                 assignmentConfiguration = assignmentConfiguration,
                 cohortSyncConfiguration = cohortSyncConfiguration,
+                evaluationProxyConfiguration = evaluationProxyConfiguration,
                 metrics = metrics,
             )
         }
@@ -152,6 +165,7 @@ class LocalEvaluationConfig internal constructor(
             "flagConfigPollerRequestTimeoutMillis=$flagConfigPollerRequestTimeoutMillis, " +
             "assignmentConfiguration=$assignmentConfiguration, " +
             "cohortSyncConfiguration=$cohortSyncConfiguration, " +
+            "evaluationProxyConfiguration=$evaluationProxyConfiguration, " +
             "metrics=$metrics)"
     }
 }
@@ -173,6 +187,13 @@ data class CohortSyncConfiguration(
 )
 
 @ExperimentalApi
+data class EvaluationProxyConfiguration(
+    val proxyUrl: String,
+    val cohortCacheCapacity: Int = 1000000,
+    val cohortCacheTtlMillis: Long = 60000L,
+)
+
+@ExperimentalApi
 interface LocalEvaluationMetrics {
     fun onEvaluation()
     fun onEvaluationFailure(exception: Exception)
@@ -184,4 +205,6 @@ interface LocalEvaluationMetrics {
     fun onFlagConfigFetchFailure(exception: Exception)
     fun onCohortDownload()
     fun onCohortDownloadFailure(exception: Exception)
+    fun onProxyCohortMembership()
+    fun onProxyCohortMembershipFailure(exception: Exception)
 }
