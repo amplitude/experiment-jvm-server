@@ -6,6 +6,7 @@ import com.amplitude.experiment.assignment.AmplitudeAssignmentService
 import com.amplitude.experiment.assignment.Assignment
 import com.amplitude.experiment.assignment.AssignmentService
 import com.amplitude.experiment.assignment.InMemoryAssignmentFilter
+import com.amplitude.experiment.cohort.CohortDownloadApi
 import com.amplitude.experiment.cohort.DirectCohortDownloadApi
 import com.amplitude.experiment.cohort.InMemoryCohortStorage
 import com.amplitude.experiment.deployment.DeploymentRunner
@@ -29,29 +30,18 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 
 class LocalEvaluationClient internal constructor(
-    private val apiKey: String,
+    apiKey: String,
     private val config: LocalEvaluationConfig = LocalEvaluationConfig(),
+    private val httpClient: OkHttpClient = OkHttpClient(),
+    cohortDownloadApi: CohortDownloadApi? = getCohortDownloadApi(config, httpClient)
 ) {
     private val startLock = Once()
-    private val httpClient = OkHttpClient()
     private val assignmentService: AssignmentService? = createAssignmentService(apiKey)
     private val serverUrl: HttpUrl = getServerUrl(config)
-    private val cohortServerUrl: HttpUrl = getCohortServerUrl(config)
     private val evaluation: EvaluationEngine = EvaluationEngineImpl()
     private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper(config.metrics)
     private val flagConfigApi = DirectFlagConfigApi(apiKey, serverUrl, httpClient)
     private val flagConfigStorage = InMemoryFlagConfigStorage()
-    private val cohortDownloadApi = if (config.cohortSyncConfiguration != null) {
-        DirectCohortDownloadApi(
-            apiKey = config.cohortSyncConfiguration.apiKey,
-            secretKey = config.cohortSyncConfiguration.secretKey,
-            maxCohortSize = config.cohortSyncConfiguration.maxCohortSize,
-            serverUrl = cohortServerUrl,
-            httpClient = httpClient,
-        )
-    } else {
-        null
-    }
     private val cohortStorage = if (config.cohortSyncConfiguration != null) {
         InMemoryCohortStorage()
     } else {
@@ -68,8 +58,13 @@ class LocalEvaluationClient internal constructor(
     )
 
     fun start() {
-        startLock.once {
+        try {
             deploymentRunner.start()
+        } catch (t: Throwable) {
+            throw ExperimentException(
+                message = "Failed to start local evaluation client.",
+                cause = t
+            )
         }
     }
 
@@ -82,7 +77,7 @@ class LocalEvaluationClient internal constructor(
                 setEventUploadPeriodMillis(config.assignmentConfiguration.eventUploadPeriodMillis)
                 useBatchMode(config.assignmentConfiguration.useBatchMode)
                 setOptions(Options().setMinIdLength(1))
-                setServerUrl(config.assignmentConfiguration.serverUrl)
+                setServerUrl(getEventServerUrl(config, config.assignmentConfiguration))
             },
             InMemoryAssignmentFilter(config.assignmentConfiguration.cacheCapacity)
         )
@@ -103,7 +98,7 @@ class LocalEvaluationClient internal constructor(
         if (sortedFlagConfigs.isEmpty()) {
             return mapOf()
         }
-        val enrichedUser = enrichUser(user, flagConfigs)
+        val enrichedUser = enrichUser(user, sortedFlagConfigs)
         val evaluationResults = wrapMetrics(
             metric = metrics::onEvaluation,
             failure = metrics::onEvaluationFailure,
@@ -116,11 +111,20 @@ class LocalEvaluationClient internal constructor(
         return variants
     }
 
-    private fun enrichUser(user: ExperimentUser, flagConfigs: Map<String, EvaluationFlag>): ExperimentUser {
+    private fun enrichUser(user: ExperimentUser, flagConfigs: List<EvaluationFlag>): ExperimentUser {
+        val groupedCohortIds = flagConfigs.getGroupedCohortIds()
+        val allCohortIds = groupedCohortIds.values.flatten().toSet()
         if (cohortStorage == null) {
+            if (groupedCohortIds.isNotEmpty()) {
+                Logger.e("Flags are targeting local evaluation cohorts $allCohortIds, but cohort downloads have not been configured in the SDK on initialization.")
+            }
             return user
         }
-        val groupedCohortIds = flagConfigs.values.getGroupedCohortIds()
+        for (cohortId in allCohortIds) {
+            if (cohortStorage.getCohort(cohortId) == null) {
+                throw ExperimentException("Targeted cohort $cohortId has not been downloaded indicating an error has occurred.")
+            }
+        }
         return user.copyToBuilder().apply {
             val userCohortsIds = groupedCohortIds[USER_GROUP_TYPE]
             if (!userCohortsIds.isNullOrEmpty() && user.userId != null) {
@@ -143,6 +147,22 @@ class LocalEvaluationClient internal constructor(
             }
         }.build()
     }
+
+
+}
+
+private fun getCohortDownloadApi(config: LocalEvaluationConfig, httpClient: OkHttpClient): CohortDownloadApi? {
+    return if (config.cohortSyncConfiguration != null) {
+        DirectCohortDownloadApi(
+            apiKey = config.cohortSyncConfiguration.apiKey,
+            secretKey = config.cohortSyncConfiguration.secretKey,
+            maxCohortSize = config.cohortSyncConfiguration.maxCohortSize,
+            serverUrl = getCohortServerUrl(config),
+            httpClient = httpClient,
+        )
+    } else {
+        null
+    }
 }
 
 private fun getServerUrl(config: LocalEvaluationConfig): HttpUrl {
@@ -163,6 +183,20 @@ private fun getCohortServerUrl(config: LocalEvaluationConfig): HttpUrl {
         return when (config.serverZone) {
             ServerZone.US -> US_SERVER_URL.toHttpUrl()
             ServerZone.EU -> EU_SERVER_URL.toHttpUrl()
+        }
+    }
+}
+
+private fun getEventServerUrl(
+    config: LocalEvaluationConfig,
+    assignmentConfiguration: AssignmentConfiguration
+): String {
+    if (config.serverZone == LocalEvaluationConfig.Defaults.SERVER_ZONE) {
+        return assignmentConfiguration.serverUrl
+    } else {
+        return when (config.serverZone) {
+            ServerZone.US -> US_EVENT_SERVER_URL
+            ServerZone.EU -> EU_EVENT_SERVER_URL
         }
     }
 }

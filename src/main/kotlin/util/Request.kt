@@ -41,8 +41,7 @@ internal inline fun <reified T> OkHttpClient.request(
 
 internal open class HttpErrorResponseException(
     val code: Int,
-    override val message: String? = null
-) : IOException()
+) : IOException("Request resulted error response $code")
 
 private fun OkHttpClient.submit(
     request: Request,
@@ -83,23 +82,13 @@ private fun newGet(
     return builder.build()
 }
 
-internal fun OkHttpClient.get(
-    serverUrl: HttpUrl,
-    path: String? = null,
-    headers: Map<String, String>? = null,
-    queries: Map<String, String>? = null,
-): Response {
-    val request = newGet(serverUrl, path, headers, queries)
-    return submit(request).thenApply { it.apply { close() } }.get()
-}
-
 internal inline fun <reified T> OkHttpClient.get(
     serverUrl: HttpUrl,
     path: String? = null,
     headers: Map<String, String>? = null,
     queries: Map<String, String>? = null,
     crossinline block: (Response) -> Unit,
-): T {
+): CompletableFuture<T> {
     val request = newGet(serverUrl, path, headers, queries)
     return submit(request).thenApply {
         it.use { response ->
@@ -107,7 +96,7 @@ internal inline fun <reified T> OkHttpClient.get(
             val body = response.body?.string() ?: throw IOException("null response body")
             json.decodeFromString<T>(body)
         }
-    }.get()
+    }
 }
 
 internal inline fun <reified T> OkHttpClient.get(
@@ -115,6 +104,6 @@ internal inline fun <reified T> OkHttpClient.get(
     path: String? = null,
     headers: Map<String, String>? = null,
     queries: Map<String, String>? = null,
-): T {
+): CompletableFuture<T> {
     return this.get<T>(serverUrl, path, headers, queries) {}
 }

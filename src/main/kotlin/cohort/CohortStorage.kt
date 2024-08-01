@@ -1,36 +1,65 @@
 package com.amplitude.experiment.cohort
 
+import com.amplitude.experiment.util.USER_GROUP_TYPE
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
+
 internal interface CohortStorage {
     fun getCohort(cohortId: String): Cohort?
-    fun getCohorts(): List<Cohort>
+    fun getCohorts(): Map<String, Cohort>
     fun getCohortsForUser(userId: String, cohortIds: Set<String>): Set<String>
     fun getCohortsForGroup(groupType: String, groupName: String, cohortIds: Set<String>): Set<String>
     fun putCohort(cohort: Cohort)
-    fun deleteCohort(groupType: String, cohortId: String)
+    fun deleteCohort(cohortId: String)
 }
 
 internal class InMemoryCohortStorage : CohortStorage {
+    private val lock = ReentrantReadWriteLock()
+    private val cohortStore = mutableMapOf<String, Cohort>()
+
     override fun getCohort(cohortId: String): Cohort? {
-        TODO("Not yet implemented")
+        lock.read {
+            return cohortStore[cohortId]
+        }
     }
 
-    override fun getCohorts(): List<Cohort> {
-        TODO("Not yet implemented")
+    override fun getCohorts(): Map<String, Cohort> {
+        lock.read {
+            return cohortStore.toMap()
+        }
     }
 
     override fun getCohortsForUser(userId: String, cohortIds: Set<String>): Set<String> {
-        TODO("Not yet implemented")
+        return getCohortsForGroup(USER_GROUP_TYPE, userId, cohortIds)
     }
 
     override fun getCohortsForGroup(groupType: String, groupName: String, cohortIds: Set<String>): Set<String> {
-        TODO("Not yet implemented")
+        val result = mutableSetOf<String>()
+        lock.read {
+            for (cohortId in cohortIds) {
+                val cohort = cohortStore[cohortId] ?: continue
+                if (cohort.groupType != groupType) {
+                    continue
+                }
+                if (cohort.members.contains(groupName)) {
+                    result.add(cohortId)
+                }
+            }
+        }
+        return result
     }
+
 
     override fun putCohort(cohort: Cohort) {
-        TODO("Not yet implemented")
+        lock.write {
+            cohortStore[cohort.id] = cohort
+        }
     }
 
-    override fun deleteCohort(groupType: String, cohortId: String) {
-        TODO("Not yet implemented")
+    override fun deleteCohort(cohortId: String) {
+        lock.write {
+            cohortStore.remove(cohortId)
+        }
     }
 }

@@ -1,31 +1,40 @@
 package com.amplitude.experiment.cohort
 
 import com.amplitude.experiment.LIBRARY_VERSION
+import com.amplitude.experiment.util.BackoffConfig
 import com.amplitude.experiment.util.HttpErrorResponseException
 import com.amplitude.experiment.util.Logger
+import com.amplitude.experiment.util.backoff
 import com.amplitude.experiment.util.get
 import kotlinx.serialization.Serializable
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import java.util.Base64
+import java.util.concurrent.ExecutionException
 
-internal class CohortTooLargeException(cohortId: String, maxCohortSize: Int) : Exception(
+internal class CohortTooLargeException(cohortId: String, maxCohortSize: Int) : RuntimeException(
     "Cohort $cohortId exceeds the maximum cohort size defined in the SDK configuration $maxCohortSize"
 )
 
-internal class CohortNotModifiedException(cohortId: String) : Exception(
+internal class CohortNotModifiedException(cohortId: String) : RuntimeException(
     "Cohort $cohortId has not been modified."
 )
 
 @Serializable
-private data class GetCohortResponse(
-    private val id: String,
+internal data class GetCohortResponse(
+    private val cohortId: String,
     private val lastModified: Long,
     private val size: Int,
     private val memberIds: Set<String> = setOf(),
     private val groupType: String,
 ) {
-    fun toCohort() = Cohort(id, groupType, size, lastModified, memberIds)
+    fun toCohort() = Cohort(
+        id = cohortId,
+        groupType = groupType,
+        size = size,
+        lastModified = lastModified,
+        members = memberIds
+    )
 }
 
 internal interface CohortDownloadApi {
@@ -39,45 +48,54 @@ internal class DirectCohortDownloadApi(
     private val serverUrl: HttpUrl,
     private val httpClient: OkHttpClient,
 ) : CohortDownloadApi {
-    private val bearerToken = Base64.getEncoder().encodeToString("$apiKey:$secretKey".toByteArray())
+
+    private val token = Base64.getEncoder().encodeToString("$apiKey:$secretKey".toByteArray())
+    private val backoffConfig = BackoffConfig(
+        attempts = 3,
+        min = 500,
+        max = 2000,
+        scalar = 2.0,
+    )
+
     override fun getCohort(cohortId: String, cohort: Cohort?): Cohort {
         Logger.d("getCohortMembers($cohortId): start")
-        var errors = 0
-        while (true) {
+        val future = backoff(backoffConfig, {
             val headers = mapOf(
-                "Authorization" to "Bearer $bearerToken",
+                "Authorization" to "Basic $token",
                 "X-Amp-Exp-Library" to "experiment-jvm-server/$LIBRARY_VERSION",
             )
             val queries = mutableMapOf(
                 "maxCohortSize" to "$maxCohortSize",
             )
-            if (cohort != null && cohort.lastModified > 0) {
+            if (cohort != null) {
                 queries["lastModified"] = "${cohort.lastModified}"
             }
-            try {
-                return httpClient.get<GetCohortResponse>(
-                    serverUrl = serverUrl,
-                    path = "sdk/v1/cohort/$cohortId",
-                    headers = headers,
-                    queries = queries,
-                ) { response ->
-                    Logger.d("getCohortMembers($cohortId): status=${response.code}")
-                    when (response.code) {
-                        200 -> return@get
-                        204 -> throw CohortNotModifiedException(cohortId)
-                        413 -> throw CohortTooLargeException(cohortId, maxCohortSize)
-                        else -> throw HttpErrorResponseException(response.code)
-                    }
-                }.toCohort()
-            } catch (e: HttpErrorResponseException) {
-                if (e.code == 429) {
-                    continue
+            httpClient.get<GetCohortResponse>(
+                serverUrl = serverUrl,
+                path = "sdk/v1/cohort/$cohortId",
+                headers = headers,
+                queries = queries,
+            ) { response ->
+                Logger.d("getCohortMembers($cohortId): status=${response.code}")
+                when (response.code) {
+                    200 -> return@get
+                    204 -> throw CohortNotModifiedException(cohortId)
+                    413 -> throw CohortTooLargeException(cohortId, maxCohortSize)
+                    else -> throw HttpErrorResponseException(response.code)
                 }
-                if (errors >= 3) {
-                    throw e
-                }
-                errors++
             }
+        }, { e ->
+            // Don't retry on expected responses
+            when (e) {
+                is CohortNotModifiedException -> false
+                is CohortTooLargeException -> false
+                else -> true
+            }
+        })
+        try {
+            return future.get().toCohort()
+        } catch(e: ExecutionException) {
+            throw e.cause ?: e
         }
     }
 }

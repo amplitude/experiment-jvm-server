@@ -54,7 +54,7 @@ class LocalEvaluationConfig internal constructor(
         /**
          * "https://api.lab.amplitude.com/"
          */
-        const val COHORT_SERVER_URL = "https://cohorts-v2.lab.amplitude.com/"
+        const val COHORT_SERVER_URL = "https://cohort-v2.lab.amplitude.com/"
 
         /**
          * ServerZone.US
@@ -169,7 +169,7 @@ data class AssignmentConfiguration(
 data class CohortSyncConfiguration(
     val apiKey: String,
     val secretKey: String,
-    val maxCohortSize: Int = 15000,
+    val maxCohortSize: Int = Int.MAX_VALUE,
 )
 
 @ExperimentalApi

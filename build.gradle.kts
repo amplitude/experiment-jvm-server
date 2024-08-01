@@ -19,6 +19,8 @@ java {
 dependencies {
     implementation(kotlin("stdlib"))
     testImplementation(kotlin("test"))
+    testImplementation("org.mockito:mockito-core:${Versions.mockito}")
+    testImplementation("com.squareup.okhttp3:mockwebserver:${Versions.mockwebserver}")
     testImplementation("io.mockk:mockk:${Versions.mockk}")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serializationRuntime}")
     implementation("com.squareup.okhttp3:okhttp:${Versions.okhttp}")

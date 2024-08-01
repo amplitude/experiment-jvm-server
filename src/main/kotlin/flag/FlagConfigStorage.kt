@@ -9,6 +9,7 @@ internal interface FlagConfigStorage {
     fun getFlagConfigs(): Map<String, EvaluationFlag>
     fun putFlagConfig(flagConfig: EvaluationFlag)
     fun removeIf(condition: (EvaluationFlag) -> Boolean)
+    fun update(put: List<EvaluationFlag>, remove: List<EvaluationFlag>)
 }
 
 internal class InMemoryFlagConfigStorage : FlagConfigStorage {
@@ -29,6 +30,14 @@ internal class InMemoryFlagConfigStorage : FlagConfigStorage {
     override fun removeIf(condition: (EvaluationFlag) -> Boolean) {
         return flagConfigsLock.write {
             flagConfigs.entries.removeIf { condition(it.value) }
+        }
+    }
+
+    override fun update(put: List<EvaluationFlag>, remove: List<EvaluationFlag>) {
+
+        return flagConfigsLock.write {
+            flagConfigs.putAll(put.associateBy { it.key })
+            remove.forEach { flagConfigs.remove(it.key) }
         }
     }
 }

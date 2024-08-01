@@ -23,6 +23,6 @@ internal class DirectFlagConfigApi(
                 "Authorization" to "Api-Key $deploymentKey",
             ),
             queries = mapOf("v" to "0")
-        )
+        ).get()
     }
 }
