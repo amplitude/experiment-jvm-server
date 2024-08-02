@@ -65,6 +65,10 @@ internal class DynamicCohortApi(
         return if (proxyUrl != null) {
             try {
                 getCohort(proxyUrl, cohortId, cohort)
+            } catch (e: CohortNotModifiedException) {
+                throw e
+            } catch (e: CohortTooLargeException) {
+                throw e
             } catch (e: Exception) {
                 metrics.onCohortDownloadOriginFallback(e)
                 getCohort(serverUrl, cohortId, cohort)
