@@ -176,8 +176,8 @@ private fun getCohortServerUrl(config: LocalEvaluationConfig): HttpUrl {
         config.cohortServerUrl.toHttpUrl()
     } else {
         when (config.serverZone) {
-            ServerZone.US -> US_SERVER_URL.toHttpUrl()
-            ServerZone.EU -> EU_SERVER_URL.toHttpUrl()
+            ServerZone.US -> US_COHORT_SERVER_URL.toHttpUrl()
+            ServerZone.EU -> EU_COHORT_SERVER_URL.toHttpUrl()
         }
     }
 }
