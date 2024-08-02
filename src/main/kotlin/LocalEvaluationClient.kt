@@ -115,6 +115,9 @@ class LocalEvaluationClient internal constructor(
     private fun enrichUser(user: ExperimentUser, flagConfigs: List<EvaluationFlag>): ExperimentUser {
         val groupedCohortIds = flagConfigs.getGroupedCohortIds()
         if (cohortStorage == null) {
+            if (groupedCohortIds.isNotEmpty()) {
+                Logger.e("Local evaluation flags target cohorts but cohort targeting is not configured.")
+            }
             return user
         }
         return user.copyToBuilder().apply {
