@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalApi::class)
+
 package com.amplitude.experiment
 
 import com.amplitude.Amplitude
@@ -7,18 +9,17 @@ import com.amplitude.experiment.assignment.Assignment
 import com.amplitude.experiment.assignment.AssignmentService
 import com.amplitude.experiment.assignment.InMemoryAssignmentFilter
 import com.amplitude.experiment.cohort.CohortApi
-import com.amplitude.experiment.cohort.DirectCohortApi
+import com.amplitude.experiment.cohort.DynamicCohortApi
 import com.amplitude.experiment.cohort.InMemoryCohortStorage
 import com.amplitude.experiment.deployment.DeploymentRunner
 import com.amplitude.experiment.evaluation.EvaluationEngine
 import com.amplitude.experiment.evaluation.EvaluationEngineImpl
 import com.amplitude.experiment.evaluation.EvaluationFlag
 import com.amplitude.experiment.evaluation.topologicalSort
-import com.amplitude.experiment.flag.DirectFlagConfigApi
+import com.amplitude.experiment.flag.DynamicFlagConfigApi
 import com.amplitude.experiment.flag.InMemoryFlagConfigStorage
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
-import com.amplitude.experiment.util.Once
 import com.amplitude.experiment.util.USER_GROUP_TYPE
 import com.amplitude.experiment.util.filterDefaultVariants
 import com.amplitude.experiment.util.getGroupedCohortIds
@@ -35,12 +36,12 @@ class LocalEvaluationClient internal constructor(
     private val httpClient: OkHttpClient = OkHttpClient(),
     cohortApi: CohortApi? = getCohortDownloadApi(config, httpClient)
 ) {
-    private val startLock = Once()
+
     private val assignmentService: AssignmentService? = createAssignmentService(apiKey)
     private val serverUrl: HttpUrl = getServerUrl(config)
     private val evaluation: EvaluationEngine = EvaluationEngineImpl()
     private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper(config.metrics)
-    private val flagConfigApi = DirectFlagConfigApi(apiKey, serverUrl, httpClient)
+    private val flagConfigApi = DynamicFlagConfigApi(apiKey, serverUrl, getProxyUrl(config), httpClient)
     private val flagConfigStorage = InMemoryFlagConfigStorage()
     private val cohortStorage = if (config.cohortSyncConfiguration != null) {
         InMemoryCohortStorage()
@@ -138,17 +139,16 @@ class LocalEvaluationClient internal constructor(
             }
         }.build()
     }
-
-
 }
 
 private fun getCohortDownloadApi(config: LocalEvaluationConfig, httpClient: OkHttpClient): CohortApi? {
     return if (config.cohortSyncConfiguration != null) {
-        DirectCohortApi(
+        DynamicCohortApi(
             apiKey = config.cohortSyncConfiguration.apiKey,
             secretKey = config.cohortSyncConfiguration.secretKey,
             maxCohortSize = config.cohortSyncConfiguration.maxCohortSize,
             serverUrl = getCohortServerUrl(config),
+            proxyUrl = getProxyUrl(config),
             httpClient = httpClient,
         )
     } else {
@@ -157,21 +157,25 @@ private fun getCohortDownloadApi(config: LocalEvaluationConfig, httpClient: OkHt
 }
 
 private fun getServerUrl(config: LocalEvaluationConfig): HttpUrl {
-    if (config.serverZone == LocalEvaluationConfig.Defaults.SERVER_ZONE) {
-        return config.serverUrl.toHttpUrl()
+    return if (config.serverZone == LocalEvaluationConfig.Defaults.SERVER_ZONE) {
+        config.serverUrl.toHttpUrl()
     } else {
-        return when (config.serverZone) {
+        when (config.serverZone) {
             ServerZone.US -> US_SERVER_URL.toHttpUrl()
             ServerZone.EU -> EU_SERVER_URL.toHttpUrl()
         }
     }
 }
 
+private fun getProxyUrl(config: LocalEvaluationConfig): HttpUrl? {
+    return config.evaluationProxyConfiguration?.proxyUrl?.toHttpUrl()
+}
+
 private fun getCohortServerUrl(config: LocalEvaluationConfig): HttpUrl {
-    if (config.serverZone == LocalEvaluationConfig.Defaults.SERVER_ZONE) {
-        return config.cohortServerUrl.toHttpUrl()
+    return if (config.serverZone == LocalEvaluationConfig.Defaults.SERVER_ZONE) {
+        config.cohortServerUrl.toHttpUrl()
     } else {
-        return when (config.serverZone) {
+        when (config.serverZone) {
             ServerZone.US -> US_SERVER_URL.toHttpUrl()
             ServerZone.EU -> EU_SERVER_URL.toHttpUrl()
         }
@@ -182,10 +186,10 @@ private fun getEventServerUrl(
     config: LocalEvaluationConfig,
     assignmentConfiguration: AssignmentConfiguration
 ): String {
-    if (config.serverZone == LocalEvaluationConfig.Defaults.SERVER_ZONE) {
-        return assignmentConfiguration.serverUrl
+    return if (config.serverZone == LocalEvaluationConfig.Defaults.SERVER_ZONE) {
+        assignmentConfiguration.serverUrl
     } else {
-        return when (config.serverZone) {
+        when (config.serverZone) {
             ServerZone.US -> US_EVENT_SERVER_URL
             ServerZone.EU -> EU_EVENT_SERVER_URL
         }

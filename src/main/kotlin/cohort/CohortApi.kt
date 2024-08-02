@@ -1,8 +1,10 @@
 package com.amplitude.experiment.cohort
 
 import com.amplitude.experiment.LIBRARY_VERSION
+import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.util.BackoffConfig
 import com.amplitude.experiment.util.HttpErrorResponseException
+import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.backoff
 import com.amplitude.experiment.util.get
@@ -41,12 +43,14 @@ internal interface CohortApi {
     fun getCohort(cohortId: String, cohort: Cohort?): Cohort
 }
 
-internal class DirectCohortApi(
+internal class DynamicCohortApi(
     apiKey: String,
     secretKey: String,
     private val maxCohortSize: Int,
     private val serverUrl: HttpUrl,
+    private val proxyUrl: HttpUrl?,
     private val httpClient: OkHttpClient,
+    private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper()
 ) : CohortApi {
 
     private val token = Base64.getEncoder().encodeToString("$apiKey:$secretKey".toByteArray())
@@ -58,6 +62,19 @@ internal class DirectCohortApi(
     )
 
     override fun getCohort(cohortId: String, cohort: Cohort?): Cohort {
+        return if (proxyUrl != null) {
+            try {
+                getCohort(proxyUrl, cohortId, cohort)
+            } catch (e: Exception) {
+                metrics.onCohortDownloadOriginFallback(e)
+                getCohort(serverUrl, cohortId, cohort)
+            }
+        } else {
+            getCohort(serverUrl, cohortId, cohort)
+        }
+    }
+
+    private fun getCohort(url: HttpUrl, cohortId: String, cohort: Cohort?): Cohort {
         Logger.d("getCohortMembers($cohortId): start")
         val future = backoff(backoffConfig, {
             val headers = mapOf(
@@ -98,4 +115,5 @@ internal class DirectCohortApi(
             throw e.cause ?: e
         }
     }
+
 }

@@ -66,6 +66,11 @@ internal class LocalEvaluationMetricsWrapper(
         executor?.execute { metrics.onFlagConfigFetchFailure(exception) }
     }
 
+    override fun onFlagConfigFetchOriginFallback(exception: Exception) {
+        val metrics = metrics ?: return
+        executor?.execute { metrics.onFlagConfigFetchOriginFallback(exception) }
+    }
+
     override fun onCohortDownload() {
         val metrics = metrics ?: return
         executor?.execute { metrics.onCohortDownload() }
@@ -74,6 +79,11 @@ internal class LocalEvaluationMetricsWrapper(
     override fun onCohortDownloadFailure(exception: Exception) {
         val metrics = metrics ?: return
         executor?.execute { metrics.onCohortDownloadFailure(exception) }
+    }
+
+    override fun onCohortDownloadOriginFallback(exception: Exception) {
+        val metrics = metrics ?: return
+        executor?.execute { metrics.onCohortDownloadOriginFallback(exception) }
     }
 
     override fun onProxyCohortMembership() {

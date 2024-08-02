@@ -2,6 +2,8 @@ package com.amplitude.experiment
 
 import com.amplitude.experiment.cohort.Cohort
 import com.amplitude.experiment.cohort.CohortApi
+import com.amplitude.experiment.util.Logger
+import com.amplitude.experiment.util.SystemLogger
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert

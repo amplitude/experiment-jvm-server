@@ -105,5 +105,9 @@ internal inline fun <reified T> OkHttpClient.get(
     headers: Map<String, String>? = null,
     queries: Map<String, String>? = null,
 ): CompletableFuture<T> {
-    return this.get<T>(serverUrl, path, headers, queries) {}
+    return this.get<T>(serverUrl, path, headers, queries) { response ->
+        if (!response.isSuccessful) {
+            throw HttpErrorResponseException(response.code)
+        }
+    }
 }
