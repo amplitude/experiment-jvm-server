@@ -170,7 +170,7 @@ class LocalEvaluationConfig internal constructor(
     }
 }
 
-data class AssignmentConfiguration(
+data class AssignmentConfiguration @JvmOverloads constructor(
     val apiKey: String,
     val cacheCapacity: Int = 65536,
     val eventUploadThreshold: Int = 10,
@@ -180,14 +180,15 @@ data class AssignmentConfiguration(
     val middleware: List<Middleware> = listOf(),
 )
 
-data class CohortSyncConfiguration(
+
+data class CohortSyncConfiguration @JvmOverloads constructor(
     val apiKey: String,
     val secretKey: String,
     val maxCohortSize: Int = Int.MAX_VALUE,
 )
 
 @ExperimentalApi
-data class EvaluationProxyConfiguration(
+data class EvaluationProxyConfiguration @JvmOverloads constructor(
     val proxyUrl: String,
     val cohortCacheCapacity: Int = 1000000,
     val cohortCacheTtlMillis: Long = 60000L,
