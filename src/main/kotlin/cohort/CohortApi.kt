@@ -70,6 +70,7 @@ internal class DynamicCohortApi(
             } catch (e: CohortTooLargeException) {
                 throw e
             } catch (e: Exception) {
+                Logger.e("Downloading cohort $cohortId from proxy failed. Falling back to Amplitude.", e)
                 metrics.onCohortDownloadOriginFallback(e)
                 getCohort(serverUrl, cohortId, cohort)
             }
@@ -92,7 +93,7 @@ internal class DynamicCohortApi(
                 queries["lastModified"] = "${cohort.lastModified}"
             }
             httpClient.get<GetCohortResponse>(
-                serverUrl = serverUrl,
+                serverUrl = url,
                 path = "sdk/v1/cohort/$cohortId",
                 headers = headers,
                 queries = queries,

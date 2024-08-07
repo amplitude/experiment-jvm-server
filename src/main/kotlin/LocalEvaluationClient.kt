@@ -106,7 +106,6 @@ class LocalEvaluationClient internal constructor(
         ) {
             evaluation.evaluate(enrichedUser.toEvaluationContext(), sortedFlagConfigs)
         }
-        Logger.d("evaluate - user=$enrichedUser, result=$evaluationResults")
         val variants = evaluationResults.toVariants()
         assignmentService?.track(Assignment(user, variants))
         return variants
