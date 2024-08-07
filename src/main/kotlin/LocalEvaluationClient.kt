@@ -24,6 +24,7 @@ import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.USER_GROUP_TYPE
 import com.amplitude.experiment.util.filterDefaultVariants
+import com.amplitude.experiment.util.getAllCohortIds
 import com.amplitude.experiment.util.getGroupedCohortIds
 import com.amplitude.experiment.util.toEvaluationContext
 import com.amplitude.experiment.util.toVariants
@@ -122,7 +123,15 @@ class LocalEvaluationClient internal constructor(
         val groupedCohortIds = flagConfigs.getGroupedCohortIds()
         if (cohortStorage == null) {
             if (groupedCohortIds.isNotEmpty()) {
-                Logger.e("Local evaluation flags target cohorts but cohort targeting is not configured.")
+                val flagKeys = flagConfigs.mapNotNull { flag ->
+                    val cohortIds = flag.getAllCohortIds()
+                    if (cohortIds.isEmpty()) {
+                        null
+                    } else {
+                        flag.key
+                    }
+                }
+                Logger.e("Local evaluation flags $flagKeys target cohorts but cohort targeting is not configured.")
             }
             return user
         }
