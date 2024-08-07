@@ -64,8 +64,8 @@ private class Backoff<T>(
                     if (shouldRetry && nextAttempt < config.attempts) {
                         val nextDelay = min(delay * config.scalar, config.max.toDouble()).toLong()
                         val jitter = Random.nextLong(
-                            (nextDelay - (nextDelay*0.1).toLong()) * -1,
-                            nextDelay + (nextDelay+0.1).toLong()
+                            (nextDelay - (nextDelay * 0.1).toLong()) * -1,
+                            nextDelay + (nextDelay + 0.1).toLong()
                         )
                         backoff(nextAttempt, nextDelay + jitter, function, retry)
                     } else {

@@ -2,8 +2,6 @@ package com.amplitude.experiment
 
 import com.amplitude.experiment.cohort.Cohort
 import com.amplitude.experiment.cohort.CohortApi
-import com.amplitude.experiment.util.Logger
-import com.amplitude.experiment.util.SystemLogger
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert
@@ -151,7 +149,7 @@ class LocalEvaluationClientTest {
     @Test
     fun `evaluate with user and group, not targeted`() {
         val cohortConfig = LocalEvaluationConfig(
-            cohortSyncConfiguration = CohortSyncConfiguration("api", "secret")
+            cohortSyncConfig = CohortSyncConfig("api", "secret")
         )
         val cohortApi = mockk<CohortApi>().apply {
             every { getCohort(eq("52gz3yi7"), allAny()) } returns Cohort("52gz3yi7", "User", 2, 1722363790000, setOf("1", "2"))
@@ -177,7 +175,7 @@ class LocalEvaluationClientTest {
     @Test
     fun `evaluate with user, cohort segment targeted`() {
         val cohortConfig = LocalEvaluationConfig(
-            cohortSyncConfiguration = CohortSyncConfiguration("api", "secret")
+            cohortSyncConfig = CohortSyncConfig("api", "secret")
         )
         val cohortApi = mockk<CohortApi>().apply {
             every { getCohort(eq("52gz3yi7"), allAny()) } returns Cohort("52gz3yi7", "User", 2, 1722363790000, setOf("1", "2"))
@@ -198,7 +196,7 @@ class LocalEvaluationClientTest {
     @Test
     fun `evaluate with user, cohort tester targeted`() {
         val cohortConfig = LocalEvaluationConfig(
-            cohortSyncConfiguration = CohortSyncConfiguration("api", "secret")
+            cohortSyncConfig = CohortSyncConfig("api", "secret")
         )
         val cohortApi = mockk<CohortApi>().apply {
             every { getCohort(eq("52gz3yi7"), allAny()) } returns Cohort("52gz3yi7", "User", 2, 1722363790000, setOf("1", "2"))
@@ -220,7 +218,7 @@ class LocalEvaluationClientTest {
     @Test
     fun `evaluate with group, cohort segment targeted`() {
         val cohortConfig = LocalEvaluationConfig(
-            cohortSyncConfiguration = CohortSyncConfiguration("api", "secret")
+            cohortSyncConfig = CohortSyncConfig("api", "secret")
         )
         val cohortApi = mockk<CohortApi>().apply {
             every { getCohort(eq("52gz3yi7"), allAny()) } returns Cohort("52gz3yi7", "User", 2, 1722363790000, setOf("1", "2"))
@@ -243,7 +241,7 @@ class LocalEvaluationClientTest {
     @Test
     fun `evaluate with group, cohort tester targeted`() {
         val cohortConfig = LocalEvaluationConfig(
-            cohortSyncConfiguration = CohortSyncConfiguration("api", "secret")
+            cohortSyncConfig = CohortSyncConfig("api", "secret")
         )
         val cohortApi = mockk<CohortApi>().apply {
             every { getCohort(eq("52gz3yi7"), allAny()) } returns Cohort("52gz3yi7", "User", 2, 1722363790000, setOf("1", "2"))

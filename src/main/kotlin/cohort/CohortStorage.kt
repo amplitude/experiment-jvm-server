@@ -2,7 +2,7 @@
 
 package com.amplitude.experiment.cohort
 
-import com.amplitude.experiment.EvaluationProxyConfiguration
+import com.amplitude.experiment.EvaluationProxyConfig
 import com.amplitude.experiment.ExperimentalApi
 import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.util.Cache
@@ -26,7 +26,7 @@ internal interface CohortStorage {
 }
 
 internal class ProxyCohortStorage(
-    private val proxyConfig: EvaluationProxyConfiguration,
+    private val proxyConfig: EvaluationProxyConfig,
     private val membershipApi: CohortMembershipApi,
     private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper()
 ) : CohortStorage {
@@ -125,7 +125,6 @@ internal class InMemoryCohortStorage : CohortStorage {
         }
         return result
     }
-
 
     override fun putCohort(cohort: Cohort) {
         lock.write {

@@ -43,7 +43,7 @@ class LocalEvaluationClient internal constructor(
     private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper(config.metrics)
     private val flagConfigApi = DynamicFlagConfigApi(apiKey, serverUrl, getProxyUrl(config), httpClient)
     private val flagConfigStorage = InMemoryFlagConfigStorage()
-    private val cohortStorage = if (config.cohortSyncConfiguration != null) {
+    private val cohortStorage = if (config.cohortSyncConfig != null) {
         InMemoryCohortStorage()
     } else {
         null
@@ -145,11 +145,11 @@ class LocalEvaluationClient internal constructor(
 }
 
 private fun getCohortDownloadApi(config: LocalEvaluationConfig, httpClient: OkHttpClient): CohortApi? {
-    return if (config.cohortSyncConfiguration != null) {
+    return if (config.cohortSyncConfig != null) {
         DynamicCohortApi(
-            apiKey = config.cohortSyncConfiguration.apiKey,
-            secretKey = config.cohortSyncConfiguration.secretKey,
-            maxCohortSize = config.cohortSyncConfiguration.maxCohortSize,
+            apiKey = config.cohortSyncConfig.apiKey,
+            secretKey = config.cohortSyncConfig.secretKey,
+            maxCohortSize = config.cohortSyncConfig.maxCohortSize,
             serverUrl = getCohortServerUrl(config),
             proxyUrl = getProxyUrl(config),
             httpClient = httpClient,
@@ -171,12 +171,13 @@ private fun getServerUrl(config: LocalEvaluationConfig): HttpUrl {
 }
 
 private fun getProxyUrl(config: LocalEvaluationConfig): HttpUrl? {
-    return config.evaluationProxyConfiguration?.proxyUrl?.toHttpUrl()
+    return config.evaluationProxyConfig?.proxyUrl?.toHttpUrl()
 }
 
 private fun getCohortServerUrl(config: LocalEvaluationConfig): HttpUrl {
     return if (config.serverZone == LocalEvaluationConfig.Defaults.SERVER_ZONE) {
-        config.cohortServerUrl.toHttpUrl()
+        config.cohortSyncConfig?.cohortServerUrl?.toHttpUrl()
+            ?: US_COHORT_SERVER_URL.toHttpUrl()
     } else {
         when (config.serverZone) {
             ServerZone.US -> US_COHORT_SERVER_URL.toHttpUrl()

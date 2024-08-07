@@ -1,8 +1,7 @@
-@file:OptIn(ExperimentalApi::class)
-
 package com.amplitude.experiment
 
 import com.amplitude.Middleware
+import com.amplitude.experiment.LocalEvaluationConfig.Defaults
 
 /**
  * Configuration options. This is an immutable object that can be created using
@@ -10,13 +9,12 @@ import com.amplitude.Middleware
  *
  * `LocalEvaluationConfig.builder().serverUrl("https://api.lab.amplitude.com/").build()`
  */
+@OptIn(ExperimentalApi::class)
 class LocalEvaluationConfig internal constructor(
     @JvmField
     val debug: Boolean = Defaults.DEBUG,
     @JvmField
     val serverUrl: String = Defaults.SERVER_URL,
-    @JvmField
-    val cohortServerUrl: String = Defaults.COHORT_SERVER_URL,
     @JvmField
     val serverZone: ServerZone = Defaults.SERVER_ZONE,
     @JvmField
@@ -26,9 +24,9 @@ class LocalEvaluationConfig internal constructor(
     @JvmField
     val assignmentConfiguration: AssignmentConfiguration? = Defaults.ASSIGNMENT_CONFIGURATION,
     @JvmField
-    val cohortSyncConfiguration: CohortSyncConfiguration? = Defaults.COHORT_SYNC_CONFIGURATION,
+    val cohortSyncConfig: CohortSyncConfig? = Defaults.COHORT_SYNC_CONFIGURATION,
     @JvmField
-    val evaluationProxyConfiguration: EvaluationProxyConfiguration? = Defaults.EVALUATION_PROXY_CONFIGURATION,
+    val evaluationProxyConfig: EvaluationProxyConfig? = Defaults.EVALUATION_PROXY_CONFIGURATION,
     @JvmField
     val metrics: LocalEvaluationMetrics? = Defaults.LOCAL_EVALUATION_METRICS,
 ) {
@@ -81,12 +79,12 @@ class LocalEvaluationConfig internal constructor(
         /**
          * null
          */
-        val COHORT_SYNC_CONFIGURATION: CohortSyncConfiguration? = null
+        val COHORT_SYNC_CONFIGURATION: CohortSyncConfig? = null
 
         /**
          * null
          */
-        val EVALUATION_PROXY_CONFIGURATION: EvaluationProxyConfiguration? = null
+        val EVALUATION_PROXY_CONFIGURATION: EvaluationProxyConfig? = null
 
         /**
          * null
@@ -132,12 +130,13 @@ class LocalEvaluationConfig internal constructor(
             this.assignmentConfiguration = assignmentConfiguration
         }
 
-        fun enableCohortSync(cohortSyncConfiguration: CohortSyncConfiguration) = apply {
-            this.cohortSyncConfiguration = cohortSyncConfiguration
+        fun cohortSyncConfig(cohortSyncConfig: CohortSyncConfig) = apply {
+            this.cohortSyncConfiguration = cohortSyncConfig
         }
 
-        fun enableEvaluationProxy(evaluationProxyConfiguration: EvaluationProxyConfiguration) = apply {
-            this.evaluationProxyConfiguration = evaluationProxyConfiguration
+        @ExperimentalApi
+        fun evaluationProxyConfig(evaluationProxyConfig: EvaluationProxyConfig) = apply {
+            this.evaluationProxyConfiguration = evaluationProxyConfig
         }
 
         @ExperimentalApi
@@ -152,8 +151,8 @@ class LocalEvaluationConfig internal constructor(
                 flagConfigPollerIntervalMillis = flagConfigPollerIntervalMillis,
                 flagConfigPollerRequestTimeoutMillis = flagConfigPollerRequestTimeoutMillis,
                 assignmentConfiguration = assignmentConfiguration,
-                cohortSyncConfiguration = cohortSyncConfiguration,
-                evaluationProxyConfiguration = evaluationProxyConfiguration,
+                cohortSyncConfig = cohortSyncConfiguration,
+                evaluationProxyConfig = evaluationProxyConfiguration,
                 metrics = metrics,
             )
         }
@@ -164,8 +163,8 @@ class LocalEvaluationConfig internal constructor(
             "flagConfigPollerIntervalMillis=$flagConfigPollerIntervalMillis, " +
             "flagConfigPollerRequestTimeoutMillis=$flagConfigPollerRequestTimeoutMillis, " +
             "assignmentConfiguration=$assignmentConfiguration, " +
-            "cohortSyncConfiguration=$cohortSyncConfiguration, " +
-            "evaluationProxyConfiguration=$evaluationProxyConfiguration, " +
+            "cohortSyncConfiguration=$cohortSyncConfig, " +
+            "evaluationProxyConfiguration=$evaluationProxyConfig, " +
             "metrics=$metrics)"
     }
 }
@@ -180,15 +179,17 @@ data class AssignmentConfiguration @JvmOverloads constructor(
     val middleware: List<Middleware> = listOf(),
 )
 
-
-data class CohortSyncConfiguration @JvmOverloads constructor(
+@ExperimentalApi
+data class CohortSyncConfig @JvmOverloads constructor(
     val apiKey: String,
     val secretKey: String,
     val maxCohortSize: Int = Int.MAX_VALUE,
+    val cohortServerUrl: String = Defaults.COHORT_SERVER_URL,
+    val cohortPollingIntervalMillis: Long = 60000L
 )
 
 @ExperimentalApi
-data class EvaluationProxyConfiguration @JvmOverloads constructor(
+data class EvaluationProxyConfig @JvmOverloads constructor(
     val proxyUrl: String,
     val cohortCacheCapacity: Int = 1000000,
     val cohortCacheTtlMillis: Long = 60000L,

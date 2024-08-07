@@ -1,5 +1,8 @@
+@file:OptIn(ExperimentalApi::class)
+
 package com.amplitude.experiment.deployment
 
+import com.amplitude.experiment.ExperimentalApi
 import com.amplitude.experiment.LocalEvaluationConfig
 import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.cohort.CohortApi
@@ -33,6 +36,7 @@ internal class DeploymentRunner(
     } else {
         null
     }
+    private val cohortPollingInterval: Long = getCohortPollingInterval()
 
     fun start() = lock.once {
         refresh()
@@ -59,10 +63,9 @@ internal class DeploymentRunner(
                     } catch (t: Throwable) {
                         Logger.e("Refresh cohorts failed.", t)
                     }
-                },
-                60,
-                60,
-                TimeUnit.SECONDS
+                }, cohortPollingInterval,
+                cohortPollingInterval,
+                TimeUnit.MILLISECONDS
             )
         }
     }
@@ -122,9 +125,16 @@ internal class DeploymentRunner(
             val storageCohortIds = cohortStorage.getCohorts().keys
             val deletedCohortIds = storageCohortIds - flagCohortIds
             for (deletedCohortId in deletedCohortIds) {
-                    cohortStorage.deleteCohort(deletedCohortId)
+                cohortStorage.deleteCohort(deletedCohortId)
             }
         }
         Logger.d("Refreshed ${flagConfigs.size} flag configs.")
+    }
+
+    private fun getCohortPollingInterval(): Long {
+        if (config.cohortSyncConfig == null || config.cohortSyncConfig.cohortPollingIntervalMillis < 60000) {
+            return 60000
+        }
+        return config.cohortSyncConfig.cohortPollingIntervalMillis
     }
 }

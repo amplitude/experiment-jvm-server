@@ -20,7 +20,7 @@ class CohortDownloadApiTest {
     private val httpClient = OkHttpClient()
     private val server = MockWebServer()
     private val url = server.url("/")
-    private val api = DynamicCohortApi(apiKey,secretKey, maxCohortSize, url, null, httpClient)
+    private val api = DynamicCohortApi(apiKey, secretKey, maxCohortSize, url, null, httpClient)
     @Test
     fun `cohort download, success`() {
         val response = cohortResponse("a", setOf("1"))
@@ -86,6 +86,8 @@ class CohortDownloadApiTest {
     fun `cohort download, 503 service unavailable, retries 3 times then throws`() {
         server.enqueue(MockResponse().setResponseCode(501))
         server.enqueue(MockResponse().setResponseCode(502))
+        server.enqueue(MockResponse().setResponseCode(503))
+        server.enqueue(MockResponse().setResponseCode(503))
         server.enqueue(MockResponse().setResponseCode(503))
         // Should not be sent in response
         server.enqueue(MockResponse().setResponseCode(204))

@@ -55,7 +55,7 @@ internal class DynamicFlagConfigApi(
         }
         try {
             return future.get()
-        } catch(e: ExecutionException) {
+        } catch (e: ExecutionException) {
             throw e.cause ?: e
         }
     }

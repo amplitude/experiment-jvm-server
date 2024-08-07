@@ -2,7 +2,7 @@
 
 package com.amplitude.experiment.cohort
 
-import com.amplitude.experiment.EvaluationProxyConfiguration
+import com.amplitude.experiment.EvaluationProxyConfig
 import com.amplitude.experiment.ExperimentalApi
 import io.mockk.every
 import io.mockk.mockk
@@ -67,7 +67,7 @@ class CohortStorageTest {
         every { cohortMembershipApi.getCohortMemberships(eq("User"), eq("u1")) } returns setOf("a")
         every { cohortMembershipApi.getCohortMemberships(eq("group"), eq("g1")) } returns setOf("b")
         val storage = ProxyCohortStorage(
-            EvaluationProxyConfiguration(""),
+            EvaluationProxyConfig(""),
             cohortMembershipApi
         )
         val cohortA = Cohort("a", "User", 1, 100, setOf("u1"))

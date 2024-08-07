@@ -55,8 +55,8 @@ internal class DynamicCohortApi(
 
     private val token = Base64.getEncoder().encodeToString("$apiKey:$secretKey".toByteArray())
     private val backoffConfig = BackoffConfig(
-        attempts = 3,
-        min = 500,
+        attempts = 5,
+        min = 100,
         max = 2000,
         scalar = 2.0,
     )
@@ -115,9 +115,8 @@ internal class DynamicCohortApi(
         })
         try {
             return future.get().toCohort()
-        } catch(e: ExecutionException) {
+        } catch (e: ExecutionException) {
             throw e.cause ?: e
         }
     }
-
 }
