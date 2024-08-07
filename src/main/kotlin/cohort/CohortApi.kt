@@ -70,7 +70,7 @@ internal class DynamicCohortApi(
             } catch (e: CohortTooLargeException) {
                 throw e
             } catch (e: Exception) {
-                Logger.e("Downloading cohort $cohortId from proxy failed. Falling back to Amplitude.", e)
+                Logger.w("Downloading cohort $cohortId from proxy failed. Falling back to Amplitude.", e)
                 metrics.onCohortDownloadOriginFallback(e)
                 getCohort(serverUrl, cohortId, cohort)
             }

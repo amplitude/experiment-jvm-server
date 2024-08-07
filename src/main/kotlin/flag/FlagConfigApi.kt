@@ -4,6 +4,7 @@ import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.evaluation.EvaluationFlag
 import com.amplitude.experiment.util.BackoffConfig
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
+import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.backoff
 import com.amplitude.experiment.util.get
 import okhttp3.HttpUrl
@@ -34,6 +35,7 @@ internal class DynamicFlagConfigApi(
             try {
                 getFlagConfigs(proxyUrl)
             } catch (e: Exception) {
+                Logger.w("Downloading flags from proxy failed. Falling back to Amplitude.", e)
                 metrics.onFlagConfigFetchOriginFallback(e)
                 getFlagConfigs(serverUrl)
             }
