@@ -118,12 +118,12 @@ private fun shouldRetryFetch(t: Throwable): Boolean {
 }
 
 private fun getServerUrl(config: RemoteEvaluationConfig): HttpUrl {
-    if (config.serverZone == RemoteEvaluationConfig.Defaults.SERVER_ZONE) {
-        return config.serverUrl.toHttpUrl()
-    } else {
-        return when (config.serverZone) {
+    return if (config.serverUrl == RemoteEvaluationConfig.Defaults.SERVER_URL) {
+        when (config.serverZone) {
             ServerZone.US -> US_SERVER_URL.toHttpUrl()
             ServerZone.EU -> EU_SERVER_URL.toHttpUrl()
         }
+    } else {
+        config.serverUrl.toHttpUrl()
     }
 }

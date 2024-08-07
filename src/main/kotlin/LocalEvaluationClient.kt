@@ -11,6 +11,8 @@ import com.amplitude.experiment.assignment.InMemoryAssignmentFilter
 import com.amplitude.experiment.cohort.CohortApi
 import com.amplitude.experiment.cohort.DynamicCohortApi
 import com.amplitude.experiment.cohort.InMemoryCohortStorage
+import com.amplitude.experiment.cohort.ProxyCohortMembershipApi
+import com.amplitude.experiment.cohort.ProxyCohortStorage
 import com.amplitude.experiment.deployment.DeploymentRunner
 import com.amplitude.experiment.evaluation.EvaluationEngine
 import com.amplitude.experiment.evaluation.EvaluationEngineImpl
@@ -36,17 +38,22 @@ class LocalEvaluationClient internal constructor(
     private val httpClient: OkHttpClient = OkHttpClient(),
     cohortApi: CohortApi? = getCohortDownloadApi(config, httpClient)
 ) {
-
     private val assignmentService: AssignmentService? = createAssignmentService(apiKey)
     private val serverUrl: HttpUrl = getServerUrl(config)
     private val evaluation: EvaluationEngine = EvaluationEngineImpl()
     private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper(config.metrics)
     private val flagConfigApi = DynamicFlagConfigApi(apiKey, serverUrl, getProxyUrl(config), httpClient)
     private val flagConfigStorage = InMemoryFlagConfigStorage()
-    private val cohortStorage = if (config.cohortSyncConfig != null) {
+    private val cohortStorage = if (config.cohortSyncConfig == null) {
+        null
+    } else if (config.evaluationProxyConfig == null) {
         InMemoryCohortStorage()
     } else {
-        null
+        ProxyCohortStorage(
+            proxyConfig = config.evaluationProxyConfig,
+            membershipApi = ProxyCohortMembershipApi(apiKey, config.evaluationProxyConfig.proxyUrl.toHttpUrl(), httpClient),
+            metrics = metrics,
+        )
     }
 
     private val deploymentRunner = DeploymentRunner(
@@ -159,13 +166,13 @@ private fun getCohortDownloadApi(config: LocalEvaluationConfig, httpClient: OkHt
 }
 
 private fun getServerUrl(config: LocalEvaluationConfig): HttpUrl {
-    return if (config.serverZone == LocalEvaluationConfig.Defaults.SERVER_ZONE) {
-        config.serverUrl.toHttpUrl()
-    } else {
+    return if (config.serverUrl == LocalEvaluationConfig.Defaults.SERVER_URL) {
         when (config.serverZone) {
             ServerZone.US -> US_SERVER_URL.toHttpUrl()
             ServerZone.EU -> EU_SERVER_URL.toHttpUrl()
         }
+    } else {
+        config.serverUrl.toHttpUrl()
     }
 }
 
@@ -174,14 +181,14 @@ private fun getProxyUrl(config: LocalEvaluationConfig): HttpUrl? {
 }
 
 private fun getCohortServerUrl(config: LocalEvaluationConfig): HttpUrl {
-    return if (config.serverZone == LocalEvaluationConfig.Defaults.SERVER_ZONE) {
-        config.cohortSyncConfig?.cohortServerUrl?.toHttpUrl()
-            ?: US_COHORT_SERVER_URL.toHttpUrl()
-    } else {
+    return if (config.cohortSyncConfig?.cohortServerUrl == LocalEvaluationConfig.Defaults.COHORT_SERVER_URL) {
         when (config.serverZone) {
             ServerZone.US -> US_COHORT_SERVER_URL.toHttpUrl()
             ServerZone.EU -> EU_COHORT_SERVER_URL.toHttpUrl()
         }
+    } else {
+        config.cohortSyncConfig?.cohortServerUrl?.toHttpUrl()
+            ?: LocalEvaluationConfig.Defaults.COHORT_SERVER_URL.toHttpUrl()
     }
 }
 
@@ -189,12 +196,12 @@ private fun getEventServerUrl(
     config: LocalEvaluationConfig,
     assignmentConfiguration: AssignmentConfiguration
 ): String {
-    return if (config.serverZone == LocalEvaluationConfig.Defaults.SERVER_ZONE) {
-        assignmentConfiguration.serverUrl
-    } else {
+    return if (assignmentConfiguration.serverUrl == LocalEvaluationConfig.Defaults.EVENT_SERVER_URL) {
         when (config.serverZone) {
             ServerZone.US -> US_EVENT_SERVER_URL
             ServerZone.EU -> EU_EVENT_SERVER_URL
         }
+    } else {
+        assignmentConfiguration.serverUrl
     }
 }

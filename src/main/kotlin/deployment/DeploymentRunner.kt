@@ -21,6 +21,8 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
+private const val MIN_COHORT_POLLING_INTERVAL = 60000L
+
 internal class DeploymentRunner(
     private val config: LocalEvaluationConfig,
     private val flagConfigApi: FlagConfigApi,
@@ -132,8 +134,10 @@ internal class DeploymentRunner(
     }
 
     private fun getCohortPollingInterval(): Long {
-        if (config.cohortSyncConfig == null || config.cohortSyncConfig.cohortPollingIntervalMillis < 60000) {
-            return 60000
+        if (config.cohortSyncConfig == null ||
+            config.cohortSyncConfig.cohortPollingIntervalMillis < MIN_COHORT_POLLING_INTERVAL
+        ) {
+            return MIN_COHORT_POLLING_INTERVAL
         }
         return config.cohortSyncConfig.cohortPollingIntervalMillis
     }

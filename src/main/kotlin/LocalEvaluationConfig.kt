@@ -49,12 +49,17 @@ class LocalEvaluationConfig internal constructor(
         /**
          * "https://api.lab.amplitude.com/"
          */
-        const val SERVER_URL = "https://api.lab.amplitude.com/"
+        const val SERVER_URL = US_SERVER_URL
 
         /**
-         * "https://api.lab.amplitude.com/"
+         * "https://cohort-v2.lab.amplitude.com/"
          */
-        const val COHORT_SERVER_URL = "https://cohort-v2.lab.amplitude.com/"
+        const val COHORT_SERVER_URL = US_COHORT_SERVER_URL
+
+        /**
+         * "https://api2.amplitude.com/2/httpapi"
+         */
+        const val EVENT_SERVER_URL = US_EVENT_SERVER_URL
 
         /**
          * ServerZone.US
@@ -102,6 +107,7 @@ class LocalEvaluationConfig internal constructor(
     class Builder {
 
         private var debug = Defaults.DEBUG
+        private var serverZone = Defaults.SERVER_ZONE
         private var serverUrl = Defaults.SERVER_URL
         private var flagConfigPollerIntervalMillis = Defaults.FLAG_CONFIG_POLLER_INTERVAL_MILLIS
         private var flagConfigPollerRequestTimeoutMillis = Defaults.FLAG_CONFIG_POLLER_REQUEST_TIMEOUT_MILLIS
@@ -116,6 +122,10 @@ class LocalEvaluationConfig internal constructor(
 
         fun serverUrl(serverUrl: String) = apply {
             this.serverUrl = serverUrl
+        }
+
+        fun serverZone(serverZone: ServerZone) = apply {
+            this.serverZone = serverZone
         }
 
         fun flagConfigPollerIntervalMillis(flagConfigPollerIntervalMillis: Long) = apply {
@@ -148,6 +158,7 @@ class LocalEvaluationConfig internal constructor(
             return LocalEvaluationConfig(
                 debug = debug,
                 serverUrl = serverUrl,
+                serverZone = serverZone,
                 flagConfigPollerIntervalMillis = flagConfigPollerIntervalMillis,
                 flagConfigPollerRequestTimeoutMillis = flagConfigPollerRequestTimeoutMillis,
                 assignmentConfiguration = assignmentConfiguration,
@@ -157,16 +168,6 @@ class LocalEvaluationConfig internal constructor(
             )
         }
     }
-
-    override fun toString(): String {
-        return "LocalEvaluationConfig(debug=$debug, serverUrl='$serverUrl', " +
-            "flagConfigPollerIntervalMillis=$flagConfigPollerIntervalMillis, " +
-            "flagConfigPollerRequestTimeoutMillis=$flagConfigPollerRequestTimeoutMillis, " +
-            "assignmentConfiguration=$assignmentConfiguration, " +
-            "cohortSyncConfiguration=$cohortSyncConfig, " +
-            "evaluationProxyConfiguration=$evaluationProxyConfig, " +
-            "metrics=$metrics)"
-    }
 }
 
 data class AssignmentConfiguration @JvmOverloads constructor(
@@ -175,7 +176,7 @@ data class AssignmentConfiguration @JvmOverloads constructor(
     val eventUploadThreshold: Int = 10,
     val eventUploadPeriodMillis: Int = 10000,
     val useBatchMode: Boolean = true,
-    val serverUrl: String = "https://api2.amplitude.com/2/httpapi",
+    val serverUrl: String = Defaults.EVENT_SERVER_URL,
     val middleware: List<Middleware> = listOf(),
 )
 

@@ -14,8 +14,6 @@ class RemoteEvaluationConfig internal constructor(
     @JvmField
     val serverUrl: String = Defaults.SERVER_URL,
     @JvmField
-    val cohortServerUrl: String = Defaults.COHORT_SERVER_URL,
-    @JvmField
     val serverZone: ServerZone = Defaults.SERVER_ZONE,
     @JvmField
     val fetchTimeoutMillis: Long = Defaults.FETCH_TIMEOUT_MILLIS,
@@ -49,12 +47,7 @@ class RemoteEvaluationConfig internal constructor(
         /**
          * "https://api.lab.amplitude.com/"
          */
-        const val SERVER_URL = "https://api.lab.amplitude.com/"
-
-        /**
-         * "https://api.lab.amplitude.com/"
-         */
-        const val COHORT_SERVER_URL = "https://cohorts-v2.lab.amplitude.com/"
+        const val SERVER_URL = US_SERVER_URL
 
         /**
          * ServerZone.US
@@ -103,7 +96,6 @@ class RemoteEvaluationConfig internal constructor(
 
         private var debug = Defaults.DEBUG
         private var serverUrl = Defaults.SERVER_URL
-        private var cohortServerUrl = Defaults.COHORT_SERVER_URL
         private var serverZone = Defaults.SERVER_ZONE
         private var fetchTimeoutMillis = Defaults.FETCH_TIMEOUT_MILLIS
         private var fetchRetries = Defaults.FETCH_RETRIES
@@ -118,10 +110,6 @@ class RemoteEvaluationConfig internal constructor(
 
         fun serverUrl(serverUrl: String) = apply {
             this.serverUrl = serverUrl
-        }
-
-        fun cohortServerUrl(cohortServerUrl: String) = apply {
-            this.cohortServerUrl = cohortServerUrl
         }
 
         fun serverZone(serverZone: ServerZone) = apply {
@@ -156,6 +144,7 @@ class RemoteEvaluationConfig internal constructor(
             return RemoteEvaluationConfig(
                 debug = debug,
                 serverUrl = serverUrl,
+                serverZone = serverZone,
                 fetchTimeoutMillis = fetchTimeoutMillis,
                 fetchRetries = fetchRetries,
                 fetchRetryBackoffMinMillis = fetchRetryBackoffMinMillis,
@@ -167,8 +156,8 @@ class RemoteEvaluationConfig internal constructor(
     }
 
     override fun toString(): String {
-        return "RemoteEvaluationConfig(debug=$debug, serverUrl='$serverUrl', cohortServerUrl='$cohortServerUrl', " +
-            "serverZone=$serverZone, fetchTimeoutMillis=$fetchTimeoutMillis, fetchRetries=$fetchRetries, " +
+        return "RemoteEvaluationConfig(debug=$debug, serverUrl='$serverUrl', serverZone=$serverZone, " +
+            "fetchTimeoutMillis=$fetchTimeoutMillis, fetchRetries=$fetchRetries, " +
             "fetchRetryBackoffMinMillis=$fetchRetryBackoffMinMillis, " +
             "fetchRetryBackoffMaxMillis=$fetchRetryBackoffMaxMillis, " +
             "fetchRetryBackoffScalar=$fetchRetryBackoffScalar, httpProxy=$httpProxy)"
