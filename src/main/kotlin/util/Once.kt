@@ -7,6 +7,13 @@ class Once {
             if (done) return@once
             done = true
         }
-        block.invoke()
+        try {
+            block.invoke()
+        } catch (t: Throwable) {
+            synchronized(this) {
+                done = false
+            }
+            throw t
+        }
     }
 }

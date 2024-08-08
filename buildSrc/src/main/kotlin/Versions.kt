@@ -9,4 +9,6 @@ object Versions {
     const val evaluationCore = "2.0.0-beta.2"
     const val amplitudeAnalytics = "1.12.0"
     const val mockk = "1.13.9"
+    const val mockito = "4.8.1"
+    const val mockwebserver = "4.12.0"
 }

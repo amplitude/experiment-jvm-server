@@ -14,6 +14,8 @@ class RemoteEvaluationConfig internal constructor(
     @JvmField
     val serverUrl: String = Defaults.SERVER_URL,
     @JvmField
+    val serverZone: ServerZone = Defaults.SERVER_ZONE,
+    @JvmField
     val fetchTimeoutMillis: Long = Defaults.FETCH_TIMEOUT_MILLIS,
     @JvmField
     val fetchRetries: Int = Defaults.FETCH_RETRIES,
@@ -45,7 +47,12 @@ class RemoteEvaluationConfig internal constructor(
         /**
          * "https://api.lab.amplitude.com/"
          */
-        const val SERVER_URL = "https://api.lab.amplitude.com/"
+        const val SERVER_URL = US_SERVER_URL
+
+        /**
+         * ServerZone.US
+         */
+        val SERVER_ZONE = ServerZone.US
 
         /**
          * 500
@@ -89,6 +96,7 @@ class RemoteEvaluationConfig internal constructor(
 
         private var debug = Defaults.DEBUG
         private var serverUrl = Defaults.SERVER_URL
+        private var serverZone = Defaults.SERVER_ZONE
         private var fetchTimeoutMillis = Defaults.FETCH_TIMEOUT_MILLIS
         private var fetchRetries = Defaults.FETCH_RETRIES
         private var fetchRetryBackoffMinMillis = Defaults.FETCH_RETRY_BACKOFF_MIN_MILLIS
@@ -102,6 +110,10 @@ class RemoteEvaluationConfig internal constructor(
 
         fun serverUrl(serverUrl: String) = apply {
             this.serverUrl = serverUrl
+        }
+
+        fun serverZone(serverZone: ServerZone) = apply {
+            this.serverZone = serverZone
         }
 
         fun fetchTimeoutMillis(fetchTimeoutMillis: Long) = apply {
@@ -132,6 +144,7 @@ class RemoteEvaluationConfig internal constructor(
             return RemoteEvaluationConfig(
                 debug = debug,
                 serverUrl = serverUrl,
+                serverZone = serverZone,
                 fetchTimeoutMillis = fetchTimeoutMillis,
                 fetchRetries = fetchRetries,
                 fetchRetryBackoffMinMillis = fetchRetryBackoffMinMillis,
@@ -143,10 +156,10 @@ class RemoteEvaluationConfig internal constructor(
     }
 
     override fun toString(): String {
-        return "ExperimentConfig(debug=$debug, serverUrl='$serverUrl', fetchTimeoutMillis=$fetchTimeoutMillis, " +
-            "fetchRetries=$fetchRetries, fetchRetryBackoffMinMillis=$fetchRetryBackoffMinMillis, " +
+        return "RemoteEvaluationConfig(debug=$debug, serverUrl='$serverUrl', serverZone=$serverZone, " +
+            "fetchTimeoutMillis=$fetchTimeoutMillis, fetchRetries=$fetchRetries, " +
+            "fetchRetryBackoffMinMillis=$fetchRetryBackoffMinMillis, " +
             "fetchRetryBackoffMaxMillis=$fetchRetryBackoffMaxMillis, " +
-            "fetchRetryBackoffScalar=$fetchRetryBackoffScalar), " +
-            "httpProxy=$httpProxy"
+            "fetchRetryBackoffScalar=$fetchRetryBackoffScalar, httpProxy=$httpProxy)"
     }
 }

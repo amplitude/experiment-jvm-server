@@ -39,6 +39,7 @@ data class ExperimentUser internal constructor(
     @JvmField val cohortIds: Set<String>? = null,
     @JvmField val groups: Map<String, Set<String>>? = null,
     @JvmField val groupProperties: Map<String, Map<String, Map<String, Any?>>>? = null,
+    @JvmField val groupCohortIds: Map<String, Map<String, Set<String>>>? = null,
 ) {
 
     /**
@@ -65,6 +66,9 @@ data class ExperimentUser internal constructor(
             .library(this.library)
             .userProperties(this.userProperties)
             .cohortIds(this.cohortIds)
+            .groups(this.groups)
+            .groupProperties(this.groupProperties)
+            .groupCohortIds(this.groupCohortIds)
     }
 
     companion object {
@@ -94,6 +98,7 @@ data class ExperimentUser internal constructor(
         private var cohortIds: Set<String>? = null
         private var groups: MutableMap<String, Set<String>>? = null
         private var groupProperties: MutableMap<String, MutableMap<String, MutableMap<String, Any?>>>? = null
+        private var groupCohortIds: MutableMap<String, MutableMap<String, Set<String>>>? = null
 
         fun userId(userId: String?) = apply { this.userId = userId }
         fun deviceId(deviceId: String?) = apply { this.deviceId = deviceId }
@@ -123,12 +128,15 @@ data class ExperimentUser internal constructor(
         fun cohortIds(cohortIds: Set<String>?) = apply {
             this.cohortIds = cohortIds
         }
+
         fun groups(groups: Map<String, Set<String>>?) = apply {
             this.groups = groups?.toMutableMap()
         }
+
         fun group(groupType: String, groupName: String) = apply {
             this.groups = (this.groups ?: mutableMapOf()).apply { put(groupType, setOf(groupName)) }
         }
+
         fun groupProperties(groupProperties: Map<String, Map<String, Map<String, Any?>>>?) = apply {
             this.groupProperties = groupProperties?.mapValues { groupTypes ->
                 groupTypes.value.toMutableMap().mapValues { groupNames ->
@@ -136,10 +144,24 @@ data class ExperimentUser internal constructor(
                 }.toMutableMap()
             }?.toMutableMap()
         }
+
         fun groupProperty(groupType: String, groupName: String, key: String, value: Any?) = apply {
             this.groupProperties = (this.groupProperties ?: mutableMapOf()).apply {
                 getOrPut(groupType) { mutableMapOf(groupName to mutableMapOf()) }
                     .getOrPut(groupName) { mutableMapOf(key to value) }[key] = value
+            }
+        }
+
+        internal fun groupCohortIds(groupCohortIds: Map<String, Map<String, Set<String>>>?) = apply {
+            this.groupCohortIds = groupCohortIds?.mapValues { groupTypes ->
+                groupTypes.value.toMutableMap()
+            }?.toMutableMap()
+        }
+
+        fun groupCohortIds(groupType: String, groupName: String, cohortIds: Set<String>) = apply {
+            this.groupCohortIds = (this.groupCohortIds ?: mutableMapOf()).apply {
+                val groupNames = getOrPut(groupType) { mutableMapOf() }
+                groupNames[groupName] = cohortIds
             }
         }
 
@@ -164,6 +186,7 @@ data class ExperimentUser internal constructor(
                 cohortIds = cohortIds,
                 groups = groups,
                 groupProperties = groupProperties,
+                groupCohortIds = groupCohortIds,
             )
         }
     }
