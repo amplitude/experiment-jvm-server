@@ -114,7 +114,11 @@ internal class InMemoryCohortStorage : CohortStorage {
         val result = mutableSetOf<String>()
         lock.read {
             for (cohortId in cohortIds) {
-                val cohort = cohortStore[cohortId] ?: continue
+                val cohort = cohortStore[cohortId]
+                if (cohort == null) {
+                    Logger.w("Targeted $groupType cohort $cohortId not found in storage.")
+                    continue
+                }
                 if (cohort.groupType != groupType) {
                     continue
                 }
