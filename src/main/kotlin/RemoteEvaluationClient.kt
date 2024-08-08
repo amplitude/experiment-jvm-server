@@ -19,6 +19,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okio.IOException
+import java.util.Base64
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
@@ -65,17 +66,18 @@ class RemoteEvaluationClient internal constructor(
         val libraryUser = user.copyToBuilder().library("experiment-jvm-server/$LIBRARY_VERSION").build()
         Logger.d("Fetch variants for user: $libraryUser")
         // Build request to fetch variants for the user
-        val body = libraryUser.toJson()
-            .toByteArray(Charsets.UTF_8)
-            .toRequestBody("application/json".toMediaType())
+        val encodedUser = Base64.getEncoder().encodeToString(
+            libraryUser.toJson().toByteArray(Charsets.UTF_8)
+        )
         val url = serverUrl.newBuilder()
             .addPathSegments("sdk/v2/vardata")
             .addQueryParameter("v", "0")
             .build()
         val request = Request.Builder()
-            .post(body)
+            .get()
             .url(url)
             .addHeader("Authorization", "Api-Key $apiKey")
+            .addHeader("X-Amp-Exp-User", encodedUser)
             .build()
         val future = CompletableFuture<Map<String, Variant>>()
         val call = httpClient.newCall(request)
