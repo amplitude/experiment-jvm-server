@@ -19,6 +19,8 @@ import com.amplitude.experiment.evaluation.EvaluationEngineImpl
 import com.amplitude.experiment.evaluation.EvaluationFlag
 import com.amplitude.experiment.evaluation.topologicalSort
 import com.amplitude.experiment.flag.DynamicFlagConfigApi
+import com.amplitude.experiment.flag.FlagConfigPoller
+import com.amplitude.experiment.flag.FlagConfigStreamApi
 import com.amplitude.experiment.flag.InMemoryFlagConfigStorage
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
@@ -43,7 +45,10 @@ class LocalEvaluationClient internal constructor(
     private val serverUrl: HttpUrl = getServerUrl(config)
     private val evaluation: EvaluationEngine = EvaluationEngineImpl()
     private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper(config.metrics)
-    private val flagConfigApi = DynamicFlagConfigApi(apiKey, serverUrl, getProxyUrl(config), httpClient)
+    private val flagConfigApi = DynamicFlagConfigApi(apiKey, serverUrl, null, httpClient)
+    private val proxyUrl: HttpUrl? = getProxyUrl(config)
+    private val flagConfigProxyApi = if (proxyUrl == null) null else DynamicFlagConfigApi(apiKey, proxyUrl, null, httpClient)
+    private val flagConfigStreamApi = FlagConfigStreamApi(apiKey, "https://stream.lab.amplitude.com", httpClient)
     private val flagConfigStorage = InMemoryFlagConfigStorage()
     private val cohortStorage = if (config.cohortSyncConfig == null) {
         null
@@ -60,6 +65,8 @@ class LocalEvaluationClient internal constructor(
     private val deploymentRunner = DeploymentRunner(
         config = config,
         flagConfigApi = flagConfigApi,
+        flagConfigProxyApi = flagConfigProxyApi,
+        flagConfigStreamApi = flagConfigStreamApi,
         flagConfigStorage = flagConfigStorage,
         cohortApi = cohortApi,
         cohortStorage = cohortStorage,
@@ -213,4 +220,10 @@ private fun getEventServerUrl(
     } else {
         assignmentConfiguration.serverUrl
     }
+}
+
+fun main() {
+    val client = LocalEvaluationClient("server-qz35UwzJ5akieoAdIgzM4m9MIiOLXLoz")
+    client.start()
+    println(client.evaluateV2(ExperimentUser("1")))
 }

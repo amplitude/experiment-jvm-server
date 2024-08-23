@@ -66,6 +66,16 @@ internal class LocalEvaluationMetricsWrapper(
         executor?.execute { metrics.onFlagConfigFetchFailure(exception) }
     }
 
+    override fun onFlagConfigStream() {
+        val metrics = metrics ?: return
+        executor?.execute { metrics.onFlagConfigStream() }
+    }
+
+    override fun onFlagConfigStreamFailure(exception: Exception?) {
+        val metrics = metrics ?: return
+        executor?.execute { metrics.onFlagConfigStreamFailure(exception) }
+    }
+
     override fun onFlagConfigFetchOriginFallback(exception: Exception) {
         val metrics = metrics ?: return
         executor?.execute { metrics.onFlagConfigFetchOriginFallback(exception) }

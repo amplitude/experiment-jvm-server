@@ -24,6 +24,7 @@ dependencies {
     testImplementation("io.mockk:mockk:${Versions.mockk}")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serializationRuntime}")
     implementation("com.squareup.okhttp3:okhttp:${Versions.okhttp}")
+    implementation("com.squareup.okhttp3:okhttp-sse:${Versions.okhttpSse}")
     implementation("com.amplitude:evaluation-core:${Versions.evaluationCore}")
     implementation("com.amplitude:java-sdk:${Versions.amplitudeAnalytics}")
     implementation("org.json:json:${Versions.json}")
