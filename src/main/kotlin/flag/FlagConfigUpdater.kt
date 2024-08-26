@@ -17,9 +17,9 @@ import java.util.concurrent.TimeUnit
 
 internal interface FlagConfigUpdater {
     // Start the updater. There can be multiple calls.
-    // If start fails, it should throw exception. The caller should handle fallback.
-    // If some other error happened while updating (already started successfully), it should call fallback.
-    fun start(fallback: (() -> Unit)? = null)
+    // If start fails, it should throw exception. The caller should handle error.
+    // If some other error happened while updating (already started successfully), it should call onError.
+    fun start(onError: (() -> Unit)? = null)
     // Stop should stop updater temporarily. There may be another start in the future.
     // To stop completely, with intention to never start again, use shutdown() instead.
     fun stop()
@@ -94,8 +94,7 @@ internal class FlagConfigPoller(
 ) {
     private val poller = Executors.newScheduledThreadPool(1, daemonFactory)
     private var scheduledFuture: ScheduledFuture<*>? = null
-    override fun start(fallback: (() -> Unit)?) {
-        // Perform updates
+    override fun start(onError: (() -> Unit)?) {
         refresh()
         scheduledFuture = poller.scheduleWithFixedDelay(
             {
@@ -104,7 +103,7 @@ internal class FlagConfigPoller(
                 } catch (t: Throwable) {
                     Logger.e("Refresh flag configs failed.", t)
                     stop()
-                    fallback?.invoke()
+                    onError?.invoke()
                 }
             },
             config.flagConfigPollerIntervalMillis,
@@ -124,7 +123,7 @@ internal class FlagConfigPoller(
         poller.shutdown()
     }
 
-    fun refresh() {
+    private fun refresh() {
         Logger.d("Refreshing flag configs.")
         println("flag poller refreshing")
         // Get updated flags from the network.
@@ -150,15 +149,14 @@ internal class FlagConfigStreamer(
 ): FlagConfigUpdaterBase(
     storage, cohortLoader, cohortStorage
 ) {
-    override fun start(fallback: (() -> Unit)?) {
+    override fun start(onError: (() -> Unit)?) {
         flagConfigStreamApi.onUpdate = {flags ->
-            println("flag streamer received")
             update(flags)
         }
         flagConfigStreamApi.onError = {e ->
             Logger.e("Stream flag configs streaming failed.", e)
             metrics.onFlagConfigStreamFailure(e)
-            fallback?.invoke()
+            onError?.invoke()
         }
         wrapMetrics(metric = metrics::onFlagConfigStream, failure = metrics::onFlagConfigStreamFailure) {
             flagConfigStreamApi.connect()
@@ -184,20 +182,20 @@ internal class FlagConfigFallbackRetryWrapper(
     private val executor = Executors.newScheduledThreadPool(1, daemonFactory)
     private var retryTask: ScheduledFuture<*>? = null
 
-    override fun start(fallback: (() -> Unit)?) {
+    override fun start(onError: (() -> Unit)?) {
         try {
             mainUpdater.start {
-                startRetry(fallback) // Don't care if poller start error or not, always retry.
+                scheduleRetry(onError) // Don't care if poller start error or not, always retry.
                 try {
-                    fallbackUpdater.start(fallback)
+                    fallbackUpdater.start(onError)
                 } catch (_: Throwable) {
-                    fallback?.invoke()
+                    onError?.invoke()
                 }
             }
         } catch (t: Throwable) {
-            Logger.e("Update flag configs start failed.", t)
-            fallbackUpdater.start(fallback) // If fallback failed, don't retry.
-            startRetry(fallback)
+            Logger.e("Primary flag configs start failed, start fallback. Error: ", t)
+            fallbackUpdater.start(onError) // If fallback failed, don't retry.
+            scheduleRetry(onError)
         }
     }
 
@@ -213,20 +211,20 @@ internal class FlagConfigFallbackRetryWrapper(
         retryTask?.cancel(true)
     }
 
-    private fun startRetry(fallback: (() -> Unit)?) {
+    private fun scheduleRetry(onError: (() -> Unit)?) {
         retryTask = executor.schedule({
             try {
                 mainUpdater.start {
-                    startRetry(fallback) // Don't care if poller start error or not, always retry stream.
+                    scheduleRetry(onError) // Don't care if poller start error or not, always retry stream.
                     try {
-                        fallbackUpdater.start(fallback)
+                        fallbackUpdater.start(onError)
                     } catch (_: Throwable) {
-                        fallback?.invoke()
+                        onError?.invoke()
                     }
                 }
                 fallbackUpdater.stop()
             } catch (_: Throwable) {
-                startRetry(fallback)
+                scheduleRetry(onError)
             }
         }, reconnIntervalRange.random(), TimeUnit.MILLISECONDS)
     }

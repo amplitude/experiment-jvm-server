@@ -22,6 +22,12 @@ class LocalEvaluationConfig internal constructor(
     @JvmField
     val flagConfigPollerRequestTimeoutMillis: Long = Defaults.FLAG_CONFIG_POLLER_REQUEST_TIMEOUT_MILLIS,
     @JvmField
+    val streamUpdates: Boolean = Defaults.STREAM_UPDATES,
+    @JvmField
+    val streamServerUrl: String = Defaults.STREAM_SERVER_URL,
+    @JvmField
+    val streamFlagConnTimeoutMillis: Long = Defaults.STREAM_FLAG_CONN_TIMEOUT_MILLIS,
+    @JvmField
     val assignmentConfiguration: AssignmentConfiguration? = Defaults.ASSIGNMENT_CONFIGURATION,
     @JvmField
     val cohortSyncConfig: CohortSyncConfig? = Defaults.COHORT_SYNC_CONFIGURATION,
@@ -76,6 +82,12 @@ class LocalEvaluationConfig internal constructor(
          */
         const val FLAG_CONFIG_POLLER_REQUEST_TIMEOUT_MILLIS = 10_000L
 
+        const val STREAM_UPDATES = false
+
+        const val STREAM_SERVER_URL = US_STREAM_SERVER_URL
+
+        const val STREAM_FLAG_CONN_TIMEOUT_MILLIS = 1_500L
+
         /**
          * null
          */
@@ -111,6 +123,9 @@ class LocalEvaluationConfig internal constructor(
         private var serverUrl = Defaults.SERVER_URL
         private var flagConfigPollerIntervalMillis = Defaults.FLAG_CONFIG_POLLER_INTERVAL_MILLIS
         private var flagConfigPollerRequestTimeoutMillis = Defaults.FLAG_CONFIG_POLLER_REQUEST_TIMEOUT_MILLIS
+        private var streamUpdates = Defaults.STREAM_UPDATES
+        private var streamServerUrl = Defaults.STREAM_SERVER_URL
+        private var streamFlagConnTimeoutMillis = Defaults.STREAM_FLAG_CONN_TIMEOUT_MILLIS
         private var assignmentConfiguration = Defaults.ASSIGNMENT_CONFIGURATION
         private var cohortSyncConfiguration = Defaults.COHORT_SYNC_CONFIGURATION
         private var evaluationProxyConfiguration = Defaults.EVALUATION_PROXY_CONFIGURATION
@@ -134,6 +149,18 @@ class LocalEvaluationConfig internal constructor(
 
         fun flagConfigPollerRequestTimeoutMillis(flagConfigPollerRequestTimeoutMillis: Long) = apply {
             this.flagConfigPollerRequestTimeoutMillis = flagConfigPollerRequestTimeoutMillis
+        }
+
+        fun streamUpdates(streamUpdates: Boolean) = apply {
+            this.streamUpdates = streamUpdates
+        }
+
+        fun streamServerUrl(streamServerUrl: String) = apply {
+            this.streamServerUrl = streamServerUrl
+        }
+
+        fun streamFlagConnTimeoutMillis(streamFlagConnTimeoutMillis: Long) = apply {
+            this.streamFlagConnTimeoutMillis = streamFlagConnTimeoutMillis
         }
 
         fun enableAssignmentTracking(assignmentConfiguration: AssignmentConfiguration) = apply {
@@ -161,6 +188,9 @@ class LocalEvaluationConfig internal constructor(
                 serverZone = serverZone,
                 flagConfigPollerIntervalMillis = flagConfigPollerIntervalMillis,
                 flagConfigPollerRequestTimeoutMillis = flagConfigPollerRequestTimeoutMillis,
+                streamUpdates = streamUpdates,
+                streamServerUrl = streamServerUrl,
+                streamFlagConnTimeoutMillis = streamFlagConnTimeoutMillis,
                 assignmentConfiguration = assignmentConfiguration,
                 cohortSyncConfig = cohortSyncConfiguration,
                 evaluationProxyConfig = evaluationProxyConfiguration,

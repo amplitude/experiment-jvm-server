@@ -60,7 +60,7 @@ private fun OkHttpClient.submit(
     return future
 }
 
-private fun newGet(
+internal fun newGet(
     serverUrl: HttpUrl,
     path: String? = null,
     headers: Map<String, String>? = null,

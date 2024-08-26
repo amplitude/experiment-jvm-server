@@ -1,5 +1,7 @@
 package com.amplitude.experiment.util
 
+import com.amplitude.experiment.LIBRARY_VERSION
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -14,14 +16,15 @@ import kotlin.concurrent.schedule
 
 internal class StreamException(error: String): Throwable(error)
 
+private const val KEEP_ALIVE_TIMEOUT_MILLIS_DEFAULT = 0L // no timeout
 private const val RECONN_INTERVAL_MILLIS_DEFAULT = 30 * 60 * 1000L
 private const val MAX_JITTER_MILLIS_DEFAULT = 5000L
-internal class SdkStream (
+internal class SseStream (
     private val authToken: String,
-    private val serverUrl: String,
+    private val url: HttpUrl,
     private val httpClient: OkHttpClient = OkHttpClient(),
     private val connectionTimeoutMillis: Long,
-    private val keepaliveTimeoutMillis: Long,
+    private val keepaliveTimeoutMillis: Long = KEEP_ALIVE_TIMEOUT_MILLIS_DEFAULT,
     private val reconnIntervalMillis: Long = RECONN_INTERVAL_MILLIS_DEFAULT,
     private val maxJitterMillis: Long = MAX_JITTER_MILLIS_DEFAULT
 ) {
@@ -67,7 +70,8 @@ internal class SdkStream (
                 return
             }
             if (t is StreamResetException && t.errorCode == ErrorCode.CANCEL) {
-                // TODO: relying on okhttp3.internal to differentiate cancel case.
+                // Relying on okhttp3.internal to differentiate cancel case.
+                // Can be a pitfall later on.
                 return
             }
             cancel()
@@ -83,11 +87,7 @@ internal class SdkStream (
         }
     }
 
-    private val request = Request.Builder()
-        .url(serverUrl)
-        .header("Authorization", authToken)
-        .addHeader("Accept", "text/event-stream")
-        .build()
+    private val request = newGet(url, null, mapOf("Authorization" to authToken, "Accept" to "text/event-stream"))
 
     private val client = httpClient.newBuilder() // client.newBuilder reuses the connection pool in the same client with new configs.
         .connectTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS) // Connection timeout for establishing SSE.
@@ -107,7 +107,7 @@ internal class SdkStream (
         es = EventSources.createFactory(client).newEventSource(request = request, listener = eventSourceListener)
         reconnectTimerTask = Timer().schedule(reconnIntervalRange.random()) {// Timer for a new event source.
             // This forces client side reconnection after interval.
-            this@SdkStream.cancel()
+            this@SseStream.cancel()
             connect()
         }
     }

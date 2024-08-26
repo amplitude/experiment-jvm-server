@@ -43,12 +43,13 @@ class LocalEvaluationClient internal constructor(
 ) {
     private val assignmentService: AssignmentService? = createAssignmentService(apiKey)
     private val serverUrl: HttpUrl = getServerUrl(config)
+    private val streamServerUrl: HttpUrl = getStreamServerUrl(config)
     private val evaluation: EvaluationEngine = EvaluationEngineImpl()
     private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper(config.metrics)
     private val flagConfigApi = DynamicFlagConfigApi(apiKey, serverUrl, null, httpClient)
     private val proxyUrl: HttpUrl? = getProxyUrl(config)
     private val flagConfigProxyApi = if (proxyUrl == null) null else DynamicFlagConfigApi(apiKey, proxyUrl, null, httpClient)
-    private val flagConfigStreamApi = FlagConfigStreamApi(apiKey, "https://stream.lab.amplitude.com", httpClient)
+    private val flagConfigStreamApi = if (config.streamUpdates) FlagConfigStreamApi(apiKey, streamServerUrl, httpClient, config.streamFlagConnTimeoutMillis) else null
     private val flagConfigStorage = InMemoryFlagConfigStorage()
     private val cohortStorage = if (config.cohortSyncConfig == null) {
         null
@@ -192,6 +193,17 @@ private fun getServerUrl(config: LocalEvaluationConfig): HttpUrl {
     }
 }
 
+private fun getStreamServerUrl(config: LocalEvaluationConfig): HttpUrl {
+    return if (config.streamServerUrl == LocalEvaluationConfig.Defaults.STREAM_SERVER_URL) {
+        when (config.serverZone) {
+            ServerZone.US -> US_STREAM_SERVER_URL.toHttpUrl()
+            ServerZone.EU -> EU_STREAM_SERVER_URL.toHttpUrl()
+        }
+    } else {
+        config.streamServerUrl.toHttpUrl()
+    }
+}
+
 private fun getProxyUrl(config: LocalEvaluationConfig): HttpUrl? {
     return config.evaluationProxyConfig?.proxyUrl?.toHttpUrl()
 }
@@ -223,7 +235,7 @@ private fun getEventServerUrl(
 }
 
 fun main() {
-    val client = LocalEvaluationClient("server-qz35UwzJ5akieoAdIgzM4m9MIiOLXLoz")
+    val client = LocalEvaluationClient("server-qz35UwzJ5akieoAdIgzM4m9MIiOLXLoz", LocalEvaluationConfig(streamUpdates = true))
     client.start()
     println(client.evaluateV2(ExperimentUser("1")))
 }

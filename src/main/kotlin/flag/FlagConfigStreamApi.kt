@@ -2,8 +2,9 @@ package com.amplitude.experiment.flag
 
 import com.amplitude.experiment.evaluation.EvaluationFlag
 import com.amplitude.experiment.util.*
-import com.amplitude.experiment.util.SdkStream
+import com.amplitude.experiment.util.SseStream
 import kotlinx.serialization.decodeFromString
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
@@ -19,12 +20,12 @@ internal class FlagConfigStreamApiConnTimeoutError: FlagConfigStreamApiError("In
 internal class FlagConfigStreamApiDataCorruptError: FlagConfigStreamApiError("Stream data corrupted")
 internal class FlagConfigStreamApiStreamError(cause: Throwable?): FlagConfigStreamApiError("Stream error", cause)
 
-private const val CONNECTION_TIMEOUT_MILLIS_DEFAULT = 2000L
-private const val KEEP_ALIVE_TIMEOUT_MILLIS_DEFAULT = 17000L
+private const val CONNECTION_TIMEOUT_MILLIS_DEFAULT = 1500L
+private const val KEEP_ALIVE_TIMEOUT_MILLIS_DEFAULT = 17000L // keep alive sends at 15s interval. 2s grace period
 private const val RECONN_INTERVAL_MILLIS_DEFAULT = 15 * 60 * 1000L
 internal class FlagConfigStreamApi (
     deploymentKey: String,
-    serverUrl: String,
+    serverUrl: HttpUrl,
     httpClient: OkHttpClient = OkHttpClient(),
     connectionTimeoutMillis: Long = CONNECTION_TIMEOUT_MILLIS_DEFAULT,
     keepaliveTimeoutMillis: Long = KEEP_ALIVE_TIMEOUT_MILLIS_DEFAULT,
@@ -33,9 +34,10 @@ internal class FlagConfigStreamApi (
     var onInitUpdate: ((List<EvaluationFlag>) -> Unit)? = null
     var onUpdate: ((List<EvaluationFlag>) -> Unit)? = null
     var onError: ((Exception?) -> Unit)? = null
-    private val stream: SdkStream = SdkStream(
+    val url = serverUrl.newBuilder().addPathSegments("sdk/stream/v1/flags").build()
+    private val stream: SseStream = SseStream(
         "Api-Key $deploymentKey",
-        "$serverUrl/sdk/stream/v1/flags",
+        url,
         httpClient,
         connectionTimeoutMillis,
         keepaliveTimeoutMillis,
