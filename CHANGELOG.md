@@ -1,3 +1,15 @@
+# [1.4.0](https://github.com/amplitude/experiment-jvm-server/compare/1.3.1...1.4.0) (2024-08-27)
+
+
+### Bug Fixes
+
+* use get request for remote fetch ([#29](https://github.com/amplitude/experiment-jvm-server/issues/29)) ([6c2fc3a](https://github.com/amplitude/experiment-jvm-server/commit/6c2fc3ab7d152cdbfbcccf8d6dee761b9d3ffe73))
+
+
+### Features
+
+* local evaluation cohorts support ([#28](https://github.com/amplitude/experiment-jvm-server/issues/28)) ([d2d5213](https://github.com/amplitude/experiment-jvm-server/commit/d2d5213b57f60ed5d032ebcbbd91487ec8ca7fc9))
+
 ## [1.3.1](https://github.com/amplitude/experiment-jvm-server/compare/1.3.0...1.3.1) (2024-05-23)
 
 
