@@ -237,9 +237,3 @@ private fun getEventServerUrl(
         assignmentConfiguration.serverUrl
     }
 }
-
-fun main() {
-    val client = LocalEvaluationClient("server-qz35UwzJ5akieoAdIgzM4m9MIiOLXLoz", LocalEvaluationConfig(streamUpdates = true))
-    client.start()
-    println(client.evaluateV2(ExperimentUser("1")))
-}
