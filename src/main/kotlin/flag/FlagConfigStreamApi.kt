@@ -6,6 +6,9 @@ import com.amplitude.experiment.util.SseStream
 import kotlinx.serialization.decodeFromString
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.sse.EventSource
+import okhttp3.sse.EventSourceListener
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
@@ -27,7 +30,7 @@ internal class FlagConfigStreamApi (
     deploymentKey: String,
     serverUrl: HttpUrl,
     httpClient: OkHttpClient = OkHttpClient(),
-    connectionTimeoutMillis: Long = CONNECTION_TIMEOUT_MILLIS_DEFAULT,
+    val connectionTimeoutMillis: Long = CONNECTION_TIMEOUT_MILLIS_DEFAULT,
     keepaliveTimeoutMillis: Long = KEEP_ALIVE_TIMEOUT_MILLIS_DEFAULT,
     reconnIntervalMillis: Long = RECONN_INTERVAL_MILLIS_DEFAULT
 ) {
@@ -101,7 +104,7 @@ internal class FlagConfigStreamApi (
 
         val t: Throwable
         try {
-            connectTimeoutFuture.get(2000, TimeUnit.MILLISECONDS)
+            connectTimeoutFuture.get(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
             updateTimeoutFuture.get()
             return
         } catch (e: TimeoutException) {

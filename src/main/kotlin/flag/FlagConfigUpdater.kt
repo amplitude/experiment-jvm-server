@@ -14,6 +14,8 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import kotlin.math.max
+import kotlin.math.min
 
 internal interface FlagConfigUpdater {
     // Start the updater. There can be multiple calls.
@@ -33,7 +35,6 @@ internal abstract class FlagConfigUpdaterBase(
     private val cohortStorage: CohortStorage?,
 ): FlagConfigUpdater {
     fun update(flagConfigs: List<EvaluationFlag>) {
-        println("update")
         // Remove flags that no longer exist.
         val flagKeys = flagConfigs.map { it.key }.toSet()
         flagConfigStorage.removeIf { !flagKeys.contains(it.key) }
@@ -125,7 +126,6 @@ internal class FlagConfigPoller(
 
     private fun refresh() {
         Logger.d("Refreshing flag configs.")
-        println("flag poller refreshing")
         // Get updated flags from the network.
         val flagConfigs = wrapMetrics(
             metric = metrics::onFlagConfigFetch,
@@ -135,7 +135,6 @@ internal class FlagConfigPoller(
         }
 
         update(flagConfigs)
-        println("flag poller refreshed")
     }
 }
 
@@ -174,11 +173,11 @@ private const val RETRY_DELAY_MILLIS_DEFAULT = 15 * 1000L
 private const val MAX_JITTER_MILLIS_DEFAULT = 2000L
 internal class FlagConfigFallbackRetryWrapper(
     private val mainUpdater: FlagConfigUpdater,
-    private val fallbackUpdater: FlagConfigUpdater,
+    private val fallbackUpdater: FlagConfigUpdater?,
     private val retryDelayMillis: Long = RETRY_DELAY_MILLIS_DEFAULT,
     private val maxJitterMillis: Long = MAX_JITTER_MILLIS_DEFAULT
 ): FlagConfigUpdater {
-    private val reconnIntervalRange = (retryDelayMillis - maxJitterMillis)..(retryDelayMillis + maxJitterMillis)
+    private val reconnIntervalRange = max(0, retryDelayMillis - maxJitterMillis)..(min(retryDelayMillis, retryDelayMillis - maxJitterMillis) + maxJitterMillis)
     private val executor = Executors.newScheduledThreadPool(1, daemonFactory)
     private var retryTask: ScheduledFuture<*>? = null
 
@@ -186,28 +185,32 @@ internal class FlagConfigFallbackRetryWrapper(
         try {
             mainUpdater.start {
                 scheduleRetry(onError) // Don't care if poller start error or not, always retry.
-                try {
-                    fallbackUpdater.start(onError)
-                } catch (_: Throwable) {
+                if (fallbackUpdater != null) {
+                    try {
+                        fallbackUpdater.start(onError)
+                    } catch (_: Throwable) {
+                        onError?.invoke()
+                    }
+                } else {
                     onError?.invoke()
                 }
             }
         } catch (t: Throwable) {
             Logger.e("Primary flag configs start failed, start fallback. Error: ", t)
-            fallbackUpdater.start(onError) // If fallback failed, don't retry.
+            fallbackUpdater?.start(onError)
             scheduleRetry(onError)
         }
     }
 
     override fun stop() {
         mainUpdater.stop()
-        fallbackUpdater.stop()
+        fallbackUpdater?.stop()
         retryTask?.cancel(true)
     }
 
     override fun shutdown() {
         mainUpdater.shutdown()
-        fallbackUpdater.shutdown()
+        fallbackUpdater?.shutdown()
         retryTask?.cancel(true)
     }
 
@@ -216,13 +219,17 @@ internal class FlagConfigFallbackRetryWrapper(
             try {
                 mainUpdater.start {
                     scheduleRetry(onError) // Don't care if poller start error or not, always retry stream.
-                    try {
-                        fallbackUpdater.start(onError)
-                    } catch (_: Throwable) {
+                    if (fallbackUpdater != null) {
+                        try {
+                            fallbackUpdater.start(onError)
+                        } catch (_: Throwable) {
+                            onError?.invoke()
+                        }
+                    } else {
                         onError?.invoke()
                     }
                 }
-                fallbackUpdater.stop()
+                fallbackUpdater?.stop()
             } catch (_: Throwable) {
                 scheduleRetry(onError)
             }

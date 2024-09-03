@@ -2,6 +2,7 @@ package com.amplitude.experiment.util
 
 import com.amplitude.experiment.LIBRARY_VERSION
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -13,12 +14,15 @@ import okhttp3.sse.EventSources
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.schedule
+import kotlin.math.max
+import kotlin.math.min
 
 internal class StreamException(error: String): Throwable(error)
 
 private const val KEEP_ALIVE_TIMEOUT_MILLIS_DEFAULT = 0L // no timeout
 private const val RECONN_INTERVAL_MILLIS_DEFAULT = 30 * 60 * 1000L
 private const val MAX_JITTER_MILLIS_DEFAULT = 5000L
+private const val KEEP_ALIVE_DATA = " "
 internal class SseStream (
     private val authToken: String,
     private val url: HttpUrl,
@@ -28,7 +32,7 @@ internal class SseStream (
     private val reconnIntervalMillis: Long = RECONN_INTERVAL_MILLIS_DEFAULT,
     private val maxJitterMillis: Long = MAX_JITTER_MILLIS_DEFAULT
 ) {
-    private val reconnIntervalRange = (reconnIntervalMillis - maxJitterMillis)..(reconnIntervalMillis + maxJitterMillis)
+    private val reconnIntervalRange = max(0, reconnIntervalMillis - maxJitterMillis)..(min(reconnIntervalMillis, Long.MAX_VALUE - maxJitterMillis) + maxJitterMillis)
     private val eventSourceListener = object : EventSourceListener() {
         override fun onOpen(eventSource: EventSource, response: Response) {
             // No action needed.
@@ -57,13 +61,15 @@ internal class SseStream (
                 return
             }
             // Keep alive data
-            if (" " == data) {
+            if (KEEP_ALIVE_DATA == data) {
                 return
             }
             onUpdate?.let { it(data) }
         }
 
         override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
+            println(t)
+            println(response)
             if ((eventSource != es)) {
                 // Not the current event source using right now, should cancel.
                 eventSource.cancel()
@@ -75,14 +81,12 @@ internal class SseStream (
                 return
             }
             cancel()
-            var err = t
-            if (t == null) {
-                err = if (response != null) {
+            val err = t
+                ?: if (response != null) {
                     StreamException(response.toString())
                 } else {
                     StreamException("Unknown stream failure")
                 }
-            }
             onError?.let { it(err) }
         }
     }
@@ -102,9 +106,12 @@ internal class SseStream (
     var onUpdate: ((String) -> Unit)? = null
     var onError: ((Throwable?) -> Unit)? = null
 
+    /**
+     * Creates an event source and immediately returns. The connection is performed async. Errors are informed through callbacks.
+     */
     fun connect() {
         cancel() // Clear any existing event sources.
-        es = EventSources.createFactory(client).newEventSource(request = request, listener = eventSourceListener)
+        es = client.newEventSource(request, eventSourceListener)
         reconnectTimerTask = Timer().schedule(reconnIntervalRange.random()) {// Timer for a new event source.
             // This forces client side reconnection after interval.
             this@SseStream.cancel()
