@@ -37,13 +37,13 @@ class LocalEvaluationClient internal constructor(
     apiKey: String,
     private val config: LocalEvaluationConfig = LocalEvaluationConfig(),
     private val httpClient: OkHttpClient = OkHttpClient(),
-    cohortApi: CohortApi? = getCohortDownloadApi(config, httpClient)
+    private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper(config.metrics),
+    cohortApi: CohortApi? = getCohortDownloadApi(config, httpClient, metrics),
 ) {
     private val assignmentService: AssignmentService? = createAssignmentService(apiKey)
     private val serverUrl: HttpUrl = getServerUrl(config)
     private val evaluation: EvaluationEngine = EvaluationEngineImpl()
-    private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper(config.metrics)
-    private val flagConfigApi = DynamicFlagConfigApi(apiKey, serverUrl, getProxyUrl(config), httpClient)
+    private val flagConfigApi = DynamicFlagConfigApi(apiKey, serverUrl, getProxyUrl(config), httpClient, metrics)
     private val flagConfigStorage = InMemoryFlagConfigStorage()
     private val cohortStorage = if (config.cohortSyncConfig == null) {
         null
@@ -88,7 +88,8 @@ class LocalEvaluationClient internal constructor(
                 setOptions(Options().setMinIdLength(1))
                 setServerUrl(getEventServerUrl(config, config.assignmentConfiguration))
             },
-            InMemoryAssignmentFilter(config.assignmentConfiguration.cacheCapacity)
+            InMemoryAssignmentFilter(config.assignmentConfiguration.cacheCapacity),
+            metrics = metrics,
         )
     }
     @JvmOverloads
@@ -159,7 +160,11 @@ class LocalEvaluationClient internal constructor(
     }
 }
 
-private fun getCohortDownloadApi(config: LocalEvaluationConfig, httpClient: OkHttpClient): CohortApi? {
+private fun getCohortDownloadApi(
+    config: LocalEvaluationConfig,
+    httpClient: OkHttpClient,
+    metrics: LocalEvaluationMetrics
+): CohortApi? {
     return if (config.cohortSyncConfig != null) {
         DynamicCohortApi(
             apiKey = config.cohortSyncConfig.apiKey,
@@ -168,6 +173,7 @@ private fun getCohortDownloadApi(config: LocalEvaluationConfig, httpClient: OkHt
             serverUrl = getCohortServerUrl(config),
             proxyUrl = getProxyUrl(config),
             httpClient = httpClient,
+            metrics = metrics
         )
     } else {
         null

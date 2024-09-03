@@ -34,7 +34,7 @@ internal class DeploymentRunner(
     private val lock = Once()
     private val poller = Executors.newScheduledThreadPool(1, daemonFactory)
     private val cohortLoader = if (cohortApi != null && cohortStorage != null) {
-        CohortLoader(cohortApi, cohortStorage)
+        CohortLoader(cohortApi, cohortStorage, metrics)
     } else {
         null
     }
