@@ -181,24 +181,26 @@ internal class FlagConfigFallbackRetryWrapper(
     private val executor = Executors.newScheduledThreadPool(1, daemonFactory)
     private var retryTask: ScheduledFuture<*>? = null
 
+    /**
+     * Since the wrapper retries, so there will never be error case. Thus, onError will never be called.
+     */
     override fun start(onError: (() -> Unit)?) {
+        if (mainUpdater is FlagConfigFallbackRetryWrapper) {
+            throw Error("Do not use FlagConfigFallbackRetryWrapper as main updater. Fallback updater will never be used. Rewrite retry and fallback logic.")
+        }
+
         try {
             mainUpdater.start {
-                scheduleRetry(onError) // Don't care if poller start error or not, always retry.
-                if (fallbackUpdater != null) {
-                    try {
-                        fallbackUpdater.start(onError)
-                    } catch (_: Throwable) {
-                        onError?.invoke()
-                    }
-                } else {
-                    onError?.invoke()
+                scheduleRetry() // Don't care if poller start error or not, always retry.
+                try {
+                    fallbackUpdater?.start()
+                } catch (_: Throwable) {
                 }
             }
         } catch (t: Throwable) {
             Logger.e("Primary flag configs start failed, start fallback. Error: ", t)
-            fallbackUpdater?.start(onError)
-            scheduleRetry(onError)
+            fallbackUpdater?.start()
+            scheduleRetry()
         }
     }
 
@@ -214,24 +216,19 @@ internal class FlagConfigFallbackRetryWrapper(
         retryTask?.cancel(true)
     }
 
-    private fun scheduleRetry(onError: (() -> Unit)?) {
+    private fun scheduleRetry() {
         retryTask = executor.schedule({
             try {
                 mainUpdater.start {
-                    scheduleRetry(onError) // Don't care if poller start error or not, always retry stream.
-                    if (fallbackUpdater != null) {
-                        try {
-                            fallbackUpdater.start(onError)
-                        } catch (_: Throwable) {
-                            onError?.invoke()
-                        }
-                    } else {
-                        onError?.invoke()
+                    scheduleRetry() // Don't care if poller start error or not, always retry stream.
+                    try {
+                        fallbackUpdater?.start()
+                    } catch (_: Throwable) {
                     }
                 }
                 fallbackUpdater?.stop()
             } catch (_: Throwable) {
-                scheduleRetry(onError)
+                scheduleRetry()
             }
         }, reconnIntervalRange.random(), TimeUnit.MILLISECONDS)
     }

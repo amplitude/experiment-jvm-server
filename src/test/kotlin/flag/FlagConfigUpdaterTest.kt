@@ -181,7 +181,6 @@ class FlagConfigStreamerTest {
 
 class FlagConfigFallbackRetryWrapperTest {
     private val mainOnErrorCapture = slot<(() -> Unit)>()
-    private val fallbackOnErrorCapture = slot<(() -> Unit)>()
 
     private var mainUpdater = mockk<FlagConfigUpdater>()
     private var fallbackUpdater = mockk<FlagConfigUpdater>()
@@ -193,59 +192,26 @@ class FlagConfigFallbackRetryWrapperTest {
         justRun { mainUpdater.start(capture(mainOnErrorCapture)) }
         justRun { mainUpdater.stop() }
         justRun { mainUpdater.shutdown() }
-        justRun { fallbackUpdater.start(capture(fallbackOnErrorCapture)) }
+        justRun { fallbackUpdater.start() } // Fallback is never passed onError callback, no need to capture
         justRun { fallbackUpdater.stop() }
         justRun { fallbackUpdater.shutdown() }
     }
 
     @Test
-    fun `Test FallbackRetryWrapper main updater all success`() {
-        val wrapper = FlagConfigFallbackRetryWrapper(mainUpdater, fallbackUpdater, 1000, 0)
-        var errorCount = 0
-
-        // Main starts
-        wrapper.start { errorCount++ }
-        verify(exactly = 1) { mainUpdater.start(any()) }
-        verify(exactly = 0) { fallbackUpdater.start() }
-        assertEquals(0, errorCount)
-
-        // Stop
-        wrapper.stop()
-        verify(exactly = 1) { mainUpdater.stop() }
-        verify(exactly = 1) { fallbackUpdater.stop() }
-        assertEquals(0, errorCount)
-
-        // Start again
-        wrapper.start { errorCount++ }
-        verify(exactly = 2) { mainUpdater.start(any()) }
-        verify(exactly = 0) { fallbackUpdater.start() }
-        assertEquals(0, errorCount)
-
-        // Shutdown
-        wrapper.shutdown()
-        verify(exactly = 1) { mainUpdater.shutdown() }
-        verify(exactly = 1) { mainUpdater.shutdown() }
-    }
-
-    @Test
     fun `Test FallbackRetryWrapper main success no fallback updater`() {
         val wrapper = FlagConfigFallbackRetryWrapper(mainUpdater, null, 1000, 0)
-        var errorCount = 0
 
         // Main starts
-        wrapper.start { errorCount++ }
+        wrapper.start()
         verify(exactly = 1) { mainUpdater.start(any()) }
-        assertEquals(0, errorCount)
 
         // Stop
         wrapper.stop()
         verify(exactly = 1) { mainUpdater.stop() }
-        assertEquals(0, errorCount)
 
         // Start again
-        wrapper.start { errorCount++ }
+        wrapper.start()
         verify(exactly = 2) { mainUpdater.start(any()) }
-        assertEquals(0, errorCount)
 
         // Shutdown
         wrapper.shutdown()
@@ -255,19 +221,16 @@ class FlagConfigFallbackRetryWrapperTest {
     @Test
     fun `Test FallbackRetryWrapper main start error and retries with no fallback updater`() {
         val wrapper = FlagConfigFallbackRetryWrapper(mainUpdater, null, 1000, 0)
-        var errorCount = 0
 
         every { mainUpdater.start(capture(mainOnErrorCapture)) } answers { throw Error() }
 
         // Main start fail, no error, same as success case
-        wrapper.start { errorCount++ }
+        wrapper.start()
         verify(exactly = 1) { mainUpdater.start(any()) }
-        assertEquals(0, errorCount)
 
         // Retries start
         Thread.sleep(1100)
         verify(exactly = 2) { mainUpdater.start(any()) }
-        assertEquals(0, errorCount)
 
         wrapper.shutdown()
     }
@@ -275,77 +238,112 @@ class FlagConfigFallbackRetryWrapperTest {
     @Test
     fun `Test FallbackRetryWrapper main error callback and retries with no fallback updater`() {
         val wrapper = FlagConfigFallbackRetryWrapper(mainUpdater, null, 1000, 0)
-        var errorCount = 0
 
         // Main start success
-        wrapper.start { errorCount++ }
+        wrapper.start()
         verify(exactly = 1) { mainUpdater.start(any()) }
-        assertEquals(0, errorCount)
 
         // Signal error
         mainOnErrorCapture.captured()
         verify(exactly = 1) { mainUpdater.start(any()) }
-        assertEquals(1, errorCount) // Updater failure from success calls callback
 
         // Retry fail after 1s
         every { mainUpdater.start(capture(mainOnErrorCapture)) } answers { throw Error() }
         Thread.sleep(1100)
         verify(exactly = 2) { mainUpdater.start(any()) }
-        assertEquals(1, errorCount) // Updater restart error doesn't call callback
 
         // Retry success after 1s
         justRun { mainUpdater.start(capture(mainOnErrorCapture)) }
         Thread.sleep(1100)
         verify(exactly = 3) { mainUpdater.start(any()) }
-        assertEquals(1, errorCount)
 
         // No more start
         Thread.sleep(1100)
         verify(exactly = 3) { mainUpdater.start(any()) }
-        assertEquals(1, errorCount)
+
+        wrapper.shutdown()
+    }
+
+    @Test
+    fun `Test FallbackRetryWrapper main updater all success`() {
+        val wrapper = FlagConfigFallbackRetryWrapper(mainUpdater, fallbackUpdater, 1000, 0)
+
+        // Main starts
+        wrapper.start()
+        verify(exactly = 1) { mainUpdater.start(any()) }
+        verify(exactly = 0) { fallbackUpdater.start() }
+
+        // Stop
+        wrapper.stop()
+        verify(exactly = 1) { mainUpdater.stop() }
+        verify(exactly = 1) { fallbackUpdater.stop() }
+
+        // Start again
+        wrapper.start()
+        verify(exactly = 2) { mainUpdater.start(any()) }
+        verify(exactly = 0) { fallbackUpdater.start() }
+
+        // Shutdown
+        wrapper.shutdown()
+        verify(exactly = 1) { mainUpdater.shutdown() }
+        verify(exactly = 1) { mainUpdater.shutdown() }
+    }
+
+    @Test
+    fun `Test FallbackRetryWrapper main start error and retries`() {
+        val wrapper = FlagConfigFallbackRetryWrapper(mainUpdater, fallbackUpdater, 1000, 0)
+
+        every { mainUpdater.start(capture(mainOnErrorCapture)) } answers { throw Error() }
+
+        // Main start fail, no error, same as success case
+        wrapper.start()
+        verify(exactly = 1) { mainUpdater.start(any()) }
+        verify(exactly = 1) { fallbackUpdater.start(any()) }
+
+        // Retries start
+        Thread.sleep(1100)
+        verify(exactly = 2) { mainUpdater.start(any()) }
+        verify(exactly = 1) { fallbackUpdater.start(any()) }
 
         wrapper.shutdown()
     }
 
     @Test
     fun `Test FallbackRetryWrapper main error callback and retries`() {
-//        val wrapper = FlagConfigFallbackRetryWrapper(mainUpdater, fallbackUpdater, 1000, 0)
-//        var errorCount = 0
-//
-//        // Main start success
-//        wrapper.start { errorCount++ }
-//        verify(exactly = 1) { mainUpdater.start(any()) }
-//        verify(exactly = 0) { fallbackUpdater.start(any()) }
-//        assertEquals(0, errorCount)
-//
-//        // Signal error
-//        mainOnErrorCapture.captured()
-//        verify(exactly = 1) { mainUpdater.start(any()) }
-//        verify(exactly = 1) { fallbackUpdater.start(any()) }
-//        assertEquals(0, errorCount) // Fallback succeeded, so no callback
-//
-//        // Retry fail after 1s
-//        every { mainUpdater.start(capture(mainOnErrorCapture)) } answers { throw Error() }
-//        Thread.sleep(1100)
-//        verify(exactly = 2) { mainUpdater.start(any()) }
-//        verify(exactly = 1) { fallbackUpdater.start(any()) }
-//        assertEquals(0, errorCount)
-//
-//        // Signal fallback fails
-//        fallbackOnErrorCapture.captured()
-//
-//
-//        // Retry success after 1s
-//        justRun { mainUpdater.start(capture(mainOnErrorCapture)) }
-//        Thread.sleep(1100)
-//        verify(exactly = 3) { mainUpdater.start(any()) }
-//        assertEquals(1, errorCount)
-//
-//        // No more start
-//        Thread.sleep(1100)
-//        verify(exactly = 3) { mainUpdater.start(any()) }
-//        assertEquals(1, errorCount)
-//
-//        wrapper.shutdown()
+        val wrapper = FlagConfigFallbackRetryWrapper(mainUpdater, fallbackUpdater, 1000, 0)
+
+        // Main start success
+        wrapper.start()
+        verify(exactly = 1) { mainUpdater.start(any()) }
+        verify(exactly = 0) { fallbackUpdater.start(any()) }
+
+        // Signal error
+        mainOnErrorCapture.captured()
+        verify(exactly = 1) { mainUpdater.start(any()) }
+        verify(exactly = 1) { fallbackUpdater.start(any()) }
+
+        // Retry fail after 1s
+        every { mainUpdater.start(capture(mainOnErrorCapture)) } answers { throw Error() }
+        Thread.sleep(1100)
+        verify(exactly = 2) { mainUpdater.start(any()) }
+        verify(exactly = 1) { fallbackUpdater.start(any()) }
+
+        // Retry success
+        justRun { mainUpdater.start(capture(mainOnErrorCapture)) }
+        verify(exactly = 0) { fallbackUpdater.stop() }
+        Thread.sleep(1100)
+        verify(exactly = 3) { mainUpdater.start(any()) }
+        verify(exactly = 1) { fallbackUpdater.start(any()) }
+        verify(exactly = 0) { mainUpdater.stop() }
+        verify(exactly = 1) { fallbackUpdater.stop() }
+
+        // No more start
+        Thread.sleep(1100)
+        verify(exactly = 3) { mainUpdater.start(any()) }
+        verify(exactly = 1) { fallbackUpdater.start(any()) }
+        verify(exactly = 0) { mainUpdater.stop() }
+        verify(exactly = 1) { fallbackUpdater.stop() }
+
+        wrapper.shutdown()
     }
 }

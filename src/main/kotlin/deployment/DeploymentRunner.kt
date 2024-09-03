@@ -39,7 +39,10 @@ internal class DeploymentRunner(
     }
     private val cohortPollingInterval: Long = getCohortPollingInterval()
     // Fallback in this order: proxy, stream, poll.
-    private val amplitudeFlagConfigPoller = FlagConfigFallbackRetryWrapper(FlagConfigPoller(flagConfigApi, flagConfigStorage, cohortLoader, cohortStorage, config, metrics), null, config.flagConfigPollerIntervalMillis, 1000)
+    private val amplitudeFlagConfigPoller = FlagConfigFallbackRetryWrapper(
+        FlagConfigPoller(flagConfigApi, flagConfigStorage, cohortLoader, cohortStorage, config, metrics),
+        null, config.flagConfigPollerIntervalMillis, 1000
+    )
     private val amplitudeFlagConfigUpdater =
         if (flagConfigStreamApi != null)
             FlagConfigFallbackRetryWrapper(
