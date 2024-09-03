@@ -2,17 +2,26 @@ package com.amplitude.experiment
 
 import com.amplitude.experiment.cohort.Cohort
 import com.amplitude.experiment.cohort.CohortApi
+import com.amplitude.experiment.flag.FlagConfigPoller
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkConstructor
 import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import kotlin.system.measureNanoTime
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 private const val API_KEY = "server-qz35UwzJ5akieoAdIgzM4m9MIiOLXLoz"
 
 class LocalEvaluationClientTest {
+    @AfterTest
+    fun afterTest() {
+        clearAllMocks()
+    }
 
     @Test
     fun `test evaluate, all flags, success`() {
@@ -193,6 +202,7 @@ class LocalEvaluationClientTest {
         assertEquals("on", userVariant?.key)
         assertEquals("on", userVariant?.value)
     }
+
     @Test
     fun `evaluate with user, cohort tester targeted`() {
         val cohortConfig = LocalEvaluationConfig(
@@ -238,6 +248,7 @@ class LocalEvaluationClientTest {
         assertEquals("on", groupVariant?.key)
         assertEquals("on", groupVariant?.value)
     }
+
     @Test
     fun `evaluate with group, cohort tester targeted`() {
         val cohortConfig = LocalEvaluationConfig(
@@ -260,5 +271,45 @@ class LocalEvaluationClientTest {
         val groupVariant = client.evaluateV2(user, setOf("sdk-local-evaluation-group-cohort-ci-test"))["sdk-local-evaluation-group-cohort-ci-test"]
         assertEquals("on", groupVariant?.key)
         assertEquals("on", groupVariant?.value)
+    }
+
+    @Test
+    fun `test evaluate, stream flags, all flags, success`() {
+        mockkConstructor(FlagConfigPoller::class)
+        every { anyConstructed<FlagConfigPoller>().start(any()) } answers {
+            throw Exception("Should use stream, may be flaky test when stream failed")
+        }
+        val client = LocalEvaluationClient(API_KEY, LocalEvaluationConfig(streamUpdates = true))
+        client.start()
+        val variants = client.evaluate(ExperimentUser(userId = "test_user"))
+        val variant = variants["sdk-local-evaluation-ci-test"]
+        Assert.assertEquals(Variant(key = "on", value = "on", payload = "payload"), variant?.copy(metadata = null))
+    }
+
+    @Test
+    fun `evaluate with user, stream flags, cohort segment targeted`() {
+        mockkConstructor(FlagConfigPoller::class)
+        every { anyConstructed<FlagConfigPoller>().start(any()) } answers {
+            throw Exception("Should use stream, may be flaky test when stream failed")
+        }
+        val cohortConfig = LocalEvaluationConfig(
+            streamUpdates = true,
+            cohortSyncConfig = CohortSyncConfig("api", "secret")
+        )
+        val cohortApi = mockk<CohortApi>().apply {
+            every { getCohort(eq("52gz3yi7"), allAny()) } returns Cohort("52gz3yi7", "User", 2, 1722363790000, setOf("1", "2"))
+            every { getCohort(eq("mv7fn2bp"), allAny()) } returns Cohort("mv7fn2bp", "User", 1, 1719350216000, setOf("67890", "12345"))
+            every { getCohort(eq("s4t57y32"), allAny()) } returns Cohort("s4t57y32", "org name", 1, 1722368285000, setOf("Amplitude Website (Portfolio)"))
+            every { getCohort(eq("k1lklnnb"), allAny()) } returns Cohort("k1lklnnb", "org id", 1, 1722466388000, setOf("1"))
+        }
+        val client = LocalEvaluationClient(API_KEY, cohortConfig, cohortApi = cohortApi)
+        client.start()
+        val user = ExperimentUser(
+            userId = "12345",
+            deviceId = "device_id",
+        )
+        val userVariant = client.evaluateV2(user, setOf("sdk-local-evaluation-user-cohort-ci-test"))["sdk-local-evaluation-user-cohort-ci-test"]
+        assertEquals("on", userVariant?.key)
+        assertEquals("on", userVariant?.value)
     }
 }

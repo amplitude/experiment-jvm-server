@@ -4,6 +4,7 @@ import com.amplitude.experiment.LocalEvaluationConfig
 import com.amplitude.experiment.evaluation.EvaluationFlag
 import com.amplitude.experiment.util.SseStream
 import io.mockk.*
+import java.lang.Exception
 import kotlin.test.*
 
 private val FLAG1 = EvaluationFlag("key1", emptyMap(), emptyList())
@@ -13,9 +14,14 @@ class FlagConfigPollerTest {
     private var storage = InMemoryFlagConfigStorage()
 
     @BeforeTest
-    fun beforeEach() {
+    fun beforeTest() {
         fetchApi = mockk<FlagConfigApi>()
         storage = InMemoryFlagConfigStorage()
+    }
+
+    @AfterTest
+    fun afterTest() {
+        clearAllMocks()
     }
 
     @Test
@@ -112,12 +118,17 @@ class FlagConfigStreamerTest {
     private val config = LocalEvaluationConfig(streamUpdates = true, streamServerUrl = "", streamFlagConnTimeoutMillis = 2000)
 
     @BeforeTest
-    fun beforeEach() {
+    fun beforeTest() {
         streamApi = mockk<FlagConfigStreamApi>()
         storage = InMemoryFlagConfigStorage()
 
         justRun { streamApi.onUpdate = capture(onUpdateCapture) }
         justRun { streamApi.onError = capture(onErrorCapture) }
+    }
+
+    @AfterTest
+    fun afterTest() {
+        clearAllMocks()
     }
 
     @Test
@@ -161,7 +172,7 @@ class FlagConfigStreamerTest {
 
     @Test
     fun `Test Streamer stream fails`(){
-        every { streamApi.connect() } answers { throw Error("Haha error") }
+        justRun { streamApi.connect() }
         val streamer = FlagConfigStreamer(streamApi, storage, null, null, config)
         var errorCount = 0
         streamer.start { errorCount++ }
@@ -173,7 +184,7 @@ class FlagConfigStreamerTest {
         assertEquals(0, errorCount)
 
         // Stream fails
-        onErrorCapture.captured(Error("Haha error"))
+        onErrorCapture.captured(Exception("Haha error"))
         assertEquals(1, errorCount) // Error callback is called
     }
 }
@@ -184,8 +195,9 @@ class FlagConfigFallbackRetryWrapperTest {
 
     private var mainUpdater = mockk<FlagConfigUpdater>()
     private var fallbackUpdater = mockk<FlagConfigUpdater>()
+
     @BeforeTest
-    fun beforeEach() {
+    fun beforeTest() {
         mainUpdater = mockk<FlagConfigUpdater>()
         fallbackUpdater = mockk<FlagConfigUpdater>()
 
@@ -195,6 +207,11 @@ class FlagConfigFallbackRetryWrapperTest {
         justRun { fallbackUpdater.start() } // Fallback is never passed onError callback, no need to capture
         justRun { fallbackUpdater.stop() }
         justRun { fallbackUpdater.shutdown() }
+    }
+
+    @AfterTest
+    fun afterTest() {
+        clearAllMocks()
     }
 
     @Test
@@ -225,12 +242,15 @@ class FlagConfigFallbackRetryWrapperTest {
         every { mainUpdater.start(capture(mainOnErrorCapture)) } answers { throw Error() }
 
         // Main start fail, no error, same as success case
-        wrapper.start()
+        try {
+            wrapper.start()
+            fail("Start errors should throw")
+        } catch (_: Throwable) {}
         verify(exactly = 1) { mainUpdater.start(any()) }
 
-        // Retries start
+        // Start errors no retry
         Thread.sleep(1100)
-        verify(exactly = 2) { mainUpdater.start(any()) }
+        verify(exactly = 1) { mainUpdater.start(any()) }
 
         wrapper.shutdown()
     }
@@ -290,6 +310,29 @@ class FlagConfigFallbackRetryWrapperTest {
     }
 
     @Test
+    fun `Test FallbackRetryWrapper main and fallback start error`() {
+        val wrapper = FlagConfigFallbackRetryWrapper(mainUpdater, fallbackUpdater, 1000, 0)
+
+        every { mainUpdater.start(capture(mainOnErrorCapture)) } answers { throw Error() }
+        every { fallbackUpdater.start() } answers { throw Error() }
+
+        // Main start fail, no error, same as success case
+        try {
+            wrapper.start()
+            fail("Start errors should throw")
+        } catch (_: Throwable) {}
+        verify(exactly = 1) { mainUpdater.start(any()) }
+        verify(exactly = 1) { fallbackUpdater.start(any()) }
+
+        // Start errors no retry
+        Thread.sleep(1100)
+        verify(exactly = 1) { mainUpdater.start(any()) }
+        verify(exactly = 1) { fallbackUpdater.start(any()) }
+
+        wrapper.shutdown()
+    }
+
+    @Test
     fun `Test FallbackRetryWrapper main start error and retries`() {
         val wrapper = FlagConfigFallbackRetryWrapper(mainUpdater, fallbackUpdater, 1000, 0)
 
@@ -345,5 +388,16 @@ class FlagConfigFallbackRetryWrapperTest {
         verify(exactly = 1) { fallbackUpdater.stop() }
 
         wrapper.shutdown()
+    }
+
+    @Test
+    fun `Test FallbackRetryWrapper main updater cannot be FlagConfigFallbackRetryWrapper`() {
+        val wrapper = FlagConfigFallbackRetryWrapper(FlagConfigFallbackRetryWrapper(mainUpdater, null), null, 1000, 0)
+        try {
+            wrapper.start()
+            fail("Did not throw")
+        } catch (_: Throwable) {
+        }
+        verify(exactly = 0) { mainUpdater.start() }
     }
 }

@@ -68,8 +68,6 @@ internal class SseStream (
         }
 
         override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
-            println(t)
-            println(response)
             if ((eventSource != es)) {
                 // Not the current event source using right now, should cancel.
                 eventSource.cancel()

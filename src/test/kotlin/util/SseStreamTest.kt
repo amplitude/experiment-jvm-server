@@ -11,6 +11,7 @@ import okhttp3.Request
 import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
 import org.mockito.Mockito
+import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -18,7 +19,7 @@ import kotlin.test.assertEquals
 
 class SseStreamTest {
     private val listenerCapture = slot<EventSourceListener>()
-    val clientMock = mockk<OkHttpClient>()
+    private val clientMock = mockk<OkHttpClient>()
     private val es = mockk<EventSource>("mocked es")
 
     private var data: List<String> = listOf()
@@ -33,7 +34,11 @@ class SseStreamTest {
 
         mockkConstructor(OkHttpClient.Builder::class)
         every { anyConstructed<OkHttpClient.Builder>().build() } returns clientMock
+    }
 
+    @AfterTest
+    fun afterTest() {
+        clearAllMocks()
     }
 
     private fun setupStream(

@@ -199,7 +199,11 @@ internal class FlagConfigFallbackRetryWrapper(
             }
         } catch (t: Throwable) {
             Logger.e("Primary flag configs start failed, start fallback. Error: ", t)
-            fallbackUpdater?.start()
+            if (fallbackUpdater == null) {
+                // No fallback, main start failed is wrapper start fail
+                throw t
+            }
+            fallbackUpdater.start()
             scheduleRetry()
         }
     }

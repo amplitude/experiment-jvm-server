@@ -32,6 +32,11 @@ class FlagConfigStreamApiTest {
         every { anyConstructed<SseStream>().onError = capture(onErrorCapture) } answers {}
     }
 
+    @AfterTest
+    fun afterTest() {
+        clearAllMocks()
+    }
+
     private fun setupApi(
         deploymentKey: String = "",
         serverUrl: HttpUrl = "http://localhost".toHttpUrl(),
