@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/amplitude/experiment-jvm-server/compare/1.4.0...1.4.1) (2024-09-04)
+
+
+### Bug Fixes
+
+* fix certain metrics that weren't firing ([dbf2994](https://github.com/amplitude/experiment-jvm-server/commit/dbf299481ab5c2d2f985edb0219a427d5b6a35ee))
+
 # [1.4.0](https://github.com/amplitude/experiment-jvm-server/compare/1.3.1...1.4.0) (2024-08-27)
 
 
