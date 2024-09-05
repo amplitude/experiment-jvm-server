@@ -34,7 +34,7 @@ internal abstract class FlagConfigUpdaterBase(
     private val cohortLoader: CohortLoader?,
     private val cohortStorage: CohortStorage?,
 ): FlagConfigUpdater {
-    fun update(flagConfigs: List<EvaluationFlag>) {
+    protected fun update(flagConfigs: List<EvaluationFlag>) {
         // Remove flags that no longer exist.
         val flagKeys = flagConfigs.map { it.key }.toSet()
         flagConfigStorage.removeIf { !flagKeys.contains(it.key) }
@@ -93,11 +93,14 @@ internal class FlagConfigPoller(
 ): FlagConfigUpdaterBase(
     storage, cohortLoader, cohortStorage
 ) {
-    private val poller = Executors.newScheduledThreadPool(1, daemonFactory)
+    private val pool = Executors.newScheduledThreadPool(1, daemonFactory)
     private var scheduledFuture: ScheduledFuture<*>? = null
     override fun start(onError: (() -> Unit)?) {
         refresh()
-        scheduledFuture = poller.scheduleWithFixedDelay(
+        if (scheduledFuture != null) {
+            stop()
+        }
+        scheduledFuture = pool.scheduleWithFixedDelay(
             {
                 try {
                     refresh()
@@ -121,7 +124,7 @@ internal class FlagConfigPoller(
 
     override fun shutdown() {
         // Stop the executor.
-        poller.shutdown()
+        pool.shutdown()
     }
 
     private fun refresh() {

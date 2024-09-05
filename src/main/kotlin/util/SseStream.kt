@@ -101,13 +101,13 @@ internal class SseStream (
 
     private var es: EventSource? = null
     private var reconnectTimerTask: TimerTask? = null
-    var onUpdate: ((String) -> Unit)? = null
-    var onError: ((Throwable?) -> Unit)? = null
+    internal var onUpdate: ((String) -> Unit)? = null
+    internal var onError: ((Throwable?) -> Unit)? = null
 
     /**
      * Creates an event source and immediately returns. The connection is performed async. Errors are informed through callbacks.
      */
-    fun connect() {
+    internal fun connect() {
         cancel() // Clear any existing event sources.
         es = client.newEventSource(request, eventSourceListener)
         reconnectTimerTask = Timer().schedule(reconnIntervalRange.random()) {// Timer for a new event source.
@@ -117,7 +117,7 @@ internal class SseStream (
         }
     }
 
-    fun cancel() {
+    internal fun cancel() {
         reconnectTimerTask?.cancel()
 
         // There can be cases where an event source is being cancelled by these calls, but take a long time and made a callback to onFailure callback.

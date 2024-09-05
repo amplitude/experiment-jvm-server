@@ -46,7 +46,7 @@ internal class FlagConfigStreamApi (
         keepaliveTimeoutMillis,
         reconnIntervalMillis)
 
-    fun connect() {
+    internal fun connect() {
         val isInit = AtomicBoolean(true)
         val connectTimeoutFuture = CompletableFuture<Unit>()
         val updateTimeoutFuture = CompletableFuture<Unit>()
@@ -124,7 +124,7 @@ internal class FlagConfigStreamApi (
         throw t
     }
 
-    fun close() {
+    internal fun close() {
         stream.cancel()
     }
 
