@@ -292,16 +292,18 @@ class FlagConfigFallbackRetryWrapperTest {
         wrapper.start()
         verify(exactly = 1) { mainUpdater.start(any()) }
         verify(exactly = 0) { fallbackUpdater.start() }
+        verify(exactly = 1) { fallbackUpdater.stop() }
 
         // Stop
         wrapper.stop()
         verify(exactly = 1) { mainUpdater.stop() }
-        verify(exactly = 1) { fallbackUpdater.stop() }
+        verify(exactly = 2) { fallbackUpdater.stop() }
 
         // Start again
         wrapper.start()
         verify(exactly = 2) { mainUpdater.start(any()) }
         verify(exactly = 0) { fallbackUpdater.start() }
+        verify(exactly = 3) { fallbackUpdater.stop() }
 
         // Shutdown
         wrapper.shutdown()
@@ -373,19 +375,19 @@ class FlagConfigFallbackRetryWrapperTest {
 
         // Retry success
         justRun { mainUpdater.start(capture(mainOnErrorCapture)) }
-        verify(exactly = 0) { fallbackUpdater.stop() }
+        verify(exactly = 1) { fallbackUpdater.stop() }
         Thread.sleep(1100)
         verify(exactly = 3) { mainUpdater.start(any()) }
         verify(exactly = 1) { fallbackUpdater.start(any()) }
         verify(exactly = 0) { mainUpdater.stop() }
-        verify(exactly = 1) { fallbackUpdater.stop() }
+        verify(exactly = 2) { fallbackUpdater.stop() }
 
         // No more start
         Thread.sleep(1100)
         verify(exactly = 3) { mainUpdater.start(any()) }
         verify(exactly = 1) { fallbackUpdater.start(any()) }
         verify(exactly = 0) { mainUpdater.stop() }
-        verify(exactly = 1) { fallbackUpdater.stop() }
+        verify(exactly = 2) { fallbackUpdater.stop() }
 
         wrapper.shutdown()
     }

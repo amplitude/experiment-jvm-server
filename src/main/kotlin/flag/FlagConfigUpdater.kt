@@ -14,6 +14,8 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import kotlin.math.max
 import kotlin.math.min
 
@@ -89,42 +91,52 @@ internal class FlagConfigPoller(
     private val cohortLoader: CohortLoader?,
     private val cohortStorage: CohortStorage?,
     private val config: LocalEvaluationConfig,
-    private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper()
+    private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper(),
 ): FlagConfigUpdaterBase(
     storage, cohortLoader, cohortStorage
 ) {
+    private val lock: ReentrantLock = ReentrantLock()
     private val pool = Executors.newScheduledThreadPool(1, daemonFactory)
-    private var scheduledFuture: ScheduledFuture<*>? = null
+    private var scheduledFuture: ScheduledFuture<*>? = null // @GuardedBy(lock)
     override fun start(onError: (() -> Unit)?) {
         refresh()
-        if (scheduledFuture != null) {
-            stop()
+        lock.withLock {
+            stopInternal()
+            scheduledFuture = pool.scheduleWithFixedDelay(
+                {
+                    try {
+                        refresh()
+                    } catch (t: Throwable) {
+                        Logger.e("Refresh flag configs failed.", t)
+                        stop()
+                        onError?.invoke()
+                    }
+                },
+                config.flagConfigPollerIntervalMillis,
+                config.flagConfigPollerIntervalMillis,
+                TimeUnit.MILLISECONDS
+            )
         }
-        scheduledFuture = pool.scheduleWithFixedDelay(
-            {
-                try {
-                    refresh()
-                } catch (t: Throwable) {
-                    Logger.e("Refresh flag configs failed.", t)
-                    stop()
-                    onError?.invoke()
-                }
-            },
-            config.flagConfigPollerIntervalMillis,
-            config.flagConfigPollerIntervalMillis,
-            TimeUnit.MILLISECONDS
-        )
     }
 
-    override fun stop() {
+    // @GuardedBy(lock)
+    private fun stopInternal() {
         // Pause only stop the task scheduled. It doesn't stop the executor.
         scheduledFuture?.cancel(true)
         scheduledFuture = null
     }
 
+    override fun stop() {
+        lock.withLock {
+            stopInternal()
+        }
+    }
+
     override fun shutdown() {
-        // Stop the executor.
-        pool.shutdown()
+        lock.withLock {
+            // Stop the executor.
+            pool.shutdown()
+        }
     }
 
     private fun refresh() {
@@ -151,21 +163,25 @@ internal class FlagConfigStreamer(
 ): FlagConfigUpdaterBase(
     storage, cohortLoader, cohortStorage
 ) {
+    private val lock: ReentrantLock = ReentrantLock()
     override fun start(onError: (() -> Unit)?) {
-        flagConfigStreamApi.onUpdate = {flags ->
-            update(flags)
-        }
-        flagConfigStreamApi.onError = {e ->
-            Logger.e("Stream flag configs streaming failed.", e)
-            metrics.onFlagConfigStreamFailure(e)
-            onError?.invoke()
-        }
-        wrapMetrics(metric = metrics::onFlagConfigStream, failure = metrics::onFlagConfigStreamFailure) {
-            flagConfigStreamApi.connect()
+        lock.withLock {
+            flagConfigStreamApi.onUpdate = { flags ->
+                update(flags)
+            }
+            flagConfigStreamApi.onError = { e ->
+                Logger.e("Stream flag configs streaming failed.", e)
+                metrics.onFlagConfigStreamFailure(e)
+                onError?.invoke()
+            }
+            wrapMetrics(metric = metrics::onFlagConfigStream, failure = metrics::onFlagConfigStreamFailure) {
+                flagConfigStreamApi.connect()
+            }
         }
     }
 
     override fun stop() {
+        // Not guarded by lock. close() can cancel start().
         flagConfigStreamApi.close()
     }
 
@@ -178,11 +194,12 @@ internal class FlagConfigFallbackRetryWrapper(
     private val mainUpdater: FlagConfigUpdater,
     private val fallbackUpdater: FlagConfigUpdater?,
     private val retryDelayMillis: Long = RETRY_DELAY_MILLIS_DEFAULT,
-    private val maxJitterMillis: Long = MAX_JITTER_MILLIS_DEFAULT
+    private val maxJitterMillis: Long = MAX_JITTER_MILLIS_DEFAULT,
 ): FlagConfigUpdater {
+    private val lock: ReentrantLock = ReentrantLock()
     private val reconnIntervalRange = max(0, retryDelayMillis - maxJitterMillis)..(min(retryDelayMillis, retryDelayMillis - maxJitterMillis) + maxJitterMillis)
     private val executor = Executors.newScheduledThreadPool(1, daemonFactory)
-    private var retryTask: ScheduledFuture<*>? = null
+    private var retryTask: ScheduledFuture<*>? = null // @GuardedBy(lock)
 
     /**
      * Since the wrapper retries, so there will never be error case. Thus, onError will never be called.
@@ -192,37 +209,49 @@ internal class FlagConfigFallbackRetryWrapper(
             throw Error("Do not use FlagConfigFallbackRetryWrapper as main updater. Fallback updater will never be used. Rewrite retry and fallback logic.")
         }
 
-        try {
-            mainUpdater.start {
-                scheduleRetry() // Don't care if poller start error or not, always retry.
-                try {
-                    fallbackUpdater?.start()
-                } catch (_: Throwable) {
+        lock.withLock {
+            retryTask?.cancel(true)
+
+            try {
+                mainUpdater.start {
+                    lock.withLock {
+                        scheduleRetry() // Don't care if poller start error or not, always retry.
+                        try {
+                            fallbackUpdater?.start()
+                        } catch (_: Throwable) {
+                        }
+                    }
                 }
+                fallbackUpdater?.stop()
+            } catch (t: Throwable) {
+                Logger.e("Primary flag configs start failed, start fallback. Error: ", t)
+                if (fallbackUpdater == null) {
+                    // No fallback, main start failed is wrapper start fail
+                    throw t
+                }
+                fallbackUpdater.start()
+                scheduleRetry()
             }
-        } catch (t: Throwable) {
-            Logger.e("Primary flag configs start failed, start fallback. Error: ", t)
-            if (fallbackUpdater == null) {
-                // No fallback, main start failed is wrapper start fail
-                throw t
-            }
-            fallbackUpdater.start()
-            scheduleRetry()
         }
     }
 
     override fun stop() {
-        mainUpdater.stop()
-        fallbackUpdater?.stop()
-        retryTask?.cancel(true)
+        lock.withLock {
+            mainUpdater.stop()
+            fallbackUpdater?.stop()
+            retryTask?.cancel(true)
+        }
     }
 
     override fun shutdown() {
-        mainUpdater.shutdown()
-        fallbackUpdater?.shutdown()
-        retryTask?.cancel(true)
+        lock.withLock {
+            mainUpdater.shutdown()
+            fallbackUpdater?.shutdown()
+            retryTask?.cancel(true)
+        }
     }
 
+    // @GuardedBy(lock)
     private fun scheduleRetry() {
         retryTask = executor.schedule({
             try {

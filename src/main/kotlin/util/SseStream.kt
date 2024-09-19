@@ -13,7 +13,9 @@ import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
 import java.util.*
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.schedule
+import kotlin.concurrent.withLock
 import kotlin.math.max
 import kotlin.math.min
 
@@ -30,8 +32,9 @@ internal class SseStream (
     private val connectionTimeoutMillis: Long,
     private val keepaliveTimeoutMillis: Long = KEEP_ALIVE_TIMEOUT_MILLIS_DEFAULT,
     private val reconnIntervalMillis: Long = RECONN_INTERVAL_MILLIS_DEFAULT,
-    private val maxJitterMillis: Long = MAX_JITTER_MILLIS_DEFAULT
+    private val maxJitterMillis: Long = MAX_JITTER_MILLIS_DEFAULT,
 ) {
+    private val lock: ReentrantLock = ReentrantLock()
     private val reconnIntervalRange = max(0, reconnIntervalMillis - maxJitterMillis)..(min(reconnIntervalMillis, Long.MAX_VALUE - maxJitterMillis) + maxJitterMillis)
     private val eventSourceListener = object : EventSourceListener() {
         override fun onOpen(eventSource: EventSource, response: Response) {
@@ -39,13 +42,15 @@ internal class SseStream (
         }
 
         override fun onClosed(eventSource: EventSource) {
-            if ((eventSource != es)) {
-                // Not the current event source using right now, should cancel.
-                eventSource.cancel()
-                return
+            lock.withLock {
+                if ((eventSource != es)) {
+                    // Not the current event source using right now, should cancel.
+                    eventSource.cancel()
+                    return
+                }
             }
             // Server closed the connection, just reconnect.
-            cancel()
+            cancelInternal()
             connect()
         }
 
@@ -55,10 +60,12 @@ internal class SseStream (
             type: String?,
             data: String
         ) {
-            if ((eventSource != es)) {
-                // Not the current event source using right now, should cancel.
-                eventSource.cancel()
-                return
+            lock.withLock {
+                if ((eventSource != es)) {
+                    // Not the current event source using right now, should cancel.
+                    eventSource.cancel()
+                    return
+                }
             }
             // Keep alive data
             if (KEEP_ALIVE_DATA == data) {
@@ -68,10 +75,12 @@ internal class SseStream (
         }
 
         override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
-            if ((eventSource != es)) {
-                // Not the current event source using right now, should cancel.
-                eventSource.cancel()
-                return
+            lock.withLock {
+                if ((eventSource != es)) {
+                    // Not the current event source using right now, should cancel.
+                    eventSource.cancel()
+                    return
+                }
             }
             if (t is StreamResetException && t.errorCode == ErrorCode.CANCEL) {
                 // Relying on okhttp3.internal to differentiate cancel case.
@@ -99,8 +108,8 @@ internal class SseStream (
         .retryOnConnectionFailure(false)
         .build()
 
-    private var es: EventSource? = null
-    private var reconnectTimerTask: TimerTask? = null
+    private var es: EventSource? = null // @GuardedBy(lock)
+    private var reconnectTimerTask: TimerTask? = null // @GuardedBy(lock)
     internal var onUpdate: ((String) -> Unit)? = null
     internal var onError: ((Throwable?) -> Unit)? = null
 
@@ -108,20 +117,29 @@ internal class SseStream (
      * Creates an event source and immediately returns. The connection is performed async. Errors are informed through callbacks.
      */
     internal fun connect() {
-        cancel() // Clear any existing event sources.
-        es = client.newEventSource(request, eventSourceListener)
-        reconnectTimerTask = Timer().schedule(reconnIntervalRange.random()) {// Timer for a new event source.
-            // This forces client side reconnection after interval.
-            this@SseStream.cancel()
-            connect()
+        lock.withLock {
+            cancelInternal() // Clear any existing event sources.
+            es = client.newEventSource(request, eventSourceListener)
+            reconnectTimerTask = Timer().schedule(reconnIntervalRange.random()) {// Timer for a new event source.
+                // This forces client side reconnection after interval.
+                this@SseStream.cancel()
+                connect()
+            }
         }
     }
 
-    internal fun cancel() {
+    // @GuardedBy(lock)
+    private fun cancelInternal() {
         reconnectTimerTask?.cancel()
 
         // There can be cases where an event source is being cancelled by these calls, but take a long time and made a callback to onFailure callback.
         es?.cancel()
         es = null
+    }
+
+    internal fun cancel() {
+        lock.withLock {
+            cancelInternal()
+        }
     }
 }
