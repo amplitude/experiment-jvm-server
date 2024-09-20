@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/amplitude/experiment-jvm-server/compare/1.4.1...1.4.2) (2024-09-20)
+
+
+### Bug Fixes
+
+* fix assignment config to use batch when configured ([#32](https://github.com/amplitude/experiment-jvm-server/issues/32)) ([d6d9684](https://github.com/amplitude/experiment-jvm-server/commit/d6d9684332066aaf5345646061651e67a7ea1247))
+
 ## [1.4.1](https://github.com/amplitude/experiment-jvm-server/compare/1.4.0...1.4.1) (2024-09-04)
 
 
