@@ -84,7 +84,6 @@ class LocalEvaluationClient internal constructor(
                 init(config.assignmentConfiguration.apiKey)
                 setEventUploadThreshold(config.assignmentConfiguration.eventUploadThreshold)
                 setEventUploadPeriodMillis(config.assignmentConfiguration.eventUploadPeriodMillis)
-                useBatchMode(config.assignmentConfiguration.useBatchMode)
                 setOptions(Options().setMinIdLength(1))
                 setServerUrl(getEventServerUrl(config, config.assignmentConfiguration))
             },
@@ -213,8 +212,16 @@ private fun getEventServerUrl(
 ): String {
     return if (assignmentConfiguration.serverUrl == LocalEvaluationConfig.Defaults.EVENT_SERVER_URL) {
         when (config.serverZone) {
-            ServerZone.US -> US_EVENT_SERVER_URL
-            ServerZone.EU -> EU_EVENT_SERVER_URL
+            ServerZone.US -> if (assignmentConfiguration.useBatchMode) {
+                US_BATCH_SERVER_URL
+            } else {
+                US_EVENT_SERVER_URL
+            }
+            ServerZone.EU -> if (assignmentConfiguration.useBatchMode) {
+                EU_BATCH_SERVER_URL
+            } else {
+                EU_EVENT_SERVER_URL
+            }
         }
     } else {
         assignmentConfiguration.serverUrl
