@@ -1,3 +1,10 @@
+## [1.4.3](https://github.com/amplitude/experiment-jvm-server/compare/1.4.2...1.4.3) (2024-09-23)
+
+
+### Bug Fixes
+
+* add metric for cohort download too large ([#33](https://github.com/amplitude/experiment-jvm-server/issues/33)) ([5a855c9](https://github.com/amplitude/experiment-jvm-server/commit/5a855c904b011b931467a29f48914bd7867f83db))
+
 ## [1.4.2](https://github.com/amplitude/experiment-jvm-server/compare/1.4.1...1.4.2) (2024-09-20)
 
 
