@@ -60,12 +60,17 @@ internal class DeploymentRunner(
                     try {
                         val cohortIds = flagConfigStorage.getFlagConfigs().values.getAllCohortIds()
                         for (cohortId in cohortIds) {
-                            cohortLoader.loadCohort(cohortId)
+                            cohortLoader.loadCohort(cohortId).handle { _, exception ->
+                                if (exception != null) {
+                                    Logger.e("Failed to load cohort $cohortId", exception)
+                                }
+                            }
                         }
                     } catch (t: Throwable) {
                         Logger.e("Refresh cohorts failed.", t)
                     }
-                }, cohortPollingInterval,
+                },
+                cohortPollingInterval,
                 cohortPollingInterval,
                 TimeUnit.MILLISECONDS
             )
