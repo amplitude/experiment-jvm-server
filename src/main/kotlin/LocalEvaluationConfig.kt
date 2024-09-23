@@ -208,6 +208,7 @@ interface LocalEvaluationMetrics {
     fun onFlagConfigFetchFailure(exception: Exception)
     fun onFlagConfigFetchOriginFallback(exception: Exception)
     fun onCohortDownload()
+    fun onCohortDownloadTooLarge(exception: Exception)
     fun onCohortDownloadFailure(exception: Exception)
     fun onCohortDownloadOriginFallback(exception: Exception)
     fun onProxyCohortMembership()
