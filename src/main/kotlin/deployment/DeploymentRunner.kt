@@ -20,6 +20,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 private const val MIN_COHORT_POLLING_INTERVAL = 60000L
+private const val FLAG_POLLING_JITTER = 1000L
 
 internal class DeploymentRunner(
     private val config: LocalEvaluationConfig,
@@ -42,13 +43,15 @@ internal class DeploymentRunner(
     // Fallback in this order: proxy, stream, poll.
     private val amplitudeFlagConfigPoller = FlagConfigFallbackRetryWrapper(
         FlagConfigPoller(flagConfigApi, flagConfigStorage, cohortLoader, cohortStorage, config, metrics),
-        null, config.flagConfigPollerIntervalMillis, 1000
+        null,
+        config.flagConfigPollerIntervalMillis,
     )
     private val amplitudeFlagConfigUpdater =
         if (flagConfigStreamApi != null)
             FlagConfigFallbackRetryWrapper(
                 FlagConfigStreamer(flagConfigStreamApi, flagConfigStorage, cohortLoader, cohortStorage, metrics),
                 amplitudeFlagConfigPoller,
+                FLAG_POLLING_JITTER
             )
         else amplitudeFlagConfigPoller
     private val flagConfigUpdater =
