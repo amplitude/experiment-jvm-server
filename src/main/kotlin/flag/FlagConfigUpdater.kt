@@ -227,6 +227,14 @@ internal class FlagConfigStreamer(
 private const val RETRY_DELAY_MILLIS_DEFAULT = 15 * 1000L
 private const val MAX_JITTER_MILLIS_DEFAULT = 2000L
 
+/**
+ * This is a wrapper class around flag config updaters.
+ * This provides retry capability in case errors encountered during update asynchronously, as well as fallbacks when an updater failed.
+ *
+ * `mainUpdater` cannot be a FlagConfigFallbackRetryWrapper.
+ * The developer should restructure arguments to make sure `mainUpdater` is never a `FlagConfigFallbackRetryWrapper`.
+ * All retry and fallback structures can be normalized into `mainUpdater`s not being `FlagConfigFallbackRetryWrapper`s.
+ */
 internal class FlagConfigFallbackRetryWrapper(
     private val mainUpdater: FlagConfigUpdater,
     private val fallbackUpdater: FlagConfigUpdater?,
@@ -234,12 +242,20 @@ internal class FlagConfigFallbackRetryWrapper(
     maxJitterMillis: Long = MAX_JITTER_MILLIS_DEFAULT,
 ): FlagConfigUpdater {
     private val lock: ReentrantLock = ReentrantLock()
-    private val reconnIntervalRange = max(0, retryDelayMillis - maxJitterMillis)..(min(retryDelayMillis, retryDelayMillis - maxJitterMillis) + maxJitterMillis)
+    private val reconnIntervalRange = max(0, retryDelayMillis - maxJitterMillis)..(min(retryDelayMillis, Long.MAX_VALUE - maxJitterMillis) + maxJitterMillis)
     private val executor = Executors.newScheduledThreadPool(1, daemonFactory)
     private var retryTask: ScheduledFuture<*>? = null // @GuardedBy(lock)
 
     /**
-     * Since the wrapper retries, so there will never be error case. Thus, onError will never be called.
+     * Since the wrapper retries for mainUpdater, so there will never be error case. Thus, onError will never be called.
+     *
+     * During start, the wrapper tries to start main updater.
+     *   If main start success, start success.
+     *   If main start failed, fallback updater tries to start.
+     *     If fallback start failed as well, throws exception.
+     *     If fallback start success, start success, main enters retry loop.
+     * After started, if main failed, fallback is started and main enters retry loop.
+     *   Fallback success or failures status is not monitored. It's suggested to wrap fallback into a retry wrapper.
      */
     override fun start(onError: (() -> Unit)?) {
         if (mainUpdater is FlagConfigFallbackRetryWrapper) {
