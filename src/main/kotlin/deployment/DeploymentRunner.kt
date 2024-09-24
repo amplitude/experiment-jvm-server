@@ -1,15 +1,16 @@
-@file:OptIn(ExperimentalApi::class)
-
 package com.amplitude.experiment.deployment
 
-import com.amplitude.experiment.*
+import com.amplitude.experiment.LocalEvaluationConfig
+import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.cohort.CohortApi
 import com.amplitude.experiment.cohort.CohortLoader
 import com.amplitude.experiment.cohort.CohortStorage
-import com.amplitude.experiment.flag.*
 import com.amplitude.experiment.flag.FlagConfigApi
+import com.amplitude.experiment.flag.FlagConfigFallbackRetryWrapper
 import com.amplitude.experiment.flag.FlagConfigPoller
 import com.amplitude.experiment.flag.FlagConfigStorage
+import com.amplitude.experiment.flag.FlagConfigStreamApi
+import com.amplitude.experiment.flag.FlagConfigStreamer
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.Once
@@ -46,7 +47,7 @@ internal class DeploymentRunner(
     private val amplitudeFlagConfigUpdater =
         if (flagConfigStreamApi != null)
             FlagConfigFallbackRetryWrapper(
-                FlagConfigStreamer(flagConfigStreamApi, flagConfigStorage, cohortLoader, cohortStorage, config, metrics),
+                FlagConfigStreamer(flagConfigStreamApi, flagConfigStorage, cohortLoader, cohortStorage, metrics),
                 amplitudeFlagConfigPoller,
             )
         else amplitudeFlagConfigPoller

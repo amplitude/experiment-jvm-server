@@ -111,19 +111,16 @@ class FlagConfigPollerTest {
 }
 
 class FlagConfigStreamerTest {
+//    private val onInitUpdateCapture = slot<((List<EvaluationFlag>) -> Unit)>()
     private val onUpdateCapture = slot<((List<EvaluationFlag>) -> Unit)>()
     private val onErrorCapture = slot<((Throwable?) -> Unit)>()
     private var streamApi = mockk<FlagConfigStreamApi>()
     private var storage = InMemoryFlagConfigStorage()
-    private val config = LocalEvaluationConfig(streamUpdates = true, streamServerUrl = "", streamFlagConnTimeoutMillis = 2000)
 
     @BeforeTest
     fun beforeTest() {
         streamApi = mockk<FlagConfigStreamApi>()
         storage = InMemoryFlagConfigStorage()
-
-        justRun { streamApi.onUpdate = capture(onUpdateCapture) }
-        justRun { streamApi.onError = capture(onErrorCapture) }
     }
 
     @AfterTest
@@ -133,13 +130,13 @@ class FlagConfigStreamerTest {
 
     @Test
     fun `Test Poller`() {
-        justRun { streamApi.connect() }
-        val streamer = FlagConfigStreamer(streamApi, storage, null, null, config)
+        justRun { streamApi.connect(capture(onUpdateCapture), capture(onUpdateCapture), capture(onErrorCapture)) }
+        val streamer = FlagConfigStreamer(streamApi, storage, null, null)
         var errorCount = 0
         streamer.start { errorCount++ }
 
         // Streamer starts
-        verify(exactly = 1) { streamApi.connect() }
+        verify(exactly = 1) { streamApi.connect(capture(onUpdateCapture), capture(onUpdateCapture), capture(onErrorCapture)) }
 
         // Verify update callback updates storage
         onUpdateCapture.captured(emptyList())
@@ -150,7 +147,7 @@ class FlagConfigStreamerTest {
         assertEquals(mapOf(FLAG1.key to FLAG1, FLAG2.key to FLAG2), storage.getFlagConfigs())
 
         // No extra connect calls
-        verify(exactly = 1) { streamApi.connect() }
+        verify(exactly = 1) { streamApi.connect(capture(onUpdateCapture), capture(onUpdateCapture), capture(onErrorCapture)) }
 
         // No errors
         assertEquals(0, errorCount)
@@ -158,27 +155,27 @@ class FlagConfigStreamerTest {
 
     @Test
     fun `Test Streamer start fails`(){
-        every { streamApi.connect() } answers { throw Error("Haha error") }
-        val streamer = FlagConfigStreamer(streamApi, storage, null, null, config)
+        every { streamApi.connect(capture(onUpdateCapture), capture(onUpdateCapture), capture(onErrorCapture)) } answers { throw Error("Haha error") }
+        val streamer = FlagConfigStreamer(streamApi, storage, null, null)
         var errorCount = 0
         try {
             streamer.start { errorCount++ }
             fail("Streamer start error not throwing")
         } catch (_: Throwable) {
         }
-        verify(exactly = 1) { streamApi.connect() }
+        verify(exactly = 1) { streamApi.connect(capture(onUpdateCapture), capture(onUpdateCapture), capture(onErrorCapture)) }
         assertEquals(0, errorCount) // No error callback as it throws directly
     }
 
     @Test
     fun `Test Streamer stream fails`(){
-        justRun { streamApi.connect() }
-        val streamer = FlagConfigStreamer(streamApi, storage, null, null, config)
+        justRun { streamApi.connect(capture(onUpdateCapture), capture(onUpdateCapture), capture(onErrorCapture)) }
+        val streamer = FlagConfigStreamer(streamApi, storage, null, null)
         var errorCount = 0
         streamer.start { errorCount++ }
 
         // Stream start success
-        verify(exactly = 1) { streamApi.connect() }
+        verify(exactly = 1) { streamApi.connect(capture(onUpdateCapture), capture(onUpdateCapture), capture(onErrorCapture)) }
         onUpdateCapture.captured(listOf(FLAG1))
         assertEquals(mapOf(FLAG1.key to FLAG1), storage.getFlagConfigs())
         assertEquals(0, errorCount)
@@ -188,7 +185,6 @@ class FlagConfigStreamerTest {
         assertEquals(1, errorCount) // Error callback is called
     }
 }
-
 
 class FlagConfigFallbackRetryWrapperTest {
     private val mainOnErrorCapture = slot<(() -> Unit)>()

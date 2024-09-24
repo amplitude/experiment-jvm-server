@@ -41,24 +41,23 @@ class SseStreamTest {
         clearAllMocks()
     }
 
-    private fun setupStream(
+    private fun setupAndConnectStream(
         reconnTimeout: Long = 5000
     ): SseStream {
         val stream = SseStream("authtoken", "http://localhost".toHttpUrl(), OkHttpClient(), 1000, 1000, reconnTimeout, 0)
 
-        stream.onUpdate = { d ->
+        stream.connect({ d ->
             data += d
-        }
-        stream.onError = { t ->
+        }, { t ->
             err += t
-        }
+        })
+
         return stream
     }
 
     @Test
     fun `Test SseStream connect`() {
-        val stream = setupStream()
-        stream.connect()
+        val stream = setupAndConnectStream()
 
         listenerCapture.captured.onEvent(es, null, null, "somedata")
         assertEquals(listOf("somedata"), data)
@@ -72,8 +71,7 @@ class SseStreamTest {
 
     @Test
     fun `Test SseStream keep alive data omits`() {
-        val stream = setupStream(1000)
-        stream.connect()
+        val stream = setupAndConnectStream(1000)
 
         listenerCapture.captured.onEvent(es, null, null, "somedata")
         assertEquals(listOf("somedata"), data)
@@ -85,8 +83,7 @@ class SseStreamTest {
 
     @Test
     fun `Test SseStream reconnects`() {
-        val stream = setupStream(1000)
-        stream.connect()
+        val stream = setupAndConnectStream(1000)
 
         listenerCapture.captured.onEvent(es, null, null, "somedata")
         assertEquals(listOf("somedata"), data)

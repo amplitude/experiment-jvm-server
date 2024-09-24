@@ -5,9 +5,10 @@ import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.cohort.CohortLoader
 import com.amplitude.experiment.cohort.CohortStorage
 import com.amplitude.experiment.evaluation.EvaluationFlag
-import com.amplitude.experiment.util.*
+import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.daemonFactory
+import com.amplitude.experiment.util.getAllCohortIds
 import com.amplitude.experiment.util.wrapMetrics
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -19,23 +20,43 @@ import kotlin.concurrent.withLock
 import kotlin.math.max
 import kotlin.math.min
 
+/**
+ * Flag config updaters should receive flags through their own means (ex. http GET, SSE stream),
+ * or as wrapper of others.
+ * They all should have these methods to control their lifecycle.
+ */
 internal interface FlagConfigUpdater {
-    // Start the updater. There can be multiple calls.
-    // If start fails, it should throw exception. The caller should handle error.
-    // If some other error happened while updating (already started successfully), it should call onError.
+    /**
+     * Start the updater. There can be multiple calls.
+     * If start fails, it should throw exception. The caller should handle error.
+     * If some other error happened while updating (already started successfully), it should call onError.
+     */
     fun start(onError: (() -> Unit)? = null)
-    // Stop should stop updater temporarily. There may be another start in the future.
-    // To stop completely, with intention to never start again, use shutdown() instead.
+
+    /**
+     * Stop should stop updater temporarily. There may be another start in the future.
+     * To stop completely, with intention to never start again, use shutdown() instead.
+     */
     fun stop()
-    // Destroy should stop the updater forever in preparation for server shutdown.
+
+    /**
+     * Destroy should stop the updater forever in preparation for server shutdown.
+     */
     fun shutdown()
 }
 
+/**
+ * All flag config updaters should share this class, which contains a function to properly process flag updates.
+ */
 internal abstract class FlagConfigUpdaterBase(
     private val flagConfigStorage: FlagConfigStorage,
     private val cohortLoader: CohortLoader?,
     private val cohortStorage: CohortStorage?,
-): FlagConfigUpdater {
+) {
+    /**
+     * Call this method after receiving and parsing flag configs from network.
+     * This method updates flag configs into storage and download all cohorts if needed.
+     */
     protected fun update(flagConfigs: List<EvaluationFlag>) {
         // Remove flags that no longer exist.
         val flagKeys = flagConfigs.map { it.key }.toSet()
@@ -85,19 +106,27 @@ internal abstract class FlagConfigUpdaterBase(
     }
 }
 
+/**
+ * This is the poller for flag configs.
+ * It keeps polling flag configs with specified interval until error occurs.
+ */
 internal class FlagConfigPoller(
     private val flagConfigApi: FlagConfigApi,
-    private val storage: FlagConfigStorage,
-    private val cohortLoader: CohortLoader?,
-    private val cohortStorage: CohortStorage?,
+    storage: FlagConfigStorage,
+    cohortLoader: CohortLoader?,
+    cohortStorage: CohortStorage?,
     private val config: LocalEvaluationConfig,
     private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper(),
-): FlagConfigUpdaterBase(
+): FlagConfigUpdater, FlagConfigUpdaterBase(
     storage, cohortLoader, cohortStorage
 ) {
     private val lock: ReentrantLock = ReentrantLock()
     private val pool = Executors.newScheduledThreadPool(1, daemonFactory)
     private var scheduledFuture: ScheduledFuture<*>? = null // @GuardedBy(lock)
+
+    /**
+     * Start will fetch once, then start poller to poll flag configs.
+     */
     override fun start(onError: (() -> Unit)?) {
         refresh()
         lock.withLock {
@@ -153,29 +182,36 @@ internal class FlagConfigPoller(
     }
 }
 
+/**
+ * Streamer for flag configs. This receives flag updates with an SSE connection.
+ */
 internal class FlagConfigStreamer(
     private val flagConfigStreamApi: FlagConfigStreamApi,
-    private val storage: FlagConfigStorage,
-    private val cohortLoader: CohortLoader?,
-    private val cohortStorage: CohortStorage?,
-    private val config: LocalEvaluationConfig,
+    storage: FlagConfigStorage,
+    cohortLoader: CohortLoader?,
+    cohortStorage: CohortStorage?,
     private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper()
-): FlagConfigUpdaterBase(
+): FlagConfigUpdater, FlagConfigUpdaterBase(
     storage, cohortLoader, cohortStorage
 ) {
     private val lock: ReentrantLock = ReentrantLock()
+
+    /**
+     * Start makes sure it connects to stream and the first set of flag configs is loaded.
+     * Then, it will update the flags whenever there's a stream.
+     */
     override fun start(onError: (() -> Unit)?) {
         lock.withLock {
-            flagConfigStreamApi.onUpdate = { flags ->
+            val onStreamUpdate: ((List<EvaluationFlag>) -> Unit) = { flags ->
                 update(flags)
             }
-            flagConfigStreamApi.onError = { e ->
+            val onStreamError: ((Exception?) -> Unit) = { e ->
                 Logger.e("Stream flag configs streaming failed.", e)
                 metrics.onFlagConfigStreamFailure(e)
                 onError?.invoke()
             }
             wrapMetrics(metric = metrics::onFlagConfigStream, failure = metrics::onFlagConfigStreamFailure) {
-                flagConfigStreamApi.connect()
+                flagConfigStreamApi.connect(onStreamUpdate, onStreamUpdate, onStreamError)
             }
         }
     }
@@ -190,11 +226,12 @@ internal class FlagConfigStreamer(
 
 private const val RETRY_DELAY_MILLIS_DEFAULT = 15 * 1000L
 private const val MAX_JITTER_MILLIS_DEFAULT = 2000L
+
 internal class FlagConfigFallbackRetryWrapper(
     private val mainUpdater: FlagConfigUpdater,
     private val fallbackUpdater: FlagConfigUpdater?,
-    private val retryDelayMillis: Long = RETRY_DELAY_MILLIS_DEFAULT,
-    private val maxJitterMillis: Long = MAX_JITTER_MILLIS_DEFAULT,
+    retryDelayMillis: Long = RETRY_DELAY_MILLIS_DEFAULT,
+    maxJitterMillis: Long = MAX_JITTER_MILLIS_DEFAULT,
 ): FlagConfigUpdater {
     private val lock: ReentrantLock = ReentrantLock()
     private val reconnIntervalRange = max(0, retryDelayMillis - maxJitterMillis)..(min(retryDelayMillis, retryDelayMillis - maxJitterMillis) + maxJitterMillis)

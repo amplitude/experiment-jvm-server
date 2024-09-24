@@ -1,14 +1,12 @@
 package com.amplitude.experiment.flag
 
 import com.amplitude.experiment.evaluation.EvaluationFlag
-import com.amplitude.experiment.util.*
 import com.amplitude.experiment.util.SseStream
+import com.amplitude.experiment.util.StreamException
+import com.amplitude.experiment.util.json
 import kotlinx.serialization.decodeFromString
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.sse.EventSource
-import okhttp3.sse.EventSourceListener
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
@@ -37,9 +35,6 @@ internal class FlagConfigStreamApi (
     reconnIntervalMillis: Long = RECONN_INTERVAL_MILLIS_DEFAULT,
 ) {
     private val lock: ReentrantLock = ReentrantLock()
-    var onInitUpdate: ((List<EvaluationFlag>) -> Unit)? = null
-    var onUpdate: ((List<EvaluationFlag>) -> Unit)? = null
-    var onError: ((Exception?) -> Unit)? = null
     val url = serverUrl.newBuilder().addPathSegments("sdk/stream/v1/flags").build()
     private val stream: SseStream = SseStream(
         "Api-Key $deploymentKey",
@@ -49,14 +44,23 @@ internal class FlagConfigStreamApi (
         keepaliveTimeoutMillis,
         reconnIntervalMillis)
 
-    internal fun connect() {
+    /**
+     * Connects to flag configs stream.
+     * This will ensure stream connects, first set of flags is received and processed successfully, then returns.
+     * If stream fails to connect, first set of flags is not received, or first set of flags did not process successfully, it throws.
+     */
+    internal fun connect(
+        onInitUpdate: ((List<EvaluationFlag>) -> Unit)? = null,
+        onUpdate: ((List<EvaluationFlag>) -> Unit)? = null,
+        onError: ((Exception?) -> Unit)? = null
+    ) {
         // Guarded by lock. Update to callbacks and waits can lead to race conditions.
         lock.withLock {
-            val isInit = AtomicBoolean(true)
+            val isDuringInit = AtomicBoolean(true)
             val connectTimeoutFuture = CompletableFuture<Unit>()
             val updateTimeoutFuture = CompletableFuture<Unit>()
-            stream.onUpdate = { data ->
-                if (isInit.getAndSet(false)) {
+            val onSseUpdate: ((String) -> Unit) = { data ->
+                if (isDuringInit.getAndSet(false)) {
                     // Stream is establishing. First data received.
                     // Resolve timeout.
                     connectTimeoutFuture.complete(Unit)
@@ -67,9 +71,9 @@ internal class FlagConfigStreamApi (
 
                         try {
                             if (onInitUpdate != null) {
-                                onInitUpdate?.let { it(flags) }
+                                onInitUpdate.invoke(flags)
                             } else {
-                                onUpdate?.let { it(flags) }
+                                onUpdate?.invoke(flags)
                             }
                             updateTimeoutFuture.complete(Unit)
                         } catch (e: Throwable) {
@@ -86,26 +90,26 @@ internal class FlagConfigStreamApi (
                         val flags = getFlagsFromData(data)
 
                         try {
-                            onUpdate?.let { it(flags) }
+                            onUpdate?.invoke(flags)
                         } catch (_: Throwable) {
                             // Don't care about application error.
                         }
                     } catch (_: Throwable) {
                         // Stream corrupted. Reconnect.
-                        handleError(FlagConfigStreamApiDataCorruptError())
+                        handleError(onError, FlagConfigStreamApiDataCorruptError())
                     }
 
                 }
             }
-            stream.onError = { t ->
-                if (isInit.getAndSet(false)) {
+            val onSseError: ((Throwable?) -> Unit) = { t ->
+                if (isDuringInit.getAndSet(false)) {
                     connectTimeoutFuture.completeExceptionally(t)
                     updateTimeoutFuture.completeExceptionally(t)
                 } else {
-                    handleError(FlagConfigStreamApiStreamError(t))
+                    handleError(onError, FlagConfigStreamApiStreamError(t))
                 }
             }
-            stream.connect()
+            stream.connect(onSseUpdate, onSseError)
 
             val t: Throwable
             try {
@@ -139,8 +143,8 @@ internal class FlagConfigStreamApi (
         return json.decodeFromString<List<EvaluationFlag>>(data)
     }
 
-    private fun handleError(e: Exception?) {
+    private fun handleError(onError: ((Exception?) -> Unit)?, e: Exception?) {
         close()
-        onError?.let { it(e) }
+        onError?.invoke(e)
     }
 }
