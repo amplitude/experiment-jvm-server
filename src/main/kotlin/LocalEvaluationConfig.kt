@@ -240,6 +240,7 @@ interface LocalEvaluationMetrics {
     fun onFlagConfigStream()
     fun onFlagConfigStreamFailure(exception: Exception?)
     fun onCohortDownload()
+    fun onCohortDownloadTooLarge(exception: Exception)
     fun onCohortDownloadFailure(exception: Exception)
     fun onCohortDownloadOriginFallback(exception: Exception)
     fun onProxyCohortMembership()

@@ -35,7 +35,7 @@ internal class DeploymentRunner(
     private val lock = Once()
     private val poller = Executors.newScheduledThreadPool(1, daemonFactory)
     private val cohortLoader = if (cohortApi != null && cohortStorage != null) {
-        CohortLoader(cohortApi, cohortStorage)
+        CohortLoader(cohortApi, cohortStorage, metrics)
     } else {
         null
     }
@@ -71,12 +71,17 @@ internal class DeploymentRunner(
                     try {
                         val cohortIds = flagConfigStorage.getFlagConfigs().values.getAllCohortIds()
                         for (cohortId in cohortIds) {
-                            cohortLoader.loadCohort(cohortId)
+                            cohortLoader.loadCohort(cohortId).handle { _, exception ->
+                                if (exception != null) {
+                                    Logger.e("Failed to load cohort $cohortId", exception)
+                                }
+                            }
                         }
                     } catch (t: Throwable) {
                         Logger.e("Refresh cohorts failed.", t)
                     }
-                }, cohortPollingInterval,
+                },
+                cohortPollingInterval,
                 cohortPollingInterval,
                 TimeUnit.MILLISECONDS
             )

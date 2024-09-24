@@ -86,6 +86,11 @@ internal class LocalEvaluationMetricsWrapper(
         executor?.execute { metrics.onCohortDownload() }
     }
 
+    override fun onCohortDownloadTooLarge(exception: Exception) {
+        val metrics = metrics ?: return
+        executor?.execute { metrics.onCohortDownloadTooLarge(exception) }
+    }
+
     override fun onCohortDownloadFailure(exception: Exception) {
         val metrics = metrics ?: return
         executor?.execute { metrics.onCohortDownloadFailure(exception) }

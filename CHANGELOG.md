@@ -1,3 +1,36 @@
+## [1.4.3](https://github.com/amplitude/experiment-jvm-server/compare/1.4.2...1.4.3) (2024-09-23)
+
+
+### Bug Fixes
+
+* add metric for cohort download too large ([#33](https://github.com/amplitude/experiment-jvm-server/issues/33)) ([5a855c9](https://github.com/amplitude/experiment-jvm-server/commit/5a855c904b011b931467a29f48914bd7867f83db))
+
+## [1.4.2](https://github.com/amplitude/experiment-jvm-server/compare/1.4.1...1.4.2) (2024-09-20)
+
+
+### Bug Fixes
+
+* fix assignment config to use batch when configured ([#32](https://github.com/amplitude/experiment-jvm-server/issues/32)) ([d6d9684](https://github.com/amplitude/experiment-jvm-server/commit/d6d9684332066aaf5345646061651e67a7ea1247))
+
+## [1.4.1](https://github.com/amplitude/experiment-jvm-server/compare/1.4.0...1.4.1) (2024-09-04)
+
+
+### Bug Fixes
+
+* fix certain metrics that weren't firing ([dbf2994](https://github.com/amplitude/experiment-jvm-server/commit/dbf299481ab5c2d2f985edb0219a427d5b6a35ee))
+
+# [1.4.0](https://github.com/amplitude/experiment-jvm-server/compare/1.3.1...1.4.0) (2024-08-27)
+
+
+### Bug Fixes
+
+* use get request for remote fetch ([#29](https://github.com/amplitude/experiment-jvm-server/issues/29)) ([6c2fc3a](https://github.com/amplitude/experiment-jvm-server/commit/6c2fc3ab7d152cdbfbcccf8d6dee761b9d3ffe73))
+
+
+### Features
+
+* local evaluation cohorts support ([#28](https://github.com/amplitude/experiment-jvm-server/issues/28)) ([d2d5213](https://github.com/amplitude/experiment-jvm-server/commit/d2d5213b57f60ed5d032ebcbbd91487ec8ca7fc9))
+
 ## [1.3.1](https://github.com/amplitude/experiment-jvm-server/compare/1.3.0...1.3.1) (2024-05-23)
 
 

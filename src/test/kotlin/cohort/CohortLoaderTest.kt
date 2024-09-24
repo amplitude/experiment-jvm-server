@@ -35,7 +35,11 @@ class CohortLoaderTest {
         `when`(api.getCohort("b", null)).thenReturn(cohortB)
         val storage = InMemoryCohortStorage()
         val loader = CohortLoader(api, storage)
-        loader.loadCohort("a").get()
+        try {
+            loader.loadCohort("a").get()
+        } catch (t: Throwable) {
+            // Expected
+        }
         loader.loadCohort("b").get()
         val storageDescriptionA = storage.getCohort("a")
         val storageDescriptionB = storage.getCohort("b")

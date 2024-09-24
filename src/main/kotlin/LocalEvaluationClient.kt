@@ -43,14 +43,14 @@ class LocalEvaluationClient internal constructor(
     apiKey: String,
     private val config: LocalEvaluationConfig = LocalEvaluationConfig(),
     private val httpClient: OkHttpClient = OkHttpClient(),
-    cohortApi: CohortApi? = getCohortDownloadApi(config, httpClient)
+    private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper(config.metrics),
+    cohortApi: CohortApi? = getCohortDownloadApi(config, httpClient, metrics),
 ) {
     private val assignmentService: AssignmentService? = createAssignmentService(apiKey)
     private val serverUrl: HttpUrl = getServerUrl(config)
     private val streamServerUrl: HttpUrl = getStreamServerUrl(config)
     private val evaluation: EvaluationEngine = EvaluationEngineImpl()
-    private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper(config.metrics)
-    private val flagConfigApi = DynamicFlagConfigApi(apiKey, serverUrl, null, httpClient)
+    private val flagConfigApi = DynamicFlagConfigApi(apiKey, serverUrl, null, httpClient, metrics)
     private val proxyUrl: HttpUrl? = getProxyUrl(config)
     private val flagConfigProxyApi = if (proxyUrl == null) null else DynamicFlagConfigApi(apiKey, proxyUrl, null, httpClient)
     private val flagConfigStreamApi = if (config.streamUpdates) FlagConfigStreamApi(apiKey, streamServerUrl, httpClient, config.streamFlagConnTimeoutMillis) else null
@@ -96,11 +96,11 @@ class LocalEvaluationClient internal constructor(
                 init(config.assignmentConfiguration.apiKey)
                 setEventUploadThreshold(config.assignmentConfiguration.eventUploadThreshold)
                 setEventUploadPeriodMillis(config.assignmentConfiguration.eventUploadPeriodMillis)
-                useBatchMode(config.assignmentConfiguration.useBatchMode)
                 setOptions(Options().setMinIdLength(1))
                 setServerUrl(getEventServerUrl(config, config.assignmentConfiguration))
             },
-            InMemoryAssignmentFilter(config.assignmentConfiguration.cacheCapacity)
+            InMemoryAssignmentFilter(config.assignmentConfiguration.cacheCapacity),
+            metrics = metrics,
         )
     }
     @JvmOverloads
@@ -171,7 +171,11 @@ class LocalEvaluationClient internal constructor(
     }
 }
 
-private fun getCohortDownloadApi(config: LocalEvaluationConfig, httpClient: OkHttpClient): CohortApi? {
+private fun getCohortDownloadApi(
+    config: LocalEvaluationConfig,
+    httpClient: OkHttpClient,
+    metrics: LocalEvaluationMetrics
+): CohortApi? {
     return if (config.cohortSyncConfig != null) {
         DynamicCohortApi(
             apiKey = config.cohortSyncConfig.apiKey,
@@ -180,6 +184,7 @@ private fun getCohortDownloadApi(config: LocalEvaluationConfig, httpClient: OkHt
             serverUrl = getCohortServerUrl(config),
             proxyUrl = getProxyUrl(config),
             httpClient = httpClient,
+            metrics = metrics
         )
     } else {
         null
@@ -230,8 +235,16 @@ private fun getEventServerUrl(
 ): String {
     return if (assignmentConfiguration.serverUrl == LocalEvaluationConfig.Defaults.EVENT_SERVER_URL) {
         when (config.serverZone) {
-            ServerZone.US -> US_EVENT_SERVER_URL
-            ServerZone.EU -> EU_EVENT_SERVER_URL
+            ServerZone.US -> if (assignmentConfiguration.useBatchMode) {
+                US_BATCH_SERVER_URL
+            } else {
+                US_EVENT_SERVER_URL
+            }
+            ServerZone.EU -> if (assignmentConfiguration.useBatchMode) {
+                EU_BATCH_SERVER_URL
+            } else {
+                EU_EVENT_SERVER_URL
+            }
         }
     } else {
         assignmentConfiguration.serverUrl

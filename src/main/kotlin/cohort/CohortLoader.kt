@@ -44,7 +44,8 @@ internal class CohortLoader(
                     } catch (e: CohortNotModifiedException) {
                         // Do nothing
                     } catch (e: CohortTooLargeException) {
-                        Logger.e("Cohort too large", e)
+                        metrics.onCohortDownloadTooLarge(e)
+                        throw e
                     }
                 }
             }, executor).whenComplete { _, _ -> jobs.remove(cohortId) }
