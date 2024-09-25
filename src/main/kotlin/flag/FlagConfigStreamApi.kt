@@ -15,18 +15,18 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-internal open class FlagConfigStreamApiError(message: String?, cause: Throwable?): Exception(message, cause) {
+internal open class FlagConfigStreamApiError(message: String?, cause: Throwable?) : Exception(message, cause) {
     constructor(message: String?) : this(message, null)
     constructor(cause: Throwable?) : this(cause?.toString(), cause)
 }
-internal class FlagConfigStreamApiConnTimeoutError: FlagConfigStreamApiError("Initial connection timed out")
-internal class FlagConfigStreamApiDataCorruptError: FlagConfigStreamApiError("Stream data corrupted")
-internal class FlagConfigStreamApiStreamError(cause: Throwable?): FlagConfigStreamApiError("Stream error", cause)
+internal class FlagConfigStreamApiConnTimeoutError : FlagConfigStreamApiError("Initial connection timed out")
+internal class FlagConfigStreamApiDataCorruptError : FlagConfigStreamApiError("Stream data corrupted")
+internal class FlagConfigStreamApiStreamError(cause: Throwable?) : FlagConfigStreamApiError("Stream error", cause)
 
 private const val CONNECTION_TIMEOUT_MILLIS_DEFAULT = 1500L
 private const val KEEP_ALIVE_TIMEOUT_MILLIS_DEFAULT = 17000L // keep alive sends at 15s interval. 2s grace period
 private const val RECONN_INTERVAL_MILLIS_DEFAULT = 15 * 60 * 1000L
-internal class FlagConfigStreamApi (
+internal class FlagConfigStreamApi(
     deploymentKey: String,
     serverUrl: HttpUrl,
     httpClient: OkHttpClient = OkHttpClient(),
@@ -42,7 +42,8 @@ internal class FlagConfigStreamApi (
         httpClient,
         connectionTimeoutMillis,
         keepaliveTimeoutMillis,
-        reconnIntervalMillis)
+        reconnIntervalMillis
+    )
 
     /**
      * Connects to flag configs stream.
@@ -82,7 +83,6 @@ internal class FlagConfigStreamApi (
                     } catch (_: Throwable) {
                         updateTimeoutFuture.completeExceptionally(FlagConfigStreamApiDataCorruptError())
                     }
-
                 } else {
                     // Stream has already established.
                     // Make sure valid data.
@@ -98,7 +98,6 @@ internal class FlagConfigStreamApi (
                         // Stream corrupted. Reconnect.
                         handleError(onError, FlagConfigStreamApiDataCorruptError())
                     }
-
                 }
             }
             val onSseError: ((Throwable?) -> Unit) = { t ->

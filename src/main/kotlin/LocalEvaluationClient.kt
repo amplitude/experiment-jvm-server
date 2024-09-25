@@ -19,7 +19,6 @@ import com.amplitude.experiment.evaluation.EvaluationEngineImpl
 import com.amplitude.experiment.evaluation.EvaluationFlag
 import com.amplitude.experiment.evaluation.topologicalSort
 import com.amplitude.experiment.flag.DynamicFlagConfigApi
-import com.amplitude.experiment.flag.FlagConfigPoller
 import com.amplitude.experiment.flag.FlagConfigStreamApi
 import com.amplitude.experiment.flag.InMemoryFlagConfigStorage
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
@@ -34,10 +33,6 @@ import com.amplitude.experiment.util.wrapMetrics
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.sse.EventSource
-import okhttp3.sse.EventSourceListener
-import okhttp3.sse.EventSources
 
 class LocalEvaluationClient internal constructor(
     apiKey: String,

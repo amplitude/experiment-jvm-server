@@ -1,21 +1,21 @@
 package com.amplitude.experiment.util
 
-import com.amplitude.experiment.ExperimentUser
-import com.amplitude.experiment.RemoteEvaluationClient
-import io.mockk.*
-import okhttp3.HttpUrl
+import io.mockk.clearAllMocks
+import io.mockk.every
+import io.mockk.justRun
+import io.mockk.mockk
+import io.mockk.mockkConstructor
+import io.mockk.mockkStatic
+import io.mockk.slot
+import io.mockk.verify
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
-import org.mockito.Mockito
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-
 
 class SseStreamTest {
     private val listenerCapture = slot<EventSourceListener>()

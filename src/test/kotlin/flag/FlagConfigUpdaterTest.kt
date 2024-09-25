@@ -2,10 +2,18 @@ package com.amplitude.experiment.flag
 
 import com.amplitude.experiment.LocalEvaluationConfig
 import com.amplitude.experiment.evaluation.EvaluationFlag
-import com.amplitude.experiment.util.SseStream
-import io.mockk.*
+import io.mockk.clearAllMocks
+import io.mockk.every
+import io.mockk.justRun
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
+import org.junit.Assert.assertEquals
 import java.lang.Exception
-import kotlin.test.*
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.fail
 
 private val FLAG1 = EvaluationFlag("key1", emptyMap(), emptyList())
 private val FLAG2 = EvaluationFlag("key2", emptyMap(), emptyList())
@@ -65,7 +73,7 @@ class FlagConfigPollerTest {
     }
 
     @Test
-    fun `Test Poller start fails`(){
+    fun `Test Poller start fails`() {
         every { fetchApi.getFlagConfigs() } answers { throw Error("Haha error") }
         val poller = FlagConfigPoller(fetchApi, storage, null, null, LocalEvaluationConfig(flagConfigPollerIntervalMillis = 1000))
         var errorCount = 0
@@ -85,7 +93,7 @@ class FlagConfigPollerTest {
     }
 
     @Test
-    fun `Test Poller poll fails`(){
+    fun `Test Poller poll fails`() {
         every { fetchApi.getFlagConfigs() } returns emptyList()
         val poller = FlagConfigPoller(fetchApi, storage, null, null, LocalEvaluationConfig(flagConfigPollerIntervalMillis = 1000))
         var errorCount = 0
@@ -154,7 +162,7 @@ class FlagConfigStreamerTest {
     }
 
     @Test
-    fun `Test Streamer start fails`(){
+    fun `Test Streamer start fails`() {
         every { streamApi.connect(capture(onUpdateCapture), capture(onUpdateCapture), capture(onErrorCapture)) } answers { throw Error("Haha error") }
         val streamer = FlagConfigStreamer(streamApi, storage, null, null)
         var errorCount = 0
@@ -168,7 +176,7 @@ class FlagConfigStreamerTest {
     }
 
     @Test
-    fun `Test Streamer stream fails`(){
+    fun `Test Streamer stream fails`() {
         justRun { streamApi.connect(capture(onUpdateCapture), capture(onUpdateCapture), capture(onErrorCapture)) }
         val streamer = FlagConfigStreamer(streamApi, storage, null, null)
         var errorCount = 0

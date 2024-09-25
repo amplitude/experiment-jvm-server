@@ -12,7 +12,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import kotlin.system.measureNanoTime
 import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 private const val API_KEY = "server-qz35UwzJ5akieoAdIgzM4m9MIiOLXLoz"

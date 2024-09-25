@@ -16,7 +16,7 @@ import kotlin.concurrent.withLock
 import kotlin.math.max
 import kotlin.math.min
 
-internal class StreamException(error: String): Throwable(error)
+internal class StreamException(error: String) : Throwable(error)
 
 private const val KEEP_ALIVE_TIMEOUT_MILLIS_DEFAULT = 0L // no timeout
 private const val RECONN_INTERVAL_MILLIS_DEFAULT = 30 * 60 * 1000L
@@ -26,7 +26,7 @@ private const val KEEP_ALIVE_DATA = " "
 /**
  * For establishing an SSE stream.
  */
-internal class SseStream (
+internal class SseStream(
     authToken: String, // Will be used in header as Authorization: <authToken>
     url: HttpUrl, // The full url to connect to.
     httpClient: OkHttpClient = OkHttpClient(),
@@ -128,7 +128,7 @@ internal class SseStream (
             this.onUpdate = onUpdate
             this.onError = onError
             es = client.newEventSource(request, eventSourceListener)
-            reconnectTimerTask = Timer().schedule(reconnIntervalRange.random()) {// Timer for a new event source.
+            reconnectTimerTask = Timer().schedule(reconnIntervalRange.random()) { // Timer for a new event source.
                 // This forces client side reconnection after interval.
                 this@SseStream.cancel()
                 connect(onUpdate, onError)

@@ -117,7 +117,7 @@ internal class FlagConfigPoller(
     cohortStorage: CohortStorage?,
     private val config: LocalEvaluationConfig,
     private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper(),
-): FlagConfigUpdater, FlagConfigUpdaterBase(
+) : FlagConfigUpdater, FlagConfigUpdaterBase(
     storage, cohortLoader, cohortStorage
 ) {
     private val lock: ReentrantLock = ReentrantLock()
@@ -191,7 +191,7 @@ internal class FlagConfigStreamer(
     cohortLoader: CohortLoader?,
     cohortStorage: CohortStorage?,
     private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper()
-): FlagConfigUpdater, FlagConfigUpdaterBase(
+) : FlagConfigUpdater, FlagConfigUpdaterBase(
     storage, cohortLoader, cohortStorage
 ) {
     private val lock: ReentrantLock = ReentrantLock()
@@ -240,7 +240,7 @@ internal class FlagConfigFallbackRetryWrapper(
     private val fallbackUpdater: FlagConfigUpdater?,
     retryDelayMillis: Long = RETRY_DELAY_MILLIS_DEFAULT,
     maxJitterMillis: Long = MAX_JITTER_MILLIS_DEFAULT,
-): FlagConfigUpdater {
+) : FlagConfigUpdater {
     private val lock: ReentrantLock = ReentrantLock()
     private val reconnIntervalRange = max(0, retryDelayMillis - maxJitterMillis)..(min(retryDelayMillis, Long.MAX_VALUE - maxJitterMillis) + maxJitterMillis)
     private val executor = Executors.newScheduledThreadPool(1, daemonFactory)
@@ -320,5 +320,6 @@ internal class FlagConfigFallbackRetryWrapper(
                 scheduleRetry()
             }
         }, reconnIntervalRange.random(), TimeUnit.MILLISECONDS)
+        }
     }
-}
+    

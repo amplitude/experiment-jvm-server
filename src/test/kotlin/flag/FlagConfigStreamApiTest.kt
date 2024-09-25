@@ -128,9 +128,9 @@ class FlagConfigStreamApiTest {
         var err: Array<Throwable?> = arrayOf()
 
         val run = async {
-            api.connect({d ->
+            api.connect({ d ->
                 assertEquals(listOf(), d)
-            }, {d ->
+            }, { d ->
                 assertEquals(listOf(), d)
             }, { t ->
                 err += t
