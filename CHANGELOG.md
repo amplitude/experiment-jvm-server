@@ -1,3 +1,10 @@
+## [1.4.4](https://github.com/amplitude/experiment-jvm-server/compare/1.4.3...1.4.4) (2024-10-02)
+
+
+### Bug Fixes
+
+* bump amplitude java sdk version ([#34](https://github.com/amplitude/experiment-jvm-server/issues/34)) ([70fdd1c](https://github.com/amplitude/experiment-jvm-server/commit/70fdd1cfc595c3189d651323c7fdcec80bfe208f))
+
 ## [1.4.3](https://github.com/amplitude/experiment-jvm-server/compare/1.4.2...1.4.3) (2024-09-23)
 
 

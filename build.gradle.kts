@@ -32,7 +32,7 @@ dependencies {
 // Publishing
 
 group = "com.amplitude"
-version = "1.4.3"
+version = "1.4.4"
 
 nexusPublishing {
     repositories {
