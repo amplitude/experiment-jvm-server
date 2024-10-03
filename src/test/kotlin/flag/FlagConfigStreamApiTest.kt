@@ -36,10 +36,6 @@ class FlagConfigStreamApiTest {
         }
     }
 
-    private fun <T> anyConstructed(): Any {
-        TODO("Not yet implemented")
-    }
-
     @AfterTest
     fun afterTest() {
         clearAllMocks()
