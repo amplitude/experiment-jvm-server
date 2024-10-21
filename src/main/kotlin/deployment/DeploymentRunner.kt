@@ -1,31 +1,32 @@
-@file:OptIn(ExperimentalApi::class)
-
 package com.amplitude.experiment.deployment
 
-import com.amplitude.experiment.ExperimentalApi
 import com.amplitude.experiment.LocalEvaluationConfig
 import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.cohort.CohortApi
 import com.amplitude.experiment.cohort.CohortLoader
 import com.amplitude.experiment.cohort.CohortStorage
 import com.amplitude.experiment.flag.FlagConfigApi
+import com.amplitude.experiment.flag.FlagConfigFallbackRetryWrapper
+import com.amplitude.experiment.flag.FlagConfigPoller
 import com.amplitude.experiment.flag.FlagConfigStorage
+import com.amplitude.experiment.flag.FlagConfigStreamApi
+import com.amplitude.experiment.flag.FlagConfigStreamer
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.Once
 import com.amplitude.experiment.util.daemonFactory
 import com.amplitude.experiment.util.getAllCohortIds
-import com.amplitude.experiment.util.wrapMetrics
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 private const val MIN_COHORT_POLLING_INTERVAL = 60000L
+private const val FLAG_POLLING_JITTER = 1000L
 
 internal class DeploymentRunner(
     private val config: LocalEvaluationConfig,
     private val flagConfigApi: FlagConfigApi,
+    private val flagConfigProxyApi: FlagConfigApi? = null,
+    private val flagConfigStreamApi: FlagConfigStreamApi? = null,
     private val flagConfigStorage: FlagConfigStorage,
     cohortApi: CohortApi?,
     private val cohortStorage: CohortStorage?,
@@ -39,21 +40,31 @@ internal class DeploymentRunner(
         null
     }
     private val cohortPollingInterval: Long = getCohortPollingInterval()
+    // Fallback in this order: proxy, stream, poll.
+    private val amplitudeFlagConfigPoller = FlagConfigFallbackRetryWrapper(
+        FlagConfigPoller(flagConfigApi, flagConfigStorage, cohortLoader, cohortStorage, config, metrics),
+        null,
+        config.flagConfigPollerIntervalMillis,
+    )
+    private val amplitudeFlagConfigUpdater =
+        if (flagConfigStreamApi != null)
+            FlagConfigFallbackRetryWrapper(
+                FlagConfigStreamer(flagConfigStreamApi, flagConfigStorage, cohortLoader, cohortStorage, metrics),
+                amplitudeFlagConfigPoller,
+                FLAG_POLLING_JITTER
+            )
+        else amplitudeFlagConfigPoller
+    private val flagConfigUpdater =
+        if (flagConfigProxyApi != null)
+            FlagConfigFallbackRetryWrapper(
+                FlagConfigPoller(flagConfigProxyApi, flagConfigStorage, cohortLoader, cohortStorage, config, metrics),
+                amplitudeFlagConfigPoller
+            )
+        else
+            amplitudeFlagConfigUpdater
 
     fun start() = lock.once {
-        refresh()
-        poller.scheduleWithFixedDelay(
-            {
-                try {
-                    refresh()
-                } catch (t: Throwable) {
-                    Logger.e("Refresh flag configs failed.", t)
-                }
-            },
-            config.flagConfigPollerIntervalMillis,
-            config.flagConfigPollerIntervalMillis,
-            TimeUnit.MILLISECONDS
-        )
+        flagConfigUpdater.start()
         if (cohortLoader != null) {
             poller.scheduleWithFixedDelay(
                 {
@@ -79,63 +90,7 @@ internal class DeploymentRunner(
 
     fun stop() {
         poller.shutdown()
-    }
-
-    fun refresh() {
-        Logger.d("Refreshing flag configs.")
-        // Get updated flags from the network.
-        val flagConfigs = wrapMetrics(
-            metric = metrics::onFlagConfigFetch,
-            failure = metrics::onFlagConfigFetchFailure,
-        ) {
-            flagConfigApi.getFlagConfigs()
-        }
-
-        // Remove flags that no longer exist.
-        val flagKeys = flagConfigs.map { it.key }.toSet()
-        flagConfigStorage.removeIf { !flagKeys.contains(it.key) }
-
-        // Get all flags from storage
-        val storageFlags = flagConfigStorage.getFlagConfigs()
-
-        // Load cohorts for each flag if applicable and put the flag in storage.
-        val futures = ConcurrentHashMap<String, CompletableFuture<*>>()
-        for (flagConfig in flagConfigs) {
-            if (cohortLoader == null) {
-                flagConfigStorage.putFlagConfig(flagConfig)
-                continue
-            }
-            val cohortIds = flagConfig.getAllCohortIds()
-            val storageCohortIds = storageFlags[flagConfig.key]?.getAllCohortIds() ?: emptySet()
-            val cohortsToLoad = cohortIds - storageCohortIds
-            if (cohortsToLoad.isEmpty()) {
-                flagConfigStorage.putFlagConfig(flagConfig)
-                continue
-            }
-            for (cohortId in cohortsToLoad) {
-                futures.putIfAbsent(
-                    cohortId,
-                    cohortLoader.loadCohort(cohortId).handle { _, exception ->
-                        if (exception != null) {
-                            Logger.e("Failed to load cohort $cohortId", exception)
-                        }
-                        flagConfigStorage.putFlagConfig(flagConfig)
-                    }
-                )
-            }
-        }
-        futures.values.forEach { it.join() }
-
-        // Delete unused cohorts
-        if (cohortStorage != null) {
-            val flagCohortIds = flagConfigStorage.getFlagConfigs().values.toList().getAllCohortIds()
-            val storageCohortIds = cohortStorage.getCohorts().keys
-            val deletedCohortIds = storageCohortIds - flagCohortIds
-            for (deletedCohortId in deletedCohortIds) {
-                cohortStorage.deleteCohort(deletedCohortId)
-            }
-        }
-        Logger.d("Refreshed ${flagConfigs.size} flag configs.")
+        flagConfigUpdater.shutdown()
     }
 
     private fun getCohortPollingInterval(): Long {

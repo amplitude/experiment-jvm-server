@@ -42,11 +42,11 @@ class DeploymentRunnerTest {
         val flagConfigStorage = Mockito.mock(FlagConfigStorage::class.java)
         val cohortStorage = Mockito.mock(CohortStorage::class.java)
         val runner = DeploymentRunner(
-            LocalEvaluationConfig(),
-            flagApi,
-            flagConfigStorage,
-            cohortApi,
-            cohortStorage,
+            config = LocalEvaluationConfig(),
+            flagConfigApi = flagApi,
+            flagConfigStorage = flagConfigStorage,
+            cohortApi = cohortApi,
+            cohortStorage = cohortStorage,
         )
         Mockito.`when`(flagApi.getFlagConfigs()).thenThrow(RuntimeException("test"))
         try {
@@ -71,10 +71,11 @@ class DeploymentRunnerTest {
         val flagConfigStorage = Mockito.mock(FlagConfigStorage::class.java)
         val cohortStorage = Mockito.mock(CohortStorage::class.java)
         val runner = DeploymentRunner(
-            LocalEvaluationConfig(),
-            flagApi, flagConfigStorage,
-            cohortApi,
-            cohortStorage,
+            config = LocalEvaluationConfig(),
+            flagConfigApi = flagApi,
+            flagConfigStorage = flagConfigStorage,
+            cohortApi = cohortApi,
+            cohortStorage = cohortStorage,
         )
         Mockito.`when`(flagApi.getFlagConfigs()).thenReturn(listOf(flag))
         Mockito.`when`(cohortApi.getCohort(COHORT_ID, null)).thenThrow(RuntimeException("test"))

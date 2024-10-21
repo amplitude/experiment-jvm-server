@@ -19,6 +19,7 @@ import com.amplitude.experiment.evaluation.EvaluationEngineImpl
 import com.amplitude.experiment.evaluation.EvaluationFlag
 import com.amplitude.experiment.evaluation.topologicalSort
 import com.amplitude.experiment.flag.DynamicFlagConfigApi
+import com.amplitude.experiment.flag.FlagConfigStreamApi
 import com.amplitude.experiment.flag.InMemoryFlagConfigStorage
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
@@ -42,8 +43,12 @@ class LocalEvaluationClient internal constructor(
 ) {
     private val assignmentService: AssignmentService? = createAssignmentService(apiKey)
     private val serverUrl: HttpUrl = getServerUrl(config)
+    private val streamServerUrl: HttpUrl = getStreamServerUrl(config)
     private val evaluation: EvaluationEngine = EvaluationEngineImpl()
-    private val flagConfigApi = DynamicFlagConfigApi(apiKey, serverUrl, getProxyUrl(config), httpClient, metrics)
+    private val flagConfigApi = DynamicFlagConfigApi(apiKey, serverUrl, null, httpClient, metrics)
+    private val proxyUrl: HttpUrl? = getProxyUrl(config)
+    private val flagConfigProxyApi = if (proxyUrl == null) null else DynamicFlagConfigApi(apiKey, proxyUrl, null, httpClient)
+    private val flagConfigStreamApi = if (config.streamUpdates) FlagConfigStreamApi(apiKey, streamServerUrl, httpClient, config.streamFlagConnTimeoutMillis) else null
     private val flagConfigStorage = InMemoryFlagConfigStorage()
     private val cohortStorage = if (config.cohortSyncConfig == null) {
         null
@@ -60,6 +65,8 @@ class LocalEvaluationClient internal constructor(
     private val deploymentRunner = DeploymentRunner(
         config = config,
         flagConfigApi = flagConfigApi,
+        flagConfigProxyApi = flagConfigProxyApi,
+        flagConfigStreamApi = flagConfigStreamApi,
         flagConfigStorage = flagConfigStorage,
         cohortApi = cohortApi,
         cohortStorage = cohortStorage,
@@ -187,6 +194,17 @@ private fun getServerUrl(config: LocalEvaluationConfig): HttpUrl {
         }
     } else {
         config.serverUrl.toHttpUrl()
+    }
+}
+
+private fun getStreamServerUrl(config: LocalEvaluationConfig): HttpUrl {
+    return if (config.streamServerUrl == LocalEvaluationConfig.Defaults.STREAM_SERVER_URL) {
+        when (config.serverZone) {
+            ServerZone.US -> US_STREAM_SERVER_URL.toHttpUrl()
+            ServerZone.EU -> EU_STREAM_SERVER_URL.toHttpUrl()
+        }
+    } else {
+        config.streamServerUrl.toHttpUrl()
     }
 }
 
