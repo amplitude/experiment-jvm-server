@@ -1,9 +1,6 @@
-@file:OptIn(ExperimentalApi::class)
-
 package com.amplitude.experiment.cohort
 
 import com.amplitude.experiment.EvaluationProxyConfig
-import com.amplitude.experiment.ExperimentalApi
 import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.util.Cache
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
