@@ -4,6 +4,7 @@ import com.amplitude.experiment.LocalEvaluationConfig
 import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.cohort.CohortLoader
 import com.amplitude.experiment.cohort.CohortStorage
+import com.amplitude.experiment.cohort.CohortTooLargeException
 import com.amplitude.experiment.evaluation.EvaluationFlag
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
@@ -83,7 +84,9 @@ internal abstract class FlagConfigUpdaterBase(
                 futures.putIfAbsent(
                     cohortId,
                     cohortLoader.loadCohort(cohortId).handle { _, exception ->
-                        if (exception != null) {
+                        if (exception is CohortTooLargeException) {
+                            Logger.w("Failed to load cohort $cohortId", exception)
+                        } else if (exception != null) {
                             Logger.e("Failed to load cohort $cohortId", exception)
                         }
                         flagConfigStorage.putFlagConfig(flagConfig)
