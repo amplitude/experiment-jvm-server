@@ -5,6 +5,7 @@ import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.cohort.CohortApi
 import com.amplitude.experiment.cohort.CohortLoader
 import com.amplitude.experiment.cohort.CohortStorage
+import com.amplitude.experiment.cohort.CohortTooLargeException
 import com.amplitude.experiment.flag.FlagConfigApi
 import com.amplitude.experiment.flag.FlagConfigFallbackRetryWrapper
 import com.amplitude.experiment.flag.FlagConfigPoller
@@ -72,7 +73,10 @@ internal class DeploymentRunner(
                         val cohortIds = flagConfigStorage.getFlagConfigs().values.getAllCohortIds()
                         for (cohortId in cohortIds) {
                             cohortLoader.loadCohort(cohortId).handle { _, exception ->
-                                if (exception != null) {
+                                if (exception is CohortTooLargeException) {
+                                    Logger.w("Failed to load cohort $cohortId", exception);
+                                }
+                                else if (exception != null) {
                                     Logger.e("Failed to load cohort $cohortId", exception)
                                 }
                             }
