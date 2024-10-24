@@ -85,9 +85,8 @@ internal abstract class FlagConfigUpdaterBase(
                     cohortId,
                     cohortLoader.loadCohort(cohortId).handle { _, exception ->
                         if (exception is CohortTooLargeException) {
-                            Logger.w("Failed to load cohort $cohortId", exception);
-                        }
-                        else if (exception != null) {
+                            Logger.w("Failed to load cohort $cohortId", exception)
+                        } else if (exception != null) {
                             Logger.e("Failed to load cohort $cohortId", exception)
                         }
                         flagConfigStorage.putFlagConfig(flagConfig)
@@ -326,3 +325,4 @@ internal class FlagConfigFallbackRetryWrapper(
         }, reconnIntervalRange.random(), TimeUnit.MILLISECONDS)
         }
     }
+    
