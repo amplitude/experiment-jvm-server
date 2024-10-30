@@ -128,6 +128,7 @@ internal class FlagConfigPoller(
      * Start will fetch once, then start poller to poll flag configs.
      */
     override fun start(onError: (() -> Unit)?) {
+        println("poller start")
         refresh()
         lock.withLock {
             stopInternal()
@@ -150,6 +151,7 @@ internal class FlagConfigPoller(
 
     // @GuardedBy(lock)
     private fun stopInternal() {
+        println("poller stop")
         // Pause only stop the task scheduled. It doesn't stop the executor.
         scheduledFuture?.cancel(true)
         scheduledFuture = null
@@ -203,6 +205,7 @@ internal class FlagConfigStreamer(
     override fun start(onError: (() -> Unit)?) {
         lock.withLock {
             val onStreamUpdate: ((List<EvaluationFlag>) -> Unit) = { flags ->
+                println("got stream flags")
                 update(flags)
             }
             val onStreamError: ((Exception?) -> Unit) = { e ->
@@ -235,39 +238,36 @@ private class RetryUntilSuccessWithJitter(
     private val reconnIntervalRange = max(0, retryDelayMillis - maxJitterMillis)..(min(retryDelayMillis, Long.MAX_VALUE - maxJitterMillis) + maxJitterMillis)
     private val executor = Executors.newScheduledThreadPool(1, daemonFactory)
     private var retryTask: ScheduledFuture<*>? = null // @GuardedBy(lock)
-    private var isRunning = false
+    private var task: (() -> Unit)? = null // @GuardedBy(lock)
 
     fun start(task: () -> Unit) {
         lock.withLock {
-            if (isRunning) {
-                return
-            }
-            isRunning = true
-            schedule(task)
+            retryTask?.cancel(true)
+            this.task = task
+            scheduleTask()
         }
     }
 
-    private fun schedule(task: () -> Unit) {
-        retryTask = executor.schedule({
-            lock.withLock {
-                if (!isRunning) {
-                    return@withLock
-                }
-                try {
-                    task()
-                    isRunning = false
-                } catch (_: Throwable) {
-                    if (isRunning) {
-                        schedule(task)
+    private fun scheduleTask() {
+        lock.withLock {
+            retryTask = executor.schedule({
+                lock.withLock {
+                    try {
+                        task?.invoke()
+                    } catch (_: InterruptedException) {
+                        // Do nothing as it's stopped by stop() or start()
+                        println("interrupted")
+                    } catch (_: Throwable) {
+                        scheduleTask()
                     }
                 }
-            }
-        }, reconnIntervalRange.random(), TimeUnit.MILLISECONDS)
+            }, reconnIntervalRange.random(), TimeUnit.MILLISECONDS)
+        }
     }
 
     fun stop() {
         lock.withLock {
-            isRunning = false
+            this.task = null
             retryTask?.cancel(true)
         }
     }
@@ -320,7 +320,7 @@ internal class FlagConfigFallbackRetryWrapper(
                     Logger.e("Main flag configs start failed, no fallback. Error: ", t)
                     throw t
                 }
-                Logger.e("Main flag configs start failed, starting fallback. Error: ", t)
+                Logger.w("Main flag configs start failed, starting fallback. Error: ", t)
                 fallbackUpdater.start()
                 scheduleRetry()
             }
@@ -329,10 +329,10 @@ internal class FlagConfigFallbackRetryWrapper(
 
     override fun stop() {
         lock.withLock {
-            mainUpdater.stop()
-            fallbackUpdater?.stop()
             retryTask.stop()
             fallbackRetryTask.stop()
+            mainUpdater.stop()
+            fallbackUpdater?.stop()
         }
     }
 
@@ -350,16 +350,8 @@ internal class FlagConfigFallbackRetryWrapper(
         mainUpdater.start {
             lock.withLock {
                 scheduleRetry()
-
-                try {
+                fallbackRetryTask.start {
                     fallbackUpdater?.start()
-                    fallbackRetryTask.stop()
-                } catch (_: Throwable) {
-                    fallbackRetryTask.start {
-                        lock.withLock {
-                            fallbackUpdater?.start()
-                        }
-                    }
                 }
             }
         }
@@ -369,7 +361,6 @@ internal class FlagConfigFallbackRetryWrapper(
 
     // @GuardedBy(lock)
     private fun scheduleRetry() {
-        // Using .schedule instead of .scheduleWithFixedDelay to allow jitter.
         retryTask.start {
             lock.withLock {
                 tryStartMain()
