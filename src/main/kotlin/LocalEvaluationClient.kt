@@ -245,12 +245,3 @@ private fun getEventServerUrl(
         assignmentConfiguration.serverUrl
     }
 }
-
-fun main() {
-    val client = Experiment.initializeLocal("server-DGZM7VCQz8pAnq0w7JKCsmPKFFJcFc73", LocalEvaluationConfig(streamUpdates = true, debug = true, flagConfigPollerIntervalMillis = 1000))
-    client.start()
-    while (true) {
-        println((client.evaluateV2(ExperimentUser("peter.zhu@amplitude.com")).get("peter-test-stream")?.payload as LinkedHashMap<String, String>).get("a")?.length)
-        Thread.sleep(1000)
-    }
-}
