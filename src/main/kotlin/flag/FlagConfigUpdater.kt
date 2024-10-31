@@ -122,16 +122,15 @@ internal class FlagConfigPoller(
 ) {
     private val lock: ReentrantLock = ReentrantLock()
     private val pool = Executors.newScheduledThreadPool(1, daemonFactory)
-    private var scheduledFuture: ScheduledFuture<*>? = null // @GuardedBy(lock)
+    private var scheduledFuture: ScheduledFuture<*>? = null
 
     /**
      * Start will fetch once, then start poller to poll flag configs.
      */
     override fun start(onError: (() -> Unit)?) {
-        println("poller start")
         refresh()
         lock.withLock {
-            stopInternal()
+            stop()
             scheduledFuture = pool.scheduleWithFixedDelay(
                 {
                     try {
@@ -149,17 +148,11 @@ internal class FlagConfigPoller(
         }
     }
 
-    // @GuardedBy(lock)
-    private fun stopInternal() {
-        println("poller stop")
-        // Pause only stop the task scheduled. It doesn't stop the executor.
-        scheduledFuture?.cancel(true)
-        scheduledFuture = null
-    }
-
     override fun stop() {
         lock.withLock {
-            stopInternal()
+            // Pause only stop the task scheduled. It doesn't stop the executor.
+            scheduledFuture?.cancel(true)
+            scheduledFuture = null
         }
     }
 
@@ -205,7 +198,6 @@ internal class FlagConfigStreamer(
     override fun start(onError: (() -> Unit)?) {
         lock.withLock {
             val onStreamUpdate: ((List<EvaluationFlag>) -> Unit) = { flags ->
-                println("got stream flags")
                 update(flags)
             }
             val onStreamError: ((Exception?) -> Unit) = { e ->
@@ -230,57 +222,6 @@ internal class FlagConfigStreamer(
 private const val RETRY_DELAY_MILLIS_DEFAULT = 15 * 1000L
 private const val MAX_JITTER_MILLIS_DEFAULT = 2000L
 
-private class RetryUntilSuccessWithJitter(
-    retryDelayMillis: Long,
-    maxJitterMillis: Long,
-) {
-    private val lock: ReentrantLock = ReentrantLock()
-    private val reconnIntervalRange = max(0, retryDelayMillis - maxJitterMillis)..(min(retryDelayMillis, Long.MAX_VALUE - maxJitterMillis) + maxJitterMillis)
-    private val executor = Executors.newScheduledThreadPool(1, daemonFactory)
-    private var retryTask: ScheduledFuture<*>? = null // @GuardedBy(lock)
-    private var task: (() -> Unit)? = null // @GuardedBy(lock)
-
-    fun start(task: () -> Unit) {
-        lock.withLock {
-            retryTask?.cancel(true)
-            this.task = task
-            scheduleTask()
-        }
-    }
-
-    private fun scheduleTask() {
-        lock.withLock {
-            retryTask = executor.schedule({
-                lock.withLock {
-                    try {
-                        task?.invoke()
-                    } catch (_: InterruptedException) {
-                        // Do nothing as it's stopped by stop() or start()
-                        println("interrupted")
-                    } catch (_: Throwable) {
-                        scheduleTask()
-                    }
-                }
-            }, reconnIntervalRange.random(), TimeUnit.MILLISECONDS)
-        }
-    }
-
-    fun stop() {
-        lock.withLock {
-            this.task = null
-            retryTask?.cancel(true)
-        }
-    }
-}
-
-/**
- * This is a wrapper class around flag config updaters.
- * This provides retry capability in case errors encountered during update asynchronously, as well as fallbacks when an updater failed.
- *
- * `mainUpdater` cannot be a FlagConfigFallbackRetryWrapper.
- * The developer should restructure arguments to make sure `mainUpdater` is never a `FlagConfigFallbackRetryWrapper`.
- * All retry and fallback structures can be normalized into `mainUpdater`s not being `FlagConfigFallbackRetryWrapper`s.
- */
 internal class FlagConfigFallbackRetryWrapper(
     private val mainUpdater: FlagConfigUpdater,
     private val fallbackUpdater: FlagConfigUpdater?,
@@ -290,8 +231,12 @@ internal class FlagConfigFallbackRetryWrapper(
     fallbackMaxJitterMillis: Long = MAX_JITTER_MILLIS_DEFAULT,
 ) : FlagConfigUpdater {
     private val lock: ReentrantLock = ReentrantLock()
-    private var retryTask = RetryUntilSuccessWithJitter(retryDelayMillis, maxJitterMillis)
-    private var fallbackRetryTask = RetryUntilSuccessWithJitter(fallbackStartRetryDelayMillis, fallbackMaxJitterMillis)
+    private val reconnIntervalRange = max(0, retryDelayMillis - maxJitterMillis)..(min(retryDelayMillis, Long.MAX_VALUE - maxJitterMillis) + maxJitterMillis)
+    private val fallbackReconnIntervalRange = max(0, fallbackStartRetryDelayMillis - fallbackMaxJitterMillis)..(min(fallbackStartRetryDelayMillis, Long.MAX_VALUE - fallbackMaxJitterMillis) + fallbackMaxJitterMillis)
+    private val executor = Executors.newScheduledThreadPool(2, daemonFactory)
+    private var retryTask: ScheduledFuture<*>? = null
+    private var fallbackRetryTask: ScheduledFuture<*>? = null
+    private var isRunning = false
 
     /**
      * Since the wrapper retries for mainUpdater, so there will never be error case. Thus, onError will never be called.
@@ -311,9 +256,18 @@ internal class FlagConfigFallbackRetryWrapper(
         }
 
         lock.withLock {
-            retryTask.stop()
+            retryTask?.cancel(true)
+
             try {
-                tryStartMain()
+                mainUpdater.start {
+                    lock.withLock {
+                        if (isRunning) {
+                            scheduleRetry() // Don't care if poller start error or not, always retry.
+                            fallbackStart()
+                        }
+                    }
+                }
+                fallbackStop()
             } catch (t: Throwable) {
                 if (fallbackUpdater == null) {
                     // No fallback, main start failed is wrapper start fail
@@ -324,47 +278,72 @@ internal class FlagConfigFallbackRetryWrapper(
                 fallbackUpdater.start()
                 scheduleRetry()
             }
+            isRunning = true
         }
     }
 
     override fun stop() {
         lock.withLock {
-            retryTask.stop()
-            fallbackRetryTask.stop()
+            isRunning = false
+            fallbackStop()
+            retryTask?.cancel(true)
             mainUpdater.stop()
-            fallbackUpdater?.stop()
         }
     }
 
     override fun shutdown() {
         lock.withLock {
+            isRunning = false
+            fallbackStop()
+            retryTask?.cancel(true)
             mainUpdater.shutdown()
             fallbackUpdater?.shutdown()
-            retryTask.stop()
-            fallbackRetryTask.stop()
         }
     }
 
-    // @GuardedBy(lock)
-    private fun tryStartMain() {
-        mainUpdater.start {
-            lock.withLock {
-                scheduleRetry()
-                fallbackRetryTask.start {
-                    fallbackUpdater?.start()
-                }
-            }
-        }
-        fallbackRetryTask.stop()
-        fallbackUpdater?.stop()
-    }
-
-    // @GuardedBy(lock)
     private fun scheduleRetry() {
-        retryTask.start {
-            lock.withLock {
-                tryStartMain()
+        lock.withLock {
+            retryTask = executor.schedule({
+                lock.withLock {
+                    if (!isRunning) {
+                        return@schedule
+                    }
+                    try {
+                        mainUpdater.start {
+                            lock.withLock {
+                                if (isRunning) {
+                                    scheduleRetry() // Don't care if poller start error or not, always retry.
+                                    fallbackStart()
+                                }
+                            }
+                        }
+                        fallbackStop()
+                    } catch (_: Throwable) {
+                        scheduleRetry()
+                    }
+                }
+            }, reconnIntervalRange.random(), TimeUnit.MILLISECONDS)
+        }
+    }
+
+    private fun fallbackStart() {
+        lock.withLock {
+            try {
+                fallbackUpdater?.start()
+            } catch (_: Throwable) {
+                if (isRunning) {
+                    fallbackRetryTask = executor.schedule({
+                        fallbackStart()
+                    }, fallbackReconnIntervalRange.random(), TimeUnit.MILLISECONDS)
+                } else {}
             }
+        }
+    }
+
+    private fun fallbackStop() {
+        lock.withLock {
+            fallbackUpdater?.stop()
+            fallbackRetryTask?.cancel(true)
         }
     }
 }
