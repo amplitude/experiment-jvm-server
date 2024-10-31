@@ -43,6 +43,8 @@ internal class CohortLoader(
                         cohortStorage.putCohort(cohort)
                     } catch (e: CohortNotModifiedException) {
                         // Do nothing
+                    } catch (e: ProxyCohortTooLargeException) {
+                        // Do nothing
                     } catch (e: CohortTooLargeException) {
                         metrics.onCohortDownloadTooLarge(e)
                         throw e

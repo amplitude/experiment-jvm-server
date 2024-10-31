@@ -14,9 +14,12 @@ import okhttp3.OkHttpClient
 import java.util.Base64
 import java.util.concurrent.ExecutionException
 
-internal class CohortTooLargeException(cohortId: String, maxCohortSize: Int) : RuntimeException(
+open class CohortTooLargeException(cohortId: String, maxCohortSize: Int) : RuntimeException(
     "Cohort $cohortId exceeds the maximum cohort size defined in the SDK configuration $maxCohortSize"
 )
+
+internal class ProxyCohortTooLargeException(cohortId: String, maxCohortSize: Int) :
+    CohortTooLargeException(cohortId, maxCohortSize)
 
 internal class CohortNotModifiedException(cohortId: String) : RuntimeException(
     "Cohort $cohortId has not been modified."
@@ -68,11 +71,15 @@ internal class DynamicCohortApi(
             } catch (e: CohortNotModifiedException) {
                 throw e
             } catch (e: CohortTooLargeException) {
-                throw e
+                throw ProxyCohortTooLargeException(cohortId, maxCohortSize)
             } catch (e: Exception) {
                 Logger.w("Downloading cohort $cohortId from proxy failed. Falling back to Amplitude.", e)
                 metrics.onCohortDownloadOriginFallback(e)
-                getCohort(serverUrl, cohortId, cohort)
+                try {
+                    getCohort(serverUrl, cohortId, cohort)
+                } catch (e: CohortTooLargeException) {
+                    throw ProxyCohortTooLargeException(cohortId, maxCohortSize)
+                }
             }
         } else {
             getCohort(serverUrl, cohortId, cohort)
