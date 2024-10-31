@@ -285,8 +285,8 @@ internal class FlagConfigFallbackRetryWrapper(
     override fun stop() {
         lock.withLock {
             isRunning = false
-            fallbackStop()
             retryTask?.cancel(true)
+            fallbackStop()
             mainUpdater.stop()
         }
     }
@@ -294,8 +294,8 @@ internal class FlagConfigFallbackRetryWrapper(
     override fun shutdown() {
         lock.withLock {
             isRunning = false
-            fallbackStop()
             retryTask?.cancel(true)
+            fallbackStop()
             mainUpdater.shutdown()
             fallbackUpdater?.shutdown()
         }
