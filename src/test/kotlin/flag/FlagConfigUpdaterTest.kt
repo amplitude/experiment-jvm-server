@@ -289,6 +289,23 @@ class FlagConfigFallbackRetryWrapperTest {
     }
 
     @Test
+    fun `Test FallbackRetryWrapper onError callback doesn't start stopped wrapper`() {
+        val wrapper = FlagConfigFallbackRetryWrapper(mainUpdater, null, 1000, 0)
+
+        // Main start no error
+        wrapper.start()
+        verify(exactly = 1) { mainUpdater.start(any()) }
+        wrapper.stop()
+
+        // Call onError
+        mainOnErrorCapture.captured()
+        Thread.sleep(1100)
+        verify(exactly = 1) { mainUpdater.start(any()) }
+
+        wrapper.shutdown()
+    }
+
+    @Test
     fun `Test FallbackRetryWrapper main updater all success`() {
         val wrapper = FlagConfigFallbackRetryWrapper(mainUpdater, fallbackUpdater, 1000, 0, 1100, 0)
 
