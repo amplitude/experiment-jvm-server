@@ -303,26 +303,30 @@ internal class FlagConfigFallbackRetryWrapper(
 
     private fun scheduleRetry() {
         lock.withLock {
-            retryTask = executor.schedule({
-                lock.withLock {
-                    if (!isRunning) {
-                        return@schedule
-                    }
-                    try {
-                        mainUpdater.start {
-                            lock.withLock {
-                                if (isRunning) {
-                                    scheduleRetry() // Don't care if poller start error or not, always retry.
-                                    fallbackStart()
+            retryTask = executor.schedule(
+                {
+                    lock.withLock {
+                        if (!isRunning) {
+                            return@schedule
+                        }
+                        try {
+                            mainUpdater.start {
+                                lock.withLock {
+                                    if (isRunning) {
+                                        scheduleRetry() // Don't care if poller start error or not, always retry.
+                                        fallbackStart()
+                                    }
                                 }
                             }
+                            fallbackStop()
+                        } catch (_: Throwable) {
+                            scheduleRetry()
                         }
-                        fallbackStop()
-                    } catch (_: Throwable) {
-                        scheduleRetry()
                     }
-                }
-            }, reconnIntervalRange.random(), TimeUnit.MILLISECONDS)
+                },
+                reconnIntervalRange.random(),
+                TimeUnit.MILLISECONDS
+            )
         }
     }
 
@@ -332,9 +336,13 @@ internal class FlagConfigFallbackRetryWrapper(
                 fallbackUpdater?.start()
             } catch (_: Throwable) {
                 if (isRunning) {
-                    fallbackRetryTask = executor.schedule({
-                        fallbackStart()
-                    }, fallbackReconnIntervalRange.random(), TimeUnit.MILLISECONDS)
+                    fallbackRetryTask = executor.schedule(
+                        {
+                            fallbackStart()
+                        },
+                        fallbackReconnIntervalRange.random(),
+                        TimeUnit.MILLISECONDS
+                    )
                 } else {}
             }
         }
