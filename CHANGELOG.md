@@ -1,3 +1,17 @@
+# [1.5.0](https://github.com/amplitude/experiment-jvm-server/compare/1.4.4...1.5.0) (2024-11-01)
+
+
+### Bug Fixes
+
+* CohortTooLargeException not thrown when in proxy mode ([#36](https://github.com/amplitude/experiment-jvm-server/issues/36)) ([cc10582](https://github.com/amplitude/experiment-jvm-server/commit/cc1058244582da6835f513c4598e5f66af5597d0))
+* fix flag push fallback ([#37](https://github.com/amplitude/experiment-jvm-server/issues/37)) ([2cf5b04](https://github.com/amplitude/experiment-jvm-server/commit/2cf5b04584c716b71c79a91d4220075c12939042))
+* remove OptIn annotation for cohort syncing ([#35](https://github.com/amplitude/experiment-jvm-server/issues/35)) ([b5e0684](https://github.com/amplitude/experiment-jvm-server/commit/b5e06848e2238fa450721e8c16e4b95d292f13e0))
+
+
+### Features
+
+* add flag push ([#30](https://github.com/amplitude/experiment-jvm-server/issues/30)) ([27caeb5](https://github.com/amplitude/experiment-jvm-server/commit/27caeb59e47a710e6a5c682c90e8f3240efce881))
+
 ## [1.4.4](https://github.com/amplitude/experiment-jvm-server/compare/1.4.3...1.4.4) (2024-10-02)
 
 
