@@ -84,6 +84,10 @@ class LocalEvaluationClient internal constructor(
         }
     }
 
+    fun stop() {
+        deploymentRunner.stop()
+    }
+
     private fun createAssignmentService(deploymentKey: String): AssignmentService? {
         if (config.assignmentConfiguration == null) return null
         return AmplitudeAssignmentService(
@@ -98,6 +102,7 @@ class LocalEvaluationClient internal constructor(
             metrics = metrics,
         )
     }
+
     @JvmOverloads
     @Deprecated(
         "Use the evaluateV2 method. EvaluateV2 returns variant objects with default values (e.g. null/off) if the user is evaluated, but not assigned a variant.",

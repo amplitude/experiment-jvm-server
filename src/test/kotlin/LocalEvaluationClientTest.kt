@@ -29,6 +29,7 @@ class LocalEvaluationClientTest {
         val variants = client.evaluate(ExperimentUser(userId = "test_user"))
         val variant = variants["sdk-local-evaluation-ci-test"]
         Assert.assertEquals(Variant(key = "on", value = "on", payload = "payload"), variant?.copy(metadata = null))
+        client.stop()
     }
 
     @Test
@@ -53,6 +54,7 @@ class LocalEvaluationClientTest {
         )
         val variant = variants["this-flag-doesnt-exit"]
         Assert.assertNull(variant)
+        client.stop()
     }
 
     @Test
@@ -65,6 +67,7 @@ class LocalEvaluationClientTest {
         val millis = duration / 1000.0 / 1000.0
         println("1 flag: $millis")
         Assert.assertTrue(millis < 20)
+        client.stop()
     }
 
     @Test
@@ -80,6 +83,7 @@ class LocalEvaluationClientTest {
         val millis = total / 1000.0 / 1000.0
         println("10 flags: $millis")
         Assert.assertTrue(millis < 40)
+        client.stop()
     }
 
     @Test
@@ -95,6 +99,7 @@ class LocalEvaluationClientTest {
         val millis = total / 1000.0 / 1000.0
         println("100 flags: $millis")
         Assert.assertTrue(millis < 80)
+        client.stop()
     }
 
     @Test
@@ -110,6 +115,7 @@ class LocalEvaluationClientTest {
         val millis = total / 1000.0 / 1000.0
         println("1000 flags: $millis")
         Assert.assertTrue(millis < 160)
+        client.stop()
     }
 
     @Test
@@ -119,6 +125,7 @@ class LocalEvaluationClientTest {
         val variants = client.evaluate(ExperimentUser(userId = "user_id", deviceId = "device_id"))
         val variant = variants["sdk-ci-local-dependencies-test"]
         Assert.assertEquals(variant?.copy(metadata = null), Variant(key = "control", value = "control", payload = null))
+        client.stop()
     }
 
     @Test
@@ -131,6 +138,7 @@ class LocalEvaluationClientTest {
         )
         val variant = variants["sdk-ci-local-dependencies-test"]
         Assert.assertEquals(variant?.copy(metadata = null), Variant(key = "control", value = "control", payload = null))
+        client.stop()
     }
 
     @Test
@@ -143,6 +151,7 @@ class LocalEvaluationClientTest {
         )
         val variant = variants["sdk-ci-local-dependencies-test"]
         Assert.assertEquals(variant, null)
+        client.stop()
     }
 
     @Test
@@ -152,6 +161,7 @@ class LocalEvaluationClientTest {
         val variants = client.evaluate(ExperimentUser(userId = "user_id", deviceId = "device_id"))
         val variant = variants["sdk-ci-local-dependencies-test-holdout"]
         Assert.assertEquals(variant, null)
+        client.stop()
     }
 
     @Test
@@ -178,6 +188,7 @@ class LocalEvaluationClientTest {
         val groupVariant = client.evaluateV2(user, setOf("sdk-local-evaluation-group-cohort-ci-test"))["sdk-local-evaluation-group-cohort-ci-test"]
         assertEquals("off", groupVariant?.key)
         assertNull(groupVariant?.value)
+        client.stop()
     }
 
     @Test
@@ -200,6 +211,7 @@ class LocalEvaluationClientTest {
         val userVariant = client.evaluateV2(user, setOf("sdk-local-evaluation-user-cohort-ci-test"))["sdk-local-evaluation-user-cohort-ci-test"]
         assertEquals("on", userVariant?.key)
         assertEquals("on", userVariant?.value)
+        client.stop()
     }
 
     @Test
@@ -222,6 +234,7 @@ class LocalEvaluationClientTest {
         val userVariant = client.evaluateV2(user, setOf("sdk-local-evaluation-user-cohort-ci-test"))["sdk-local-evaluation-user-cohort-ci-test"]
         assertEquals("on", userVariant?.key)
         assertEquals("on", userVariant?.value)
+        client.stop()
     }
 
     @Test
@@ -246,6 +259,7 @@ class LocalEvaluationClientTest {
         val groupVariant = client.evaluateV2(user, setOf("sdk-local-evaluation-group-cohort-ci-test"))["sdk-local-evaluation-group-cohort-ci-test"]
         assertEquals("on", groupVariant?.key)
         assertEquals("on", groupVariant?.value)
+        client.stop()
     }
 
     @Test
@@ -270,6 +284,7 @@ class LocalEvaluationClientTest {
         val groupVariant = client.evaluateV2(user, setOf("sdk-local-evaluation-group-cohort-ci-test"))["sdk-local-evaluation-group-cohort-ci-test"]
         assertEquals("on", groupVariant?.key)
         assertEquals("on", groupVariant?.value)
+        client.stop()
     }
 
     @Test
@@ -283,6 +298,7 @@ class LocalEvaluationClientTest {
         val variants = client.evaluate(ExperimentUser(userId = "test_user"))
         val variant = variants["sdk-local-evaluation-ci-test"]
         Assert.assertEquals(Variant(key = "on", value = "on", payload = "payload"), variant?.copy(metadata = null))
+        client.stop()
     }
 
     @Test
@@ -310,5 +326,6 @@ class LocalEvaluationClientTest {
         val userVariant = client.evaluateV2(user, setOf("sdk-local-evaluation-user-cohort-ci-test"))["sdk-local-evaluation-user-cohort-ci-test"]
         assertEquals("on", userVariant?.key)
         assertEquals("on", userVariant?.value)
+        client.stop()
     }
 }
