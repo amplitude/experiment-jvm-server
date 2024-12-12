@@ -97,8 +97,10 @@ internal class DeploymentRunner(
     }
 
     fun stop() {
-        poller.shutdown()
-        flagConfigUpdater.shutdown()
+        lock.once {
+            poller.shutdown()
+            flagConfigUpdater.shutdown()
+        }
     }
 
     private fun getCohortPollingInterval(): Long {
