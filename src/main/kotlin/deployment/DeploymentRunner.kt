@@ -33,7 +33,8 @@ internal class DeploymentRunner(
     private val cohortStorage: CohortStorage?,
     private val metrics: LocalEvaluationMetrics = LocalEvaluationMetricsWrapper()
 ) {
-    private val lock = Once()
+    private val startLock = Once()
+    private val stopLock = Once()
     private val poller = Executors.newScheduledThreadPool(1, daemonFactory)
     private val cohortLoader = if (cohortApi != null && cohortStorage != null) {
         CohortLoader(cohortApi, cohortStorage, metrics)
@@ -71,7 +72,7 @@ internal class DeploymentRunner(
         else
             amplitudeFlagConfigUpdater
 
-    fun start() = lock.once {
+    fun start() = startLock.once {
         flagConfigUpdater.start()
         if (cohortLoader != null) {
             poller.scheduleWithFixedDelay(
@@ -97,7 +98,8 @@ internal class DeploymentRunner(
     }
 
     fun stop() {
-        lock.once {
+        if (!startLock.done) return
+        stopLock.once {
             poller.shutdown()
             flagConfigUpdater.shutdown()
         }

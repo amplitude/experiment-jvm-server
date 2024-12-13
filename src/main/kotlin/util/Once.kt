@@ -1,7 +1,7 @@
 package com.amplitude.experiment.util
 
 class Once {
-    private var done = false
+    var done = false
     fun once(block: () -> Unit) {
         synchronized(this) {
             if (done) return@once
