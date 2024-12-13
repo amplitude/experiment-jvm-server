@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/amplitude/experiment-jvm-server/compare/1.6.0...1.6.1) (2024-12-13)
+
+
+### Bug Fixes
+
+* Use separate locks for LocalEvaluationClient start() and stop() ([#39](https://github.com/amplitude/experiment-jvm-server/issues/39)) ([f007497](https://github.com/amplitude/experiment-jvm-server/commit/f00749792dd638ce5d352696612932223e561172))
+
 # [1.6.0](https://github.com/amplitude/experiment-jvm-server/compare/1.5.0...1.6.0) (2024-12-12)
 
 
