@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/amplitude/experiment-jvm-server/compare/1.5.0...1.6.0) (2024-12-12)
+
+
+### Features
+
+* add stop() for LocalEvaluationClient ([#38](https://github.com/amplitude/experiment-jvm-server/issues/38)) ([7b97728](https://github.com/amplitude/experiment-jvm-server/commit/7b97728ba25e33f21548cc01ad63982602a75646))
+
 # [1.5.0](https://github.com/amplitude/experiment-jvm-server/compare/1.4.4...1.5.0) (2024-11-01)
 
 
