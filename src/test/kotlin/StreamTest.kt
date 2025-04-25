@@ -19,7 +19,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.junit.Assert
-import kotlin.random.Random
 import kotlin.random.Random.Default.nextInt
 import kotlin.test.Test
 import kotlin.time.Duration
@@ -27,7 +26,7 @@ import kotlin.time.Duration.Companion.seconds
 
 // Read env vars.
 val ENVIRONMENT = System.getenv("ENVIRONMENT")
-val ENV_VARS = dotenv{
+val ENV_VARS = dotenv {
     filename = if (ENVIRONMENT != null) ".env." + ENVIRONMENT else ".env"
 }
 val SERVER_URL = ENV_VARS["SERVER_URL"] ?: LocalEvaluationConfig.Defaults.SERVER_URL
@@ -128,11 +127,13 @@ class StreamTest {
 
             // Get flag id using management api.
             val flagIdReq = newGet(
-                (MANAGEMENT_API_SERVER_URL).toHttpUrl(), "api/1/flags", mapOf(
+                (MANAGEMENT_API_SERVER_URL).toHttpUrl(), "api/1/flags",
+                mapOf(
                     "Authorization" to "Bearer " + MANAGEMENT_API_KEY,
                     "Content-Type" to "application/json",
                     "Accept" to "*/*",
-                ), mapOf("key" to FLAG_KEY)
+                ),
+                mapOf("key" to FLAG_KEY)
             )
             val flagIdResp = OkHttpClient().newCall(flagIdReq).execute()
             Assert.assertTrue(flagIdResp.isSuccessful)
@@ -153,11 +154,13 @@ class StreamTest {
             streamFlags.clear()
             val randNumber = nextInt(Int.MAX_VALUE).toString()
             val modifyFlagReq = newPatch(
-                MANAGEMENT_API_SERVER_URL.toHttpUrl(), "api/1/flags/$flagId/variants/on", mapOf(
+                MANAGEMENT_API_SERVER_URL.toHttpUrl(), "api/1/flags/$flagId/variants/on",
+                mapOf(
                     "Authorization" to "Bearer $MANAGEMENT_API_KEY",
                     "Content-Type" to "application/json",
                     "Accept" to "*/*",
-                ), mapOf(), "{\"payload\":\"$randNumber\"}", JSON_MEDIA_TYPE
+                ),
+                mapOf(), "{\"payload\":\"$randNumber\"}", JSON_MEDIA_TYPE
             )
             val modifyFlagResp = OkHttpClient().newCall(modifyFlagReq).execute()
             Assert.assertTrue(modifyFlagResp.isSuccessful)
@@ -166,7 +169,7 @@ class StreamTest {
             // This means that the stream is working and we are getting updates.
             Thread.sleep(5000L)
             Assert.assertEquals(1, streamFlags.size)
-            var gotUpdate = false;
+            var gotUpdate = false
             for (i in 0 until streamFlags.size) {
                 val flag = findFlag(streamFlags[i], FLAG_KEY) ?: continue
                 val payload = flag.variants["on"]?.payload ?: continue
