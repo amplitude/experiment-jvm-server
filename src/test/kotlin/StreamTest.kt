@@ -113,7 +113,7 @@ class StreamTest {
             // Check stream no error.
             Assert.assertNull(streamError)
 
-            // Check at lease one of the streamed updates is equal to the fetched flags.
+            // Check at least one of the streamed updates is equal to the fetched flags.
             val theStreamFlags = streamFlags.filter { it?.equals(fetchFlags) == true }.first()
             Assert.assertNotNull(theStreamFlags)
             Assert.assertEquals(fetchFlags, theStreamFlags)
