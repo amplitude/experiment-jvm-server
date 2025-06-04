@@ -28,6 +28,7 @@ import kotlin.time.Duration.Companion.seconds
 val ENVIRONMENT = System.getenv("ENVIRONMENT")
 val ENV_VARS = dotenv {
     filename = if (ENVIRONMENT != null) ".env." + ENVIRONMENT else ".env"
+    ignoreIfMissing = true
 }
 val SERVER_URL = ENV_VARS["SERVER_URL"] ?: LocalEvaluationConfig.Defaults.SERVER_URL
 val STREAM_SERVER_URL = ENV_VARS["STREAM_SERVER_URL"] ?: LocalEvaluationConfig.Defaults.STREAM_SERVER_URL
