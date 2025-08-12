@@ -31,6 +31,7 @@ val ENV_VARS = dotenv {
     ignoreIfMissing = true
 }
 val SERVER_URL = ENV_VARS["SERVER_URL"] ?: LocalEvaluationConfig.Defaults.SERVER_URL
+val FLAGS_SERVER_URL = ENV_VARS["FLAGS_SERVER_URL"] ? SERVER_URL
 val STREAM_SERVER_URL = ENV_VARS["STREAM_SERVER_URL"] ?: LocalEvaluationConfig.Defaults.STREAM_SERVER_URL
 val MANAGEMENT_API_SERVER_URL = ENV_VARS["MANAGEMENT_API_SERVER_URL"] ?: "https://experiment.amplitude.com"
 val DEPLOYMENT_KEY = ENV_VARS["DEPLOYMENT_KEY"] ?: "server-qz35UwzJ5akieoAdIgzM4m9MIiOLXLoz"
@@ -110,7 +111,7 @@ class StreamTest {
             // Get flags from fetch api.
             val fetchFlags = DynamicFlagConfigApi(
                 deploymentKey = DEPLOYMENT_KEY,
-                serverUrl = SERVER_URL.toHttpUrl(),
+                serverUrl = FLAGS_SERVER_URL.toHttpUrl(),
                 proxyUrl = null,
                 httpClient = OkHttpClient(),
             ).getFlagConfigs()
