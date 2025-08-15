@@ -5,6 +5,7 @@ import com.amplitude.AmplitudeCallbacks
 import com.amplitude.Event
 import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
+import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.wrapMetrics
 import org.json.JSONObject
 
@@ -37,9 +38,13 @@ internal class AmplitudeAssignmentService(
     init {
         amplitude.setCallbacks(object : AmplitudeCallbacks() {
             override fun onLogEventServerResponse(event: Event?, status: Int, message: String?) {
-                if (event == null) return
-                if (status != 200) {
-                    metrics.onAssignmentEventFailure(EventTrackingException(event, status, message))
+                try {
+                    if (event == null) return
+                    if (status != 200) {
+                        metrics.onAssignmentEventFailure(EventTrackingException(event, status, message))
+                    }
+                } catch (e: Exception) {
+                    Logger.e("Failed log event server response.", e)
                 }
             }
         })
