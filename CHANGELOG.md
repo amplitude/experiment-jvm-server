@@ -1,3 +1,10 @@
+## [1.6.2](https://github.com/amplitude/experiment-jvm-server/compare/1.6.1...1.6.2) (2025-08-15)
+
+
+### Bug Fixes
+
+* add more try catches to metrics ([#41](https://github.com/amplitude/experiment-jvm-server/issues/41)) ([c110e4b](https://github.com/amplitude/experiment-jvm-server/commit/c110e4b851e3304e2594bd1e77d9827540d13834))
+
 ## [1.6.1](https://github.com/amplitude/experiment-jvm-server/compare/1.6.0...1.6.1) (2024-12-13)
 
 
