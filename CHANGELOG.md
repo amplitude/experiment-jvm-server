@@ -1,3 +1,10 @@
+## [1.6.3](https://github.com/amplitude/experiment-jvm-server/compare/1.6.2...1.6.3) (2025-08-20)
+
+
+### Bug Fixes
+
+* update to maven central; update kotlin; fix serialization ([857b019](https://github.com/amplitude/experiment-jvm-server/commit/857b0194e3a960dfd14912b274e7295e4ad4de0d))
+
 ## [1.6.2](https://github.com/amplitude/experiment-jvm-server/compare/1.6.1...1.6.2) (2025-08-15)
 
 
