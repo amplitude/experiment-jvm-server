@@ -1,8 +1,12 @@
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.KotlinJvm
+
 plugins {
     kotlin("jvm")
     kotlin("plugin.serialization") version Versions.serializationPlugin
     `maven-publish`
     signing
+    id("com.vanniktech.maven.publish") version Versions.vanniktechMavenPublish
     id("io.github.gradle-nexus.publish-plugin") version Versions.gradleNexusPublishPlugin
     id("org.jlleitschuh.gradle.ktlint") version Versions.kotlinLint
     id("org.jetbrains.dokka") version Versions.dokkaVersion
@@ -14,6 +18,13 @@ repositories {
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
 }
 
 dependencies {
@@ -35,14 +46,22 @@ dependencies {
 group = "com.amplitude"
 version = "1.6.2"
 
-nexusPublishing {
-    repositories {
-        sonatype {
-            stagingProfileId.set(System.getenv("SONATYPE_STAGING_PROFILE_ID"))
-            username.set(System.getenv("SONATYPE_USERNAME"))
-            password.set(System.getenv("SONATYPE_PASSWORD"))
-        }
-    }
+mavenPublishing {
+    coordinates(
+        group as String?,
+        "experiment-jvm-server",
+        version as String?
+    )
+
+    configure(
+        KotlinJvm(
+            javadocJar = JavadocJar.Dokka("dokkaHtml"),
+            sourcesJar = true,
+        )
+    )
+
+    publishToMavenCentral()
+    signAllPublications()
 }
 
 java {
@@ -51,7 +70,6 @@ java {
 }
 
 publishing {
-    @Suppress("LocalVariableName")
     publications {
         create<MavenPublication>("sdk") {
             from(components["java"])
@@ -81,18 +99,3 @@ publishing {
         }
     }
 }
-
-signing {
-    val publishing = extensions.findByType<PublishingExtension>()
-    val signingKey = System.getenv("SIGNING_KEY")
-    val signingPassword = System.getenv("SIGNING_PASSWORD")
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign(publishing?.publications)
-}
-
-tasks.withType<Sign>().configureEach {
-    onlyIf { isReleaseBuild }
-}
-
-val isReleaseBuild: Boolean
-    get() = System.getenv("SIGNING_KEY") != null
