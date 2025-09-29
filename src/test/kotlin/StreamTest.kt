@@ -91,6 +91,7 @@ class StreamTest {
     @OptIn(ExperimentalApi::class)
     @Test
     fun `test SDK stream is compatible with stream server (flaky possible, see comments)`() {
+        println("Testing stream server: $STREAM_SERVER_URL")
         Assert.assertNotNull(MANAGEMENT_API_KEY)
         retry {
             // Connect stream.
