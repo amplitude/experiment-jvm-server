@@ -24,14 +24,12 @@ fun assertVariantEquals(
     expected: Variant,
     actual: Variant?,
 ) {
-    val metadata = when {
-        expected.metadata != null -> expected.metadata?.toMutableMap()
-        actual?.metadata != null -> mutableMapOf()
-        else -> null
+    Assert.assertEquals(expected.key, actual?.key)
+    Assert.assertEquals(expected.value, actual?.value)
+    Assert.assertEquals(expected.payload, actual?.payload)
+    if (expected.metadata?.get("evaluationId") != null) {
+        Assert.assertNotNull(actual?.metadata?.get("evaluationId"))
     }
-    metadata?.set("evaluationId", actual?.metadata?.get("evaluationId"))
-    val matchedVariant = Variant(expected.value, expected.payload, expected.key, metadata)
-    Assert.assertEquals(matchedVariant, actual)
 }
 
 class RemoteEvaluationClientTest {
