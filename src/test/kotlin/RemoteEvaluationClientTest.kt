@@ -16,6 +16,22 @@ import kotlin.test.fail
 
 private const val API_KEY = "server-qz35UwzJ5akieoAdIgzM4m9MIiOLXLoz"
 
+/**
+ * To assert two variants. These fields are not consistent across evaluation, simply assert not null.
+ * - metadata.evaluationId
+ */
+fun assertVariantEquals(
+    expected: Variant,
+    actual: Variant?,
+) {
+    Assert.assertEquals(expected.key, actual?.key)
+    Assert.assertEquals(expected.value, actual?.value)
+    Assert.assertEquals(expected.payload, actual?.payload)
+    if (expected.metadata?.get("evaluationId") != null) {
+        Assert.assertNotNull(actual?.metadata?.get("evaluationId"))
+    }
+}
+
 class RemoteEvaluationClientTest {
 
     init {
@@ -23,7 +39,7 @@ class RemoteEvaluationClientTest {
     }
 
     private val testFlagKey = "sdk-ci-test"
-    private val testVariant = Variant(key = "on", value = "on", payload = "payload")
+    private val testVariant = Variant(key = "on", value = "on", payload = "payload", metadata = mapOf("evaluationId" to ""))
 
     private val testUser = ExperimentUser(userId = "test_user")
 
@@ -40,7 +56,7 @@ class RemoteEvaluationClientTest {
         println(dur)
         Assert.assertNotNull(variants)
         val variant = variants[testFlagKey]
-        Assert.assertEquals(testVariant, variant)
+        assertVariantEquals(testVariant, variant)
     }
 
     @Test
