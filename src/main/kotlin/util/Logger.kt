@@ -17,11 +17,11 @@ interface LoggerProvider {
     fun verbose(msg: String)
     fun debug(msg: String)
     fun info(msg: String)
-    fun warn(msg: String, e: Throwable? = null)
-    fun error(msg: String, e: Throwable? = null)
+    fun warn(msg: String)
+    fun error(msg: String)
 }
 
-internal object Logger : LoggerProvider {
+internal object Logger {
 
     private var logLevel: LogLevel = LogLevel.ERROR
     private var loggerProvider: LoggerProvider? = null
@@ -35,33 +35,41 @@ internal object Logger : LoggerProvider {
         loggerProvider = provider
     }
 
-    override fun verbose(msg: String) {
+    fun verbose(msg: String) {
         if (shouldLog(LogLevel.VERBOSE)) {
             loggerProvider?.verbose(msg)
         }
     }
 
-    override fun debug(msg: String) {
+    fun debug(msg: String) {
         if (shouldLog(LogLevel.DEBUG)) {
             loggerProvider?.debug(msg)
         }
     }
 
-    override fun info(msg: String) {
+    fun info(msg: String) {
         if (shouldLog(LogLevel.INFO)) {
             loggerProvider?.info(msg)
         }
     }
 
-    override fun warn(msg: String, e: Throwable?) {
+    fun warn(msg: String, e: Throwable? = null) {
         if (shouldLog(LogLevel.WARN)) {
-            loggerProvider?.warn(msg, e)
+            if (e == null) {
+                loggerProvider?.warn(msg)
+            } else {
+                loggerProvider?.warn("$msg\n${e.stackTraceToString()}")
+            }
         }
     }
 
-    override fun error(msg: String, e: Throwable?) {
+    fun error(msg: String, e: Throwable? = null) {
         if (shouldLog(LogLevel.ERROR)) {
-            loggerProvider?.error(msg, e)
+            if (e == null) {
+                loggerProvider?.error(msg)
+            } else {
+                loggerProvider?.error("$msg\n${e.stackTraceToString()}")
+            }
         }
     }
 
@@ -91,19 +99,11 @@ internal class DefaultLogger : LoggerProvider {
         println("[${timestamp()}] INFO: $msg")
     }
 
-    override fun warn(msg: String, e: Throwable?) {
-        if (e == null) {
-            println("[${timestamp()}] WARN: $msg")
-        } else {
-            println("[${timestamp()}] WARN: $msg\n${e.stackTraceToString()}")
-        }
+    override fun warn(msg: String) {
+        println("[${timestamp()}] WARN: $msg")
     }
 
-    override fun error(msg: String, e: Throwable?) {
-        if (e == null) {
-            println("[${timestamp()}] ERROR: $msg")
-        } else {
-            println("[${timestamp()}] ERROR: $msg\n${e.stackTraceToString()}")
-        }
+    override fun error(msg: String) {
+        println("[${timestamp()}] ERROR: $msg")
     }
 }

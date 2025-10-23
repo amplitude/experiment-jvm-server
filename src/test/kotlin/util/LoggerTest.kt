@@ -36,8 +36,8 @@ class LoggerTest {
         verify(exactly = 1) { mockLogger.verbose("verbose msg") }
         verify(exactly = 1) { mockLogger.debug("debug msg") }
         verify(exactly = 1) { mockLogger.info("info msg") }
-        verify(exactly = 1) { mockLogger.warn("warn msg", null) }
-        verify(exactly = 1) { mockLogger.error("error msg", null) }
+        verify(exactly = 1) { mockLogger.warn("warn msg") }
+        verify(exactly = 1) { mockLogger.error("error msg") }
     }
 
     @Test
@@ -53,8 +53,8 @@ class LoggerTest {
         verify(exactly = 0) { mockLogger.verbose(any()) }
         verify(exactly = 1) { mockLogger.debug("debug msg") }
         verify(exactly = 1) { mockLogger.info("info msg") }
-        verify(exactly = 1) { mockLogger.warn("warn msg", null) }
-        verify(exactly = 1) { mockLogger.error("error msg", null) }
+        verify(exactly = 1) { mockLogger.warn("warn msg") }
+        verify(exactly = 1) { mockLogger.error("error msg") }
     }
 
     @Test
@@ -70,8 +70,8 @@ class LoggerTest {
         verify(exactly = 0) { mockLogger.verbose(any()) }
         verify(exactly = 0) { mockLogger.debug(any()) }
         verify(exactly = 1) { mockLogger.info("info msg") }
-        verify(exactly = 1) { mockLogger.warn("warn msg", null) }
-        verify(exactly = 1) { mockLogger.error("error msg", null) }
+        verify(exactly = 1) { mockLogger.warn("warn msg") }
+        verify(exactly = 1) { mockLogger.error("error msg") }
     }
 
     @Test
@@ -87,8 +87,8 @@ class LoggerTest {
         verify(exactly = 0) { mockLogger.verbose(any()) }
         verify(exactly = 0) { mockLogger.debug(any()) }
         verify(exactly = 0) { mockLogger.info(any()) }
-        verify(exactly = 1) { mockLogger.warn("warn msg", null) }
-        verify(exactly = 1) { mockLogger.error("error msg", null) }
+        verify(exactly = 1) { mockLogger.warn("warn msg") }
+        verify(exactly = 1) { mockLogger.error("error msg") }
     }
 
     @Test
@@ -104,8 +104,8 @@ class LoggerTest {
         verify(exactly = 0) { mockLogger.verbose(any()) }
         verify(exactly = 0) { mockLogger.debug(any()) }
         verify(exactly = 0) { mockLogger.info(any()) }
-        verify(exactly = 0) { mockLogger.warn(any(), any()) }
-        verify(exactly = 1) { mockLogger.error("error msg", null) }
+        verify(exactly = 0) { mockLogger.warn(any()) }
+        verify(exactly = 1) { mockLogger.error("error msg") }
     }
 
     @Test
@@ -121,8 +121,8 @@ class LoggerTest {
         verify(exactly = 0) { mockLogger.verbose(any()) }
         verify(exactly = 0) { mockLogger.debug(any()) }
         verify(exactly = 0) { mockLogger.info(any()) }
-        verify(exactly = 0) { mockLogger.warn(any(), any()) }
-        verify(exactly = 0) { mockLogger.error(any(), any()) }
+        verify(exactly = 0) { mockLogger.warn(any()) }
+        verify(exactly = 0) { mockLogger.error(any()) }
     }
 
     @Test
@@ -135,41 +135,12 @@ class LoggerTest {
     }
 
     @Test
-    fun `test warn with null exception`() {
-        Logger.configure(LogLevel.WARN, mockLogger)
-
-        Logger.warn("warning without exception", null)
-
-        verify { mockLogger.warn("warning without exception", null) }
-    }
-
-    @Test
-    fun `test warn with exception`() {
-        Logger.configure(LogLevel.WARN, mockLogger)
-        val exception = RuntimeException("test exception")
-
-        Logger.warn("warning with exception", exception)
-
-        verify { mockLogger.warn("warning with exception", exception) }
-    }
-
-    @Test
     fun `test error with null exception`() {
         Logger.configure(LogLevel.ERROR, mockLogger)
 
-        Logger.error("error without exception", null)
+        Logger.error("test error message")
 
-        verify { mockLogger.error("error without exception", null) }
-    }
-
-    @Test
-    fun `test error with exception`() {
-        Logger.configure(LogLevel.ERROR, mockLogger)
-        val exception = IllegalArgumentException("invalid argument")
-
-        Logger.error("error with exception", exception)
-
-        verify { mockLogger.error("error with exception", exception) }
+        verify { mockLogger.error("test error message") }
     }
 
     @Test
