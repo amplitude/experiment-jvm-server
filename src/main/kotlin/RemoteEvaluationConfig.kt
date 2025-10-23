@@ -1,5 +1,8 @@
 package com.amplitude.experiment
 
+import com.amplitude.experiment.util.DefaultLogger
+import com.amplitude.experiment.util.LogLevel
+import com.amplitude.experiment.util.LoggerProvider
 import java.net.Proxy
 
 /**
@@ -10,7 +13,15 @@ import java.net.Proxy
  */
 class RemoteEvaluationConfig internal constructor(
     @JvmField
+    @Deprecated(
+        message = "Use logLevel instead",
+        replaceWith = ReplaceWith("logLevel")
+    )
     val debug: Boolean = Defaults.DEBUG,
+    @JvmField
+    val logLevel: LogLevel = Defaults.LOG_LEVEL,
+    @JvmField
+    val loggerProvider: LoggerProvider = Defaults.LOGGER_PROVIDER,
     @JvmField
     val serverUrl: String = Defaults.SERVER_URL,
     @JvmField
@@ -43,6 +54,16 @@ class RemoteEvaluationConfig internal constructor(
          * false
          */
         const val DEBUG = false
+
+        /**
+         * ERROR
+         */
+        val LOG_LEVEL = LogLevel.ERROR
+
+        /**
+         * [com.amplitude.experiment.util.DefaultLogger]
+         */
+        val LOGGER_PROVIDER : LoggerProvider = DefaultLogger()
 
         /**
          * "https://api.lab.amplitude.com/"
@@ -95,6 +116,8 @@ class RemoteEvaluationConfig internal constructor(
     class Builder {
 
         private var debug = Defaults.DEBUG
+        private var logLevel = Defaults.LOG_LEVEL
+        private var loggerProvider = Defaults.LOGGER_PROVIDER
         private var serverUrl = Defaults.SERVER_URL
         private var serverZone = Defaults.SERVER_ZONE
         private var fetchTimeoutMillis = Defaults.FETCH_TIMEOUT_MILLIS
@@ -104,8 +127,29 @@ class RemoteEvaluationConfig internal constructor(
         private var fetchRetryBackoffScalar = Defaults.FETCH_RETRY_BACKOFF_SCALAR
         private var httpProxy = Defaults.HTTP_PROXY
 
+        @Deprecated(
+            message = "Use logLevel instead",
+            replaceWith = ReplaceWith("logLevel(LogLevel.DEBUG)")
+        )
         fun debug(debug: Boolean) = apply {
             this.debug = debug
+            if (debug) {
+                this.logLevel = LogLevel.DEBUG
+            } else {
+                this.logLevel = LogLevel.ERROR
+            }
+        }
+
+        fun logLevel(logLevel: LogLevel) = apply {
+            if (this.debug) {
+                this.logLevel = LogLevel.DEBUG
+            } else {
+                this.logLevel = logLevel
+            }
+        }
+
+        fun loggerProvider(loggerProvider: LoggerProvider) = apply {
+            this.loggerProvider = loggerProvider
         }
 
         fun serverUrl(serverUrl: String) = apply {
@@ -143,6 +187,8 @@ class RemoteEvaluationConfig internal constructor(
         fun build(): RemoteEvaluationConfig {
             return RemoteEvaluationConfig(
                 debug = debug,
+                logLevel = logLevel,
+                loggerProvider = loggerProvider,
                 serverUrl = serverUrl,
                 serverZone = serverZone,
                 fetchTimeoutMillis = fetchTimeoutMillis,

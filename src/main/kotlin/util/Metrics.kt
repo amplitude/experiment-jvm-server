@@ -117,7 +117,7 @@ internal class LocalEvaluationMetricsWrapper(
             try {
                 block.invoke()
             } catch (e: Exception) {
-                Logger.e("Failed to execute metrics.", e)
+                Logger.error("Failed to execute metrics.", e)
             }
         }
     }

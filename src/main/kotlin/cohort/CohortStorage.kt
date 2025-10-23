@@ -60,7 +60,7 @@ internal class ProxyCohortStorage(
                         }
                     }
                 } catch (e: Exception) {
-                    Logger.e("Failed to get cohort membership from proxy.", e)
+                    Logger.error("Failed to get cohort membership from proxy.", e)
                     // Fall back on in memory storage in the case of proxy failure.
                     storage.getCohortsForGroup(groupType, groupName, cohortIds)
                 }
@@ -113,7 +113,7 @@ internal class InMemoryCohortStorage : CohortStorage {
             for (cohortId in cohortIds) {
                 val cohort = cohortStore[cohortId]
                 if (cohort == null) {
-                    Logger.w("Targeted $groupType cohort $cohortId not found in storage.")
+                    Logger.warn("Targeted $groupType cohort $cohortId not found in storage.")
                     continue
                 }
                 if (cohort.groupType != groupType) {
