@@ -1,8 +1,6 @@
 package com.amplitude.experiment
 
 import com.amplitude.experiment.util.Logger
-import com.amplitude.experiment.util.DefaultLogger
-import com.amplitude.experiment.util.LogLevel
 import java.util.concurrent.Executors
 
 internal const val LIBRARY_VERSION = "1.6.3"

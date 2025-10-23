@@ -80,15 +80,15 @@ internal fun timestamp(): String {
 internal class DefaultLogger : LoggerProvider {
 
     override fun verbose(msg: String) {
-            println("[${timestamp()}] VERBOSE: $msg")
+        println("[${timestamp()}] VERBOSE: $msg")
     }
 
     override fun debug(msg: String) {
-            println("[${timestamp()}] DEBUG: $msg")
+        println("[${timestamp()}] DEBUG: $msg")
     }
 
     override fun info(msg: String) {
-            println("[${timestamp()}] INFO: $msg")
+        println("[${timestamp()}] INFO: $msg")
     }
 
     override fun warn(msg: String, e: Throwable?) {

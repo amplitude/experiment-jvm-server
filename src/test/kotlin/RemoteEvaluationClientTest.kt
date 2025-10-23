@@ -1,9 +1,8 @@
 package com.amplitude.experiment
 
 import com.amplitude.experiment.util.FetchException
-import com.amplitude.experiment.util.Logger
-import com.amplitude.experiment.util.DefaultLogger
 import com.amplitude.experiment.util.LogLevel
+import com.amplitude.experiment.util.Logger
 import io.mockk.every
 import io.mockk.spyk
 import io.mockk.verify

@@ -2,7 +2,6 @@ package com.amplitude.experiment
 
 import com.amplitude.experiment.evaluation.EvaluationVariant
 import com.amplitude.experiment.util.Logger
-import com.amplitude.experiment.util.DefaultLogger
 import com.amplitude.experiment.util.LogLevel
 import com.amplitude.experiment.util.json
 import com.amplitude.experiment.util.toVariant

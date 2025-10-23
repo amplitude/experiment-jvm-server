@@ -71,7 +71,7 @@ class LocalEvaluationConfig internal constructor(
         /**
          * [com.amplitude.experiment.util.DefaultLogger]
          */
-        val LOGGER_PROVIDER : LoggerProvider = DefaultLogger()
+        val LOGGER_PROVIDER: LoggerProvider = DefaultLogger()
 
         /**
          * "https://api.lab.amplitude.com/"
