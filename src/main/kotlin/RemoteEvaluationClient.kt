@@ -1,5 +1,6 @@
 package com.amplitude.experiment
 
+import com.amplitude.experiment.FetchOptions
 import com.amplitude.experiment.evaluation.EvaluationVariant
 import com.amplitude.experiment.util.BackoffConfig
 import com.amplitude.experiment.util.FetchException
@@ -36,12 +37,12 @@ class RemoteEvaluationClient internal constructor(
         scalar = config.fetchRetryBackoffScalar,
     )
 
-    fun fetch(user: ExperimentUser): CompletableFuture<Map<String, Variant>> {
-        return doFetch(user, config.fetchTimeoutMillis).handle { variants, t ->
+    fun fetch(user: ExperimentUser, options: FetchOptions? = null): CompletableFuture<Map<String, Variant>> {
+        return doFetch(user, config.fetchTimeoutMillis, options).handle { variants, t ->
             if (t != null || variants == null) {
                 if (retry && shouldRetryFetch(t)) {
                     backoff(backoffConfig) {
-                        doFetch(user, config.fetchTimeoutMillis)
+                        doFetch(user, config.fetchTimeoutMillis, options)
                     }
                 } else {
                     CompletableFuture<Map<String, Variant>>().apply {
@@ -56,7 +57,8 @@ class RemoteEvaluationClient internal constructor(
 
     private fun doFetch(
         user: ExperimentUser,
-        timeoutMillis: Long
+        timeoutMillis: Long,
+        fetchOptions: FetchOptions?
     ): CompletableFuture<Map<String, Variant>> {
         if (user.userId == null && user.deviceId == null) {
             Logger.w("user id and device id are null; amplitude may not resolve identity")
@@ -71,12 +73,18 @@ class RemoteEvaluationClient internal constructor(
             .addPathSegments("sdk/v2/vardata")
             .addQueryParameter("v", "0")
             .build()
-        val request = Request.Builder()
+        var requestBuilder = Request.Builder()
             .get()
             .url(url)
             .addHeader("Authorization", "Api-Key $apiKey")
             .addHeader("X-Amp-Exp-User", encodedUser)
-            .build()
+        if (fetchOptions?.tracksAssignment != null) {
+            requestBuilder = requestBuilder.addHeader("X-Amp-Exp-Track", if (fetchOptions.tracksAssignment) "track" else "no-track")
+        }
+        if (fetchOptions?.tracksExposure != null) {
+            requestBuilder = requestBuilder.addHeader("X-Amp-Exp-Exposure-Track",  if (fetchOptions.tracksExposure) "track" else "no-track")
+        }
+        val request = requestBuilder.build()
         val future = CompletableFuture<Map<String, Variant>>()
         val call = httpClient.newCall(request)
         call.timeout().timeout(timeoutMillis, TimeUnit.MILLISECONDS)
