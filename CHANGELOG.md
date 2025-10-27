@@ -1,3 +1,15 @@
+# [1.7.0](https://github.com/amplitude/experiment-jvm-server/compare/1.6.3...1.7.0) (2025-10-27)
+
+
+### Bug Fixes
+
+* tests assertion ignore evaluationId ([#42](https://github.com/amplitude/experiment-jvm-server/issues/42)) ([9d7a999](https://github.com/amplitude/experiment-jvm-server/commit/9d7a999e6742f12992a81b8bb0d68bcc1ec905af))
+
+
+### Features
+
+* allow for better user defined logging behavior with logLevel and loggerProvider config fields ([#43](https://github.com/amplitude/experiment-jvm-server/issues/43)) ([e66656f](https://github.com/amplitude/experiment-jvm-server/commit/e66656fee96b0369bee32f75c4b2d7e5b87b0f9e))
+
 ## [1.6.3](https://github.com/amplitude/experiment-jvm-server/compare/1.6.2...1.6.3) (2025-08-20)
 
 
