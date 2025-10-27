@@ -1,7 +1,6 @@
 package com.amplitude.experiment
 
 import com.amplitude.experiment.util.Logger
-import com.amplitude.experiment.util.SystemLogger
 import java.util.concurrent.Executors
 
 internal const val LIBRARY_VERSION = "1.6.3"
@@ -28,7 +27,7 @@ object Experiment {
     ): RemoteEvaluationClient = synchronized(remoteInstances) {
         return when (val instance = remoteInstances[apiKey]) {
             null -> {
-                Logger.implementation = SystemLogger(config.debug)
+                Logger.configure(config.logLevel, config.loggerProvider)
                 val newInstance = RemoteEvaluationClient(
                     apiKey,
                     config,
@@ -54,7 +53,7 @@ object Experiment {
     ): LocalEvaluationClient = synchronized(localInstances) {
         return when (val instance = localInstances[apiKey]) {
             null -> {
-                Logger.implementation = SystemLogger(config.debug)
+                Logger.configure(config.logLevel, config.loggerProvider)
                 val newInstance = LocalEvaluationClient(
                     apiKey,
                     config,

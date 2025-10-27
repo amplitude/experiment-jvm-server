@@ -44,7 +44,7 @@ internal class AmplitudeAssignmentService(
                         metrics.onAssignmentEventFailure(EventTrackingException(event, status, message))
                     }
                 } catch (e: Exception) {
-                    Logger.e("Failed log event server response.", e)
+                    Logger.error("Failed log event server response.", e)
                 }
             }
         })

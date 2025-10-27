@@ -84,7 +84,7 @@ internal abstract class FlagConfigUpdaterBase(
                     cohortId,
                     cohortLoader.loadCohort(cohortId).handle { _, exception ->
                         if (exception != null) {
-                            Logger.e("Failed to load cohort $cohortId", exception)
+                            Logger.error("Failed to load cohort $cohortId", exception)
                         }
                         flagConfigStorage.putFlagConfig(flagConfig)
                     }
@@ -102,7 +102,7 @@ internal abstract class FlagConfigUpdaterBase(
                 cohortStorage.deleteCohort(deletedCohortId)
             }
         }
-        Logger.d("Refreshed ${flagConfigs.size} flag configs.")
+        Logger.debug("Refreshed ${flagConfigs.size} flag configs.")
     }
 }
 
@@ -136,7 +136,7 @@ internal class FlagConfigPoller(
                     try {
                         refresh()
                     } catch (t: Throwable) {
-                        Logger.e("Refresh flag configs failed.", t)
+                        Logger.error("Refresh flag configs failed.", t)
                         stop()
                         onError?.invoke()
                     }
@@ -164,7 +164,7 @@ internal class FlagConfigPoller(
     }
 
     private fun refresh() {
-        Logger.d("Refreshing flag configs.")
+        Logger.debug("Refreshing flag configs.")
         // Get updated flags from the network.
         val flagConfigs = wrapMetrics(
             metric = metrics::onFlagConfigFetch,
@@ -201,7 +201,7 @@ internal class FlagConfigStreamer(
                 update(flags)
             }
             val onStreamError: ((Exception?) -> Unit) = { e ->
-                Logger.e("Stream flag configs streaming failed.", e)
+                Logger.error("Stream flag configs streaming failed.", e)
                 metrics.onFlagConfigStreamFailure(e)
                 onError?.invoke()
             }
@@ -271,10 +271,10 @@ internal class FlagConfigFallbackRetryWrapper(
             } catch (t: Throwable) {
                 if (fallbackUpdater == null) {
                     // No fallback, main start failed is wrapper start fail
-                    Logger.e("Main flag configs start failed, no fallback. Error: ", t)
+                    Logger.error("Main flag configs start failed, no fallback. Error: ", t)
                     throw t
                 }
-                Logger.w("Main flag configs start failed, starting fallback. Error: ", t)
+                Logger.warn("Main flag configs start failed, starting fallback. Error: ", t)
                 fallbackUpdater.start()
                 scheduleRetry()
             }

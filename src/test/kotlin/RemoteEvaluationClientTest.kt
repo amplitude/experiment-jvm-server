@@ -1,8 +1,8 @@
 package com.amplitude.experiment
 
 import com.amplitude.experiment.util.FetchException
+import com.amplitude.experiment.util.LogLevel
 import com.amplitude.experiment.util.Logger
-import com.amplitude.experiment.util.SystemLogger
 import io.mockk.every
 import io.mockk.spyk
 import io.mockk.verify
@@ -35,7 +35,7 @@ fun assertVariantEquals(
 class RemoteEvaluationClientTest {
 
     init {
-        Logger.implementation = SystemLogger(false)
+        Logger.configure(LogLevel.ERROR)
     }
 
     private val testFlagKey = "sdk-ci-test"

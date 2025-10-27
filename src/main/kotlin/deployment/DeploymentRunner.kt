@@ -82,12 +82,12 @@ internal class DeploymentRunner(
                         for (cohortId in cohortIds) {
                             cohortLoader.loadCohort(cohortId).handle { _, exception ->
                                 if (exception != null) {
-                                    Logger.e("Failed to load cohort $cohortId", exception)
+                                    Logger.error("Failed to load cohort $cohortId", exception)
                                 }
                             }
                         }
                     } catch (t: Throwable) {
-                        Logger.e("Refresh cohorts failed.", t)
+                        Logger.error("Refresh cohorts failed.", t)
                     }
                 },
                 cohortPollingInterval,

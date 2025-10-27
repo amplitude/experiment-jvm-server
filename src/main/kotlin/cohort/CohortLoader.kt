@@ -32,7 +32,7 @@ internal class CohortLoader(
     fun loadCohort(cohortId: String): CompletableFuture<*> {
         return jobs.getOrPut(cohortId) {
             CompletableFuture.runAsync({
-                Logger.d("Loading cohort $cohortId")
+                Logger.debug("Loading cohort $cohortId")
                 val storageCohort = cohortStorage.getCohort(cohortId)
                 wrapMetrics(
                     metrics::onCohortDownload,
