@@ -175,27 +175,42 @@ class RemoteEvaluationClientTest {
         httpClientField.isAccessible = true
         httpClientField.set(client, httpClient)
 
-        val variants = client.fetch(testUser, FetchOptions.builder()
-            .setTracksAssignment(true)
-            .setTracksExposure(false)
-            .build()).get()
+        val variants = client.fetch(
+            testUser,
+            FetchOptions.builder()
+                .setTracksAssignment(true)
+                .setTracksExposure(false)
+                .build()
+        ).get()
 
         Assert.assertNotNull(variants)
         assertVariantEquals(testVariant, variants[testFlagKey])
 
-        verify { httpClient.newCall(match {
-            it.headers["X-Amp-Exp-Track"] == "track" && it.headers["X-Amp-Exp-Exposure-Track"] == "no-track"
-        }) }
+        verify {
+            httpClient.newCall(
+                match {
+                    it.headers["X-Amp-Exp-Track"] == "track" && it.headers["X-Amp-Exp-Exposure-Track"] == "no-track"
+                }
+            )
+        }
 
         client.fetch(testUser, FetchOptions(tracksAssignment = false, tracksExposure = true)).get()
-        verify { httpClient.newCall(match {
-            it.headers["X-Amp-Exp-Track"] == "no-track" && it.headers["X-Amp-Exp-Exposure-Track"] == "track"
-        }) }
+        verify {
+            httpClient.newCall(
+                match {
+                    it.headers["X-Amp-Exp-Track"] == "no-track" && it.headers["X-Amp-Exp-Exposure-Track"] == "track"
+                }
+            )
+        }
 
         client.fetch(testUser, FetchOptions()).get()
-        verify { httpClient.newCall(match {
-            it.headers["X-Amp-Exp-Track"] == null && it.headers["X-Amp-Exp-Exposure-Track"] == null
-        }) }
+        verify {
+            httpClient.newCall(
+                match {
+                    it.headers["X-Amp-Exp-Track"] == null && it.headers["X-Amp-Exp-Exposure-Track"] == null
+                }
+            )
+        }
     }
 }
 
