@@ -57,6 +57,26 @@ internal class LocalEvaluationMetricsWrapper(
         tryExecute(executor) { metrics.onAssignmentEventFailure(exception) }
     }
 
+    override fun onExposure() {
+        val metrics = metrics ?: return
+        tryExecute(executor) { metrics.onExposure() }
+    }
+
+    override fun onExposureEvent() {
+        val metrics = metrics ?: return
+        tryExecute(executor) { metrics.onExposureEvent() }
+    }
+
+    override fun onExposureFilter() {
+        val metrics = metrics ?: return
+        tryExecute(executor) { metrics.onExposureFilter() }
+    }
+
+    override fun onExposureEventFailure(exception: Exception) {
+        val metrics = metrics ?: return
+        tryExecute(executor) { metrics.onExposureEventFailure(exception) }
+    }
+
     override fun onFlagConfigFetch() {
         val metrics = metrics ?: return
         tryExecute(executor) { metrics.onFlagConfigFetch() }
