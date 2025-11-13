@@ -132,13 +132,9 @@ class LocalEvaluationClient internal constructor(
     }
 
     @JvmOverloads
-    fun evaluateV2(user: ExperimentUser, flagKeys: Set<String> = setOf()): Map<String, Variant> {
-        return evaluateV2(user, EvaluateOptions(flagKeys = flagKeys))
-    }
-
-    fun evaluateV2(user: ExperimentUser, evaluateOptions: EvaluateOptions): Map<String, Variant> {
+    fun evaluateV2(user: ExperimentUser, flagKeys: Set<String> = setOf(), evaluateOptions: EvaluateOptions? = null): Map<String, Variant> {
         val flagConfigs = flagConfigStorage.getFlagConfigs()
-        val sortedFlagConfigs = topologicalSort(flagConfigs, evaluateOptions.flagKeys ?: setOf())
+        val sortedFlagConfigs = topologicalSort(flagConfigs, flagKeys)
         if (sortedFlagConfigs.isEmpty()) {
             return mapOf()
         }
@@ -150,7 +146,7 @@ class LocalEvaluationClient internal constructor(
             evaluation.evaluate(enrichedUser.toEvaluationContext(), sortedFlagConfigs)
         }
         val variants = evaluationResults.toVariants()
-        if (evaluateOptions.tracksExposure == true) {
+        if (evaluateOptions?.tracksExposure == true) {
             exposureService?.track(Exposure(user, variants))
         }
         assignmentService?.track(Assignment(user, variants))

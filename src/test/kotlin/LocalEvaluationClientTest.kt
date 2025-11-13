@@ -360,7 +360,7 @@ class LocalEvaluationClientTest {
         try {
             // Perform evaluation with tracksExposure=true
             val options = EvaluateOptions(tracksExposure = true)
-            val variants = client.evaluateV2(ExperimentUser(userId = "test_user"), options)
+            val variants = client.evaluateV2(ExperimentUser(userId = "test_user"), setOf(), options)
 
             // Verify that track was called
             assert(trackedEvents.isNotEmpty()) { "Expected exposure events to be tracked, but none were tracked" }

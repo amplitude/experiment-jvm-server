@@ -1,7 +1,6 @@
 package com.amplitude.experiment
 
 data class EvaluateOptions(
-    @JvmField var flagKeys: Set<String>? = setOf(),
     @JvmField val tracksExposure: Boolean? = null,
 ) {
     companion object {
@@ -12,12 +11,7 @@ data class EvaluateOptions(
     }
 
     class Builder {
-        private var flagKeys: Set<String>? = null
         private var tracksExposure: Boolean? = null
-
-        fun setFlagKeys(flagKeys: Set<String>?) = apply {
-            this.flagKeys = flagKeys
-        }
 
         fun setTracksExposure(tracksExposure: Boolean) = apply {
             this.tracksExposure = tracksExposure
@@ -25,7 +19,6 @@ data class EvaluateOptions(
 
         fun build(): EvaluateOptions {
             return EvaluateOptions(
-                flagKeys = flagKeys,
                 tracksExposure = tracksExposure,
             )
         }
