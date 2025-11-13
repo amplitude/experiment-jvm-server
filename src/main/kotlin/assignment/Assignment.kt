@@ -7,7 +7,7 @@ internal const val DAY_MILLIS: Long = 24 * 60 * 60 * 1000
 
 @Deprecated(
     message = "Assignment service is deprecated. Use Exposure with Exposure service instead.",
-    replaceWith = ReplaceWith("Exposure"),
+    replaceWith = ReplaceWith("com.amplitude.experiment.exposure.Exposure"),
 )
 internal data class Assignment(
     val user: ExperimentUser,

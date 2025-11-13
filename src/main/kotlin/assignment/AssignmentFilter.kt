@@ -4,7 +4,7 @@ import com.amplitude.experiment.util.Cache
 
 @Deprecated(
     message = "Assignment service is deprecated. Use ExposureFilter with Exposure service instead.",
-    replaceWith = ReplaceWith("ExposureFilter"),
+    replaceWith = ReplaceWith("com.amplitude.experiment.exposure.ExposureFilter"),
 )
 internal interface AssignmentFilter {
     fun shouldTrack(assignment: Assignment): Boolean
@@ -12,7 +12,7 @@ internal interface AssignmentFilter {
 
 @Deprecated(
     message = "Assignment service is deprecated. Use InMemoryExposureFilter with Exposure service instead.",
-    replaceWith = ReplaceWith("InMemoryExposureFilter"),
+    replaceWith = ReplaceWith("com.amplitude.experiment.exposure.InMemoryExposureFilter"),
 )
 internal class InMemoryAssignmentFilter(size: Int, ttlMillis: Long = DAY_MILLIS) : AssignmentFilter {
 

@@ -344,7 +344,7 @@ class LocalEvaluationClientTest {
             isAccessible = true
         }?.get(exposureService) as? com.amplitude.Amplitude
 
-        val originalLogEvent = amplitudeClient?.javaClass?.getDeclaredMethod("logEvent", com.amplitude.Event::class.java)
+
         val mockAmplitude = mockk<com.amplitude.Amplitude>(relaxed = true)
         every { mockAmplitude.logEvent(any()) } answers {
             val event = firstArg<com.amplitude.Event>()
