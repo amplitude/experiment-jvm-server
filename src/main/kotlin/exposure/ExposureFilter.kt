@@ -1,6 +1,5 @@
 package com.amplitude.experiment.exposure
 
-
 import com.amplitude.experiment.util.Cache
 
 internal interface ExposureFilter {
