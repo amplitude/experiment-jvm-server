@@ -37,7 +37,7 @@ class ExposureServiceTest {
             Assert.assertEquals(user.deviceId, event.deviceId)
             Assert.assertEquals("[Experiment] Exposure", event.eventType)
 
-            val flagKey =  event.eventProperties?.getString("[Experiment] Flag Key")
+            val flagKey = event.eventProperties?.getString("[Experiment] Flag Key")
             Assert.assertEquals(results[flagKey]?.key, if (event.eventProperties.has("[Experiment] Variant")) event.eventProperties.getString("[Experiment] Variant") else null)
 
             val userProperties = event.userProperties
@@ -53,7 +53,6 @@ class ExposureServiceTest {
                 Assert.assertFalse(userProperties.getJSONObject("\$set").has("[Experiment] $flagKey"))
             }
             Assert.assertEquals(0, userProperties.getJSONObject("\$unset").length())
-
 
             val canonicalization = "user device empty-variant null flag-key-1 on flag-key-2 off "
             val expected = "user device ${("$flagKey $canonicalization").hashCode()} ${exposure.timestamp / DAY_MILLIS}"
