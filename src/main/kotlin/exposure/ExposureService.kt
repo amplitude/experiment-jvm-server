@@ -3,7 +3,6 @@ package com.amplitude.experiment.exposure
 import com.amplitude.Amplitude
 import com.amplitude.AmplitudeCallbacks
 import com.amplitude.Event
-import com.amplitude.experiment.ExperimentalApi
 import com.amplitude.experiment.LocalEvaluationMetrics
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
