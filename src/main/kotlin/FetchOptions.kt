@@ -1,7 +1,15 @@
 package com.amplitude.experiment
 
 data class FetchOptions(
+  /**
+   * Whether assignment events are tracked when fetching flag configurations.
+   * Defaults to null, which uses the server default behavior (to track assignment event).
+   */
   @JvmField val tracksAssignment: Boolean? = null,
+  /**
+   * Whether exposure events are tracked when fetching flag configurations.
+   * Defaults to null, which uses the server default behavior (to not track exposure event).
+   */
   @JvmField val tracksExposure: Boolean? = null,
 ) {
   companion object {
