@@ -143,7 +143,7 @@ class LocalEvaluationClient internal constructor(
                         flag.key
                     }
                 }
-                Logger.e("Local evaluation flags $flagKeys target cohorts but cohort targeting is not configured.")
+                Logger.error("Local evaluation flags $flagKeys target cohorts but cohort targeting is not configured.")
             }
             return user
         }

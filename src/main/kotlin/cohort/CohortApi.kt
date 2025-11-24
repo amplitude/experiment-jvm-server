@@ -73,7 +73,7 @@ internal class DynamicCohortApi(
             } catch (e: CohortTooLargeException) {
                 throw ProxyCohortTooLargeException(cohortId, maxCohortSize)
             } catch (e: Exception) {
-                Logger.w("Downloading cohort $cohortId from proxy failed. Falling back to Amplitude.", e)
+                Logger.warn("Downloading cohort $cohortId from proxy failed. Falling back to Amplitude.", e)
                 metrics.onCohortDownloadOriginFallback(e)
                 try {
                     getCohort(serverUrl, cohortId, cohort)
@@ -87,7 +87,7 @@ internal class DynamicCohortApi(
     }
 
     private fun getCohort(url: HttpUrl, cohortId: String, cohort: Cohort?): Cohort {
-        Logger.d("getCohortMembers($cohortId): start")
+        Logger.debug("getCohortMembers($cohortId): start")
         val future = backoff(backoffConfig, {
             val headers = mapOf(
                 "Authorization" to "Basic $token",
@@ -105,7 +105,7 @@ internal class DynamicCohortApi(
                 headers = headers,
                 queries = queries,
             ) { response ->
-                Logger.d("getCohortMembers($cohortId): status=${response.code}")
+                Logger.debug("getCohortMembers($cohortId): status=${response.code}")
                 when (response.code) {
                     200 -> return@get
                     204 -> throw CohortNotModifiedException(cohortId)

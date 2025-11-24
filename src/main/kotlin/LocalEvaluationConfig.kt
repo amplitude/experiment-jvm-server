@@ -2,6 +2,9 @@ package com.amplitude.experiment
 
 import com.amplitude.Middleware
 import com.amplitude.experiment.LocalEvaluationConfig.Defaults
+import com.amplitude.experiment.util.DefaultLogger
+import com.amplitude.experiment.util.LogLevel
+import com.amplitude.experiment.util.LoggerProvider
 
 /**
  * Configuration options. This is an immutable object that can be created using
@@ -12,7 +15,15 @@ import com.amplitude.experiment.LocalEvaluationConfig.Defaults
 @OptIn(ExperimentalApi::class)
 class LocalEvaluationConfig internal constructor(
     @JvmField
+    @Deprecated(
+        message = "Use logLevel instead",
+        replaceWith = ReplaceWith("logLevel")
+    )
     val debug: Boolean = Defaults.DEBUG,
+    @JvmField
+    val logLevel: LogLevel = Defaults.LOG_LEVEL,
+    @JvmField
+    val loggerProvider: LoggerProvider = Defaults.LOGGER_PROVIDER,
     @JvmField
     val serverUrl: String = Defaults.SERVER_URL,
     @JvmField
@@ -51,6 +62,16 @@ class LocalEvaluationConfig internal constructor(
          * false
          */
         const val DEBUG = false
+
+        /**
+         * ERROR
+         */
+        val LOG_LEVEL = LogLevel.ERROR
+
+        /**
+         * [com.amplitude.experiment.util.DefaultLogger]
+         */
+        val LOGGER_PROVIDER: LoggerProvider = DefaultLogger()
 
         /**
          * "https://api.lab.amplitude.com/"
@@ -119,6 +140,8 @@ class LocalEvaluationConfig internal constructor(
     class Builder {
 
         private var debug = Defaults.DEBUG
+        private var logLevel = Defaults.LOG_LEVEL
+        private var loggerProvider = Defaults.LOGGER_PROVIDER
         private var serverZone = Defaults.SERVER_ZONE
         private var serverUrl = Defaults.SERVER_URL
         private var flagConfigPollerIntervalMillis = Defaults.FLAG_CONFIG_POLLER_INTERVAL_MILLIS
@@ -131,8 +154,28 @@ class LocalEvaluationConfig internal constructor(
         private var evaluationProxyConfiguration = Defaults.EVALUATION_PROXY_CONFIGURATION
         private var metrics = Defaults.LOCAL_EVALUATION_METRICS
 
+        @Deprecated(
+            message = "Use logLevel instead",
+            replaceWith = ReplaceWith("logLevel(LogLevel.DEBUG)")
+        )
         fun debug(debug: Boolean) = apply {
             this.debug = debug
+            if (debug) {
+                this.logLevel = LogLevel.DEBUG
+            } else {
+                this.logLevel = LogLevel.ERROR
+            }
+        }
+
+        fun logLevel(logLevel: LogLevel) = apply {
+            this.logLevel = logLevel
+            if (logLevel != LogLevel.DEBUG) {
+                this.debug = false
+            }
+        }
+
+        fun loggerProvider(loggerProvider: LoggerProvider) = apply {
+            this.loggerProvider = loggerProvider
         }
 
         fun serverUrl(serverUrl: String) = apply {
@@ -184,6 +227,8 @@ class LocalEvaluationConfig internal constructor(
         fun build(): LocalEvaluationConfig {
             return LocalEvaluationConfig(
                 debug = debug,
+                logLevel = logLevel,
+                loggerProvider = loggerProvider,
                 serverUrl = serverUrl,
                 serverZone = serverZone,
                 flagConfigPollerIntervalMillis = flagConfigPollerIntervalMillis,

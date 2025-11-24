@@ -9,7 +9,6 @@ import com.amplitude.experiment.util.backoff
 import com.amplitude.experiment.util.json
 import com.amplitude.experiment.util.toJson
 import com.amplitude.experiment.util.toVariant
-import kotlinx.serialization.decodeFromString
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.HttpUrl
@@ -61,10 +60,10 @@ class RemoteEvaluationClient internal constructor(
         fetchOptions: FetchOptions?
     ): CompletableFuture<Map<String, Variant>> {
         if (user.userId == null && user.deviceId == null) {
-            Logger.w("user id and device id are null; amplitude may not resolve identity")
+            Logger.warn("user id and device id are null; amplitude may not resolve identity")
         }
         val libraryUser = user.copyToBuilder().library("experiment-jvm-server/$LIBRARY_VERSION").build()
-        Logger.d("Fetch variants for user: $libraryUser")
+        Logger.debug("Fetch variants for user: $libraryUser")
         // Build request to fetch variants for the user
         val encodedUser = Base64.getEncoder().encodeToString(
             libraryUser.toJson().toByteArray(Charsets.UTF_8)
@@ -92,7 +91,7 @@ class RemoteEvaluationClient internal constructor(
         call.enqueue(object : Callback {
             override fun onResponse(call: Call, response: Response) {
                 try {
-                    Logger.d("Received fetch response: $response")
+                    Logger.debug("Received fetch response: $response")
                     val variants = response.use {
                         if (!response.isSuccessful) {
                             throw FetchException(response.code, "fetch error response: $response")

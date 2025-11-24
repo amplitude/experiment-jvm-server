@@ -35,7 +35,7 @@ internal class DynamicFlagConfigApi(
             try {
                 getFlagConfigs(proxyUrl)
             } catch (e: Exception) {
-                Logger.w("Downloading flags from proxy failed. Falling back to Amplitude.", e)
+                Logger.warn("Downloading flags from proxy failed. Falling back to Amplitude.", e)
                 metrics.onFlagConfigFetchOriginFallback(e)
                 getFlagConfigs(serverUrl)
             }

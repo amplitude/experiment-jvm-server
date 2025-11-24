@@ -1,18 +1,17 @@
 package com.amplitude.experiment
 
 import com.amplitude.experiment.evaluation.EvaluationVariant
+import com.amplitude.experiment.util.LogLevel
 import com.amplitude.experiment.util.Logger
-import com.amplitude.experiment.util.SystemLogger
 import com.amplitude.experiment.util.json
 import com.amplitude.experiment.util.toVariant
-import kotlinx.serialization.decodeFromString
 import org.junit.Assert
 import kotlin.test.Test
 
 class VariantTest {
 
     init {
-        Logger.implementation = SystemLogger(true)
+        Logger.configure(LogLevel.DEBUG)
     }
 
     // Test Remote
