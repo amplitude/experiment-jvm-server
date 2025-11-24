@@ -3,7 +3,6 @@ package com.amplitude.experiment
 import com.amplitude.experiment.util.FetchException
 import com.amplitude.experiment.util.LogLevel
 import com.amplitude.experiment.util.Logger
-import com.amplitude.experiment.util.SystemLogger
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.spyk
