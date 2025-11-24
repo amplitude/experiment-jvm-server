@@ -82,7 +82,7 @@ class RemoteEvaluationClient internal constructor(
             requestBuilder = requestBuilder.addHeader("X-Amp-Exp-Track", if (fetchOptions.tracksAssignment) "track" else "no-track")
         }
         if (fetchOptions?.tracksExposure != null) {
-            requestBuilder = requestBuilder.addHeader("X-Amp-Exp-Exposure-Track",  if (fetchOptions.tracksExposure) "track" else "no-track")
+            requestBuilder = requestBuilder.addHeader("X-Amp-Exp-Exposure-Track", if (fetchOptions.tracksExposure) "track" else "no-track")
         }
         val request = requestBuilder.build()
         val future = CompletableFuture<Map<String, Variant>>()

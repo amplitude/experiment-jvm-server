@@ -20,8 +20,8 @@ data class FetchOptions(
   }
 
   class Builder {
-    private var tracksAssignment: Boolean? = null;
-    private var tracksExposure: Boolean? = null;
+    private var tracksAssignment: Boolean? = null
+    private var tracksExposure: Boolean? = null
 
     fun setTracksAssignment(tracksAssignment: Boolean) = apply {
       this.tracksAssignment = tracksAssignment
