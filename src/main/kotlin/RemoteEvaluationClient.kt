@@ -36,6 +36,7 @@ class RemoteEvaluationClient internal constructor(
         scalar = config.fetchRetryBackoffScalar,
     )
 
+    @JvmOverloads
     fun fetch(user: ExperimentUser, options: FetchOptions? = null): CompletableFuture<Map<String, Variant>> {
         return doFetch(user, config.fetchTimeoutMillis, options).handle { variants, t ->
             if (t != null || variants == null) {
