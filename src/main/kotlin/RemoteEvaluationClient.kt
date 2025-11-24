@@ -1,6 +1,5 @@
 package com.amplitude.experiment
 
-import com.amplitude.experiment.FetchOptions
 import com.amplitude.experiment.evaluation.EvaluationVariant
 import com.amplitude.experiment.util.BackoffConfig
 import com.amplitude.experiment.util.FetchException
