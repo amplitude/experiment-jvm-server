@@ -3,14 +3,17 @@ package com.amplitude.experiment
 import com.amplitude.experiment.util.FetchException
 import com.amplitude.experiment.util.LogLevel
 import com.amplitude.experiment.util.Logger
+import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.spyk
 import io.mockk.verify
+import okhttp3.OkHttpClient
 import org.junit.Assert
 import java.util.Date
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.fail
 
@@ -42,6 +45,9 @@ class RemoteEvaluationClientTest {
     private val testVariant = Variant(key = "on", value = "on", payload = "payload", metadata = mapOf("evaluationId" to ""))
 
     private val testUser = ExperimentUser(userId = "test_user")
+
+    @BeforeTest
+    fun setUp() = MockKAnnotations.init(this, relaxUnitFun = true)
 
     @Test
     fun `test fetch`() {
@@ -136,7 +142,7 @@ class RemoteEvaluationClientTest {
             val config = RemoteEvaluationConfig(fetchRetries = 1, debug = true)
             val client = spyk(RemoteEvaluationClient("apiKey", config), recordPrivateCalls = true)
             // Mock the private method to throw FetchException or other exceptions
-            every { client["doFetch"](any<ExperimentUser>(), any<Long>()) } answers {
+            every { client["doFetch"](any<ExperimentUser>(), any<Long>(), isNull<FetchOptions>()) } answers {
                 val future = CompletableFuture<Map<String, Variant>>()
                 if (responseCode == 0) {
                     future.completeExceptionally(Exception(errorMessage))
@@ -152,7 +158,58 @@ class RemoteEvaluationClientTest {
                 // catch exception
             }
 
-            verify(exactly = fetchCalls) { client["doFetch"](any<ExperimentUser>(), any<Long>()) }
+            verify(exactly = fetchCalls) { client["doFetch"](any<ExperimentUser>(), any<Long>(), isNull<FetchOptions>()) }
+        }
+    }
+
+    @Test
+    fun `test fetch with fetch options`() {
+        val client = RemoteEvaluationClient(
+            API_KEY,
+            RemoteEvaluationConfig(debug = true),
+        )
+
+        // Use reflection to spy on private httpClient field
+        val httpClient = spyk(OkHttpClient())
+        val httpClientField = RemoteEvaluationClient::class.java.getDeclaredField("httpClient")
+        httpClientField.isAccessible = true
+        httpClientField.set(client, httpClient)
+
+        val variants = client.fetch(
+            testUser,
+            FetchOptions.builder()
+                .setTracksAssignment(true)
+                .setTracksExposure(false)
+                .build()
+        ).get()
+
+        Assert.assertNotNull(variants)
+        assertVariantEquals(testVariant, variants[testFlagKey])
+
+        verify {
+            httpClient.newCall(
+                match {
+                    it.headers["X-Amp-Exp-Track"] == "track" && it.headers["X-Amp-Exp-Exposure-Track"] == "no-track"
+                }
+            )
+        }
+
+        client.fetch(testUser, FetchOptions(tracksAssignment = false, tracksExposure = true)).get()
+        verify {
+            httpClient.newCall(
+                match {
+                    it.headers["X-Amp-Exp-Track"] == "no-track" && it.headers["X-Amp-Exp-Exposure-Track"] == "track"
+                }
+            )
+        }
+
+        client.fetch(testUser, FetchOptions()).get()
+        verify {
+            httpClient.newCall(
+                match {
+                    it.headers["X-Amp-Exp-Track"] == null && it.headers["X-Amp-Exp-Exposure-Track"] == null
+                }
+            )
         }
     }
 }
