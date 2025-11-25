@@ -18,6 +18,10 @@ import com.amplitude.experiment.evaluation.EvaluationEngine
 import com.amplitude.experiment.evaluation.EvaluationEngineImpl
 import com.amplitude.experiment.evaluation.EvaluationFlag
 import com.amplitude.experiment.evaluation.topologicalSort
+import com.amplitude.experiment.exposure.AmplitudeExposureService
+import com.amplitude.experiment.exposure.Exposure
+import com.amplitude.experiment.exposure.ExposureService
+import com.amplitude.experiment.exposure.InMemoryExposureFilter
 import com.amplitude.experiment.flag.DynamicFlagConfigApi
 import com.amplitude.experiment.flag.FlagConfigStreamApi
 import com.amplitude.experiment.flag.InMemoryFlagConfigStorage
@@ -42,6 +46,7 @@ class LocalEvaluationClient internal constructor(
     cohortApi: CohortApi? = getCohortDownloadApi(config, httpClient, metrics),
 ) {
     private val assignmentService: AssignmentService? = createAssignmentService(apiKey)
+    private val exposureService: ExposureService? = createExposureService(apiKey)
     private val serverUrl: HttpUrl = getServerUrl(config)
     private val streamServerUrl: HttpUrl = getStreamServerUrl(config)
     private val evaluation: EvaluationEngine = EvaluationEngineImpl()
@@ -96,9 +101,24 @@ class LocalEvaluationClient internal constructor(
                 setEventUploadThreshold(config.assignmentConfiguration.eventUploadThreshold)
                 setEventUploadPeriodMillis(config.assignmentConfiguration.eventUploadPeriodMillis)
                 setOptions(Options().setMinIdLength(1))
-                setServerUrl(getEventServerUrl(config, config.assignmentConfiguration))
+                setServerUrl(getEventServerUrl(config, config.assignmentConfiguration.serverUrl, config.assignmentConfiguration.useBatchMode))
             },
             InMemoryAssignmentFilter(config.assignmentConfiguration.cacheCapacity),
+            metrics = metrics,
+        )
+    }
+
+    private fun createExposureService(deploymentKey: String): ExposureService? {
+        if (config.exposureConfiguration == null) return null
+        return AmplitudeExposureService(
+            Amplitude.getInstance(deploymentKey).apply {
+                init(config.exposureConfiguration.apiKey)
+                setEventUploadThreshold(config.exposureConfiguration.eventUploadThreshold)
+                setEventUploadPeriodMillis(config.exposureConfiguration.eventUploadPeriodMillis)
+                setOptions(Options().setMinIdLength(1))
+                setServerUrl(getEventServerUrl(config, config.exposureConfiguration.serverUrl, config.exposureConfiguration.useBatchMode))
+            },
+            InMemoryExposureFilter(config.exposureConfiguration.cacheCapacity),
             metrics = metrics,
         )
     }
@@ -113,7 +133,7 @@ class LocalEvaluationClient internal constructor(
     }
 
     @JvmOverloads
-    fun evaluateV2(user: ExperimentUser, flagKeys: Set<String> = setOf()): Map<String, Variant> {
+    fun evaluateV2(user: ExperimentUser, flagKeys: Set<String> = setOf(), evaluateOptions: EvaluateOptions? = null): Map<String, Variant> {
         val flagConfigs = flagConfigStorage.getFlagConfigs()
         val sortedFlagConfigs = topologicalSort(flagConfigs, flagKeys)
         if (sortedFlagConfigs.isEmpty()) {
@@ -127,6 +147,9 @@ class LocalEvaluationClient internal constructor(
             evaluation.evaluate(enrichedUser.toEvaluationContext(), sortedFlagConfigs)
         }
         val variants = evaluationResults.toVariants()
+        if (evaluateOptions?.tracksExposure == true) {
+            exposureService?.track(Exposure(user, variants))
+        }
         assignmentService?.track(Assignment(user, variants))
         return variants
     }
@@ -231,22 +254,23 @@ private fun getCohortServerUrl(config: LocalEvaluationConfig): HttpUrl {
 
 private fun getEventServerUrl(
     config: LocalEvaluationConfig,
-    assignmentConfiguration: AssignmentConfiguration
+    serverUrl: String,
+    useBatchMode: Boolean
 ): String {
-    return if (assignmentConfiguration.serverUrl == LocalEvaluationConfig.Defaults.EVENT_SERVER_URL) {
+    return if (serverUrl == LocalEvaluationConfig.Defaults.EVENT_SERVER_URL) {
         when (config.serverZone) {
-            ServerZone.US -> if (assignmentConfiguration.useBatchMode) {
+            ServerZone.US -> if (useBatchMode) {
                 US_BATCH_SERVER_URL
             } else {
                 US_EVENT_SERVER_URL
             }
-            ServerZone.EU -> if (assignmentConfiguration.useBatchMode) {
+            ServerZone.EU -> if (useBatchMode) {
                 EU_BATCH_SERVER_URL
             } else {
                 EU_EVENT_SERVER_URL
             }
         }
     } else {
-        assignmentConfiguration.serverUrl
+        serverUrl
     }
 }

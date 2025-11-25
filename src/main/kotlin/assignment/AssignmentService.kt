@@ -4,31 +4,25 @@ import com.amplitude.Amplitude
 import com.amplitude.AmplitudeCallbacks
 import com.amplitude.Event
 import com.amplitude.experiment.LocalEvaluationMetrics
+import com.amplitude.experiment.exposure.EventTrackingException
+import com.amplitude.experiment.exposure.FlagType
 import com.amplitude.experiment.util.LocalEvaluationMetricsWrapper
 import com.amplitude.experiment.util.Logger
 import com.amplitude.experiment.util.wrapMetrics
 import org.json.JSONObject
 
-private object FlagType {
-    const val RELEASE = "release"
-    const val EXPERIMENT = "experiment"
-    const val MUTUAL_EXCLUSION_GROUP = "mutual-exclusion-group"
-    const val HOLDOUT_GROUP = "holdout-group"
-    const val RELEASE_GROUP = "release-group"
-}
-
+@Deprecated(
+    message = "Assignment service is deprecated. Use ExposureService with Exposure service instead.",
+    replaceWith = ReplaceWith("com.amplitude.experiment.exposure.ExposureService"),
+)
 internal interface AssignmentService {
     fun track(assignment: Assignment)
 }
 
-class EventTrackingException(
-    event: Event,
-    status: Int,
-    message: String?
-) : Exception(
-    "Failed to track event to amplitude: event=${event.eventType}, status=$status, msg=$message"
+@Deprecated(
+    message = "Assignment service is deprecated. Use AmplitudeExposureService with Exposure service instead.",
+    replaceWith = ReplaceWith("com.amplitude.experiment.exposure.AmplitudeExposureService"),
 )
-
 internal class AmplitudeAssignmentService(
     private val amplitude: Amplitude,
     private val assignmentFilter: AssignmentFilter,

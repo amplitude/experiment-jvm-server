@@ -328,4 +328,80 @@ class LocalEvaluationClientTest {
         assertEquals("on", userVariant?.value)
         client.stop()
     }
+
+    @Test
+    fun `evaluateV2 with tracksExposure tracks non-default variants`() {
+        val client = LocalEvaluationClient(
+            API_KEY,
+            LocalEvaluationConfig(
+                exposureConfiguration = ExposureConfiguration(apiKey = "apikey")
+            )
+        )
+        client.start()
+
+        // Mock the amplitude client to capture events
+        val trackedEvents = mutableListOf<com.amplitude.Event>()
+        val exposureService = client.javaClass.getDeclaredField("exposureService").apply {
+            isAccessible = true
+        }.get(client) as? com.amplitude.experiment.exposure.AmplitudeExposureService
+
+        val amplitudeClient = exposureService?.javaClass?.getDeclaredField("amplitude")?.apply {
+            isAccessible = true
+        }?.get(exposureService) as? com.amplitude.Amplitude
+
+        val mockAmplitude = mockk<com.amplitude.Amplitude>(relaxed = true)
+        every { mockAmplitude.logEvent(any()) } answers {
+            val event = firstArg<com.amplitude.Event>()
+            trackedEvents.add(event)
+        }
+
+        // Replace the amplitude client in the exposure service using reflection
+        val amplitudeField = exposureService?.javaClass?.getDeclaredField("amplitude")
+        amplitudeField?.isAccessible = true
+        val originalAmplitude = amplitudeField?.get(exposureService)
+        amplitudeField?.set(exposureService, mockAmplitude)
+
+        try {
+            // Perform evaluation with tracksExposure=true
+            val options = EvaluateOptions(tracksExposure = true)
+            val variants = client.evaluateV2(ExperimentUser(userId = "test_user"), setOf(), options)
+
+            // Verify that track was called
+            assert(trackedEvents.isNotEmpty()) { "Expected exposure events to be tracked, but none were tracked" }
+
+            // Count non-default variants
+            val nonDefaultVariants = variants.filter { (_, variant) ->
+                val isDefault = variant.metadata?.get("default") as? Boolean ?: false
+                !isDefault
+            }
+
+            // Verify that we have one event per non-default variant
+            Assert.assertEquals(nonDefaultVariants.size, trackedEvents.size)
+
+            // Verify each event has the correct structure
+            val trackedFlagKeys = mutableSetOf<String>()
+            for (event in trackedEvents) {
+                assertEquals("[Experiment] Exposure", event.eventType)
+                assertEquals("test_user", event.userId)
+                val flagKey: String = event.eventProperties?.get("[Experiment] Flag Key") as String
+                Assert.assertNotNull(flagKey)
+                trackedFlagKeys.add(flagKey)
+                // Verify the variant is not default
+                val variant = variants[flagKey]
+                Assert.assertNotNull(variant)
+                val isDefault = variant?.metadata?.get("default") as? Boolean ?: false
+                Assert.assertFalse(isDefault)
+            }
+
+            // Verify all non-default variants were tracked
+            Assert.assertEquals(nonDefaultVariants.keys.size, trackedFlagKeys.size)
+            for (flagKey in nonDefaultVariants.keys) {
+                Assert.assertTrue(trackedFlagKeys.contains(flagKey))
+            }
+        } finally {
+            // Restore original amplitude client
+            amplitudeField?.set(exposureService, originalAmplitude)
+            client.stop()
+        }
+    }
 }
