@@ -331,9 +331,12 @@ class LocalEvaluationClientTest {
 
     @Test
     fun `evaluateV2 with tracksExposure tracks non-default variants`() {
-        val client = LocalEvaluationClient(API_KEY, LocalEvaluationConfig(
-            exposureConfiguration = ExposureConfiguration(apiKey = "apikey")
-        ))
+        val client = LocalEvaluationClient(
+            API_KEY,
+            LocalEvaluationConfig(
+                exposureConfiguration = ExposureConfiguration(apiKey = "apikey")
+            )
+        )
         client.start()
 
         // Mock the amplitude client to capture events
