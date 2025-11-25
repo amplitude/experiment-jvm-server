@@ -45,7 +45,7 @@ class LocalEvaluationConfig internal constructor(
     @JvmField
     val assignmentConfiguration: AssignmentConfiguration? = Defaults.ASSIGNMENT_CONFIGURATION,
     @JvmField
-    val exposureConfiguration: ExposureConfiguration = Defaults.EXPOSURE_CONFIGURATION,
+    val exposureConfiguration: ExposureConfiguration? = Defaults.EXPOSURE_CONFIGURATION,
     @JvmField
     val cohortSyncConfig: CohortSyncConfig? = Defaults.COHORT_SYNC_CONFIGURATION,
     @JvmField
@@ -127,7 +127,7 @@ class LocalEvaluationConfig internal constructor(
         /**
          * null
          */
-        val EXPOSURE_CONFIGURATION = ExposureConfiguration()
+        val EXPOSURE_CONFIGURATION: ExposureConfiguration? = null
 
         /**
          * null

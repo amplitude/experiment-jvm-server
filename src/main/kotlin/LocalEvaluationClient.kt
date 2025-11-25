@@ -108,10 +108,11 @@ class LocalEvaluationClient internal constructor(
         )
     }
 
-    private fun createExposureService(deploymentKey: String): ExposureService {
+    private fun createExposureService(deploymentKey: String): ExposureService? {
+        if (config.exposureConfiguration == null) return null
         return AmplitudeExposureService(
             Amplitude.getInstance(deploymentKey).apply {
-                init(config.exposureConfiguration.apiKey ?: deploymentKey)
+                init(config.exposureConfiguration.apiKey)
                 setEventUploadThreshold(config.exposureConfiguration.eventUploadThreshold)
                 setEventUploadPeriodMillis(config.exposureConfiguration.eventUploadPeriodMillis)
                 setOptions(Options().setMinIdLength(1))
