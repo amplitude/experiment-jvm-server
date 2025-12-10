@@ -38,8 +38,14 @@ class LocalEvaluationConfig internal constructor(
     val streamServerUrl: String = Defaults.STREAM_SERVER_URL,
     @JvmField
     val streamFlagConnTimeoutMillis: Long = Defaults.STREAM_FLAG_CONN_TIMEOUT_MILLIS,
+    @Deprecated(
+        message = "Assignment service is deprecated. Use exposureConfiguration with Exposure service instead.",
+        replaceWith = ReplaceWith("exposureConfiguration")
+    )
     @JvmField
     val assignmentConfiguration: AssignmentConfiguration? = Defaults.ASSIGNMENT_CONFIGURATION,
+    @JvmField
+    val exposureConfiguration: ExposureConfiguration? = Defaults.EXPOSURE_CONFIGURATION,
     @JvmField
     val cohortSyncConfig: CohortSyncConfig? = Defaults.COHORT_SYNC_CONFIGURATION,
     @JvmField
@@ -112,7 +118,16 @@ class LocalEvaluationConfig internal constructor(
         /**
          * null
          */
+        @Deprecated(
+            message = "Assignment service is deprecated. Use EXPOSURE_CONFIGURATION with Exposure service instead.",
+            replaceWith = ReplaceWith("EXPOSURE_CONFIGURATION")
+        )
         val ASSIGNMENT_CONFIGURATION: AssignmentConfiguration? = null
+
+        /**
+         * null
+         */
+        val EXPOSURE_CONFIGURATION: ExposureConfiguration? = null
 
         /**
          * null
@@ -149,7 +164,12 @@ class LocalEvaluationConfig internal constructor(
         private var streamUpdates = Defaults.STREAM_UPDATES
         private var streamServerUrl = Defaults.STREAM_SERVER_URL
         private var streamFlagConnTimeoutMillis = Defaults.STREAM_FLAG_CONN_TIMEOUT_MILLIS
+        @Deprecated(
+            message = "Assignment service is deprecated. Use exposureConfiguration with Exposure service instead.",
+            replaceWith = ReplaceWith("exposureConfiguration")
+        )
         private var assignmentConfiguration = Defaults.ASSIGNMENT_CONFIGURATION
+        private var exposureConfiguration = Defaults.EXPOSURE_CONFIGURATION
         private var cohortSyncConfiguration = Defaults.COHORT_SYNC_CONFIGURATION
         private var evaluationProxyConfiguration = Defaults.EVALUATION_PROXY_CONFIGURATION
         private var metrics = Defaults.LOCAL_EVALUATION_METRICS
@@ -206,8 +226,16 @@ class LocalEvaluationConfig internal constructor(
             this.streamFlagConnTimeoutMillis = streamFlagConnTimeoutMillis
         }
 
+        @Deprecated(
+            message = "Assignment service is deprecated. Use enableExposureTracking with Exposure service instead.",
+            replaceWith = ReplaceWith("enableExposureTracking")
+        )
         fun enableAssignmentTracking(assignmentConfiguration: AssignmentConfiguration) = apply {
             this.assignmentConfiguration = assignmentConfiguration
+        }
+
+        fun enableExposureTracking(exposureConfiguration: ExposureConfiguration) = apply {
+            this.exposureConfiguration = exposureConfiguration
         }
 
         fun cohortSyncConfig(cohortSyncConfig: CohortSyncConfig) = apply {
@@ -245,8 +273,22 @@ class LocalEvaluationConfig internal constructor(
     }
 }
 
+@Deprecated(
+    message = "Assignment service is deprecated. Use ExposureConfiguration with Exposure service instead.",
+    replaceWith = ReplaceWith("ExposureConfiguration")
+)
 data class AssignmentConfiguration @JvmOverloads constructor(
     val apiKey: String,
+    val cacheCapacity: Int = 65536,
+    val eventUploadThreshold: Int = 10,
+    val eventUploadPeriodMillis: Int = 10000,
+    val useBatchMode: Boolean = true,
+    val serverUrl: String = Defaults.EVENT_SERVER_URL,
+    val middleware: List<Middleware> = listOf(),
+)
+
+data class ExposureConfiguration @JvmOverloads constructor(
+    val apiKey: String? = null,
     val cacheCapacity: Int = 65536,
     val eventUploadThreshold: Int = 10,
     val eventUploadPeriodMillis: Int = 10000,
@@ -279,6 +321,10 @@ interface LocalEvaluationMetrics {
     fun onAssignmentFilter()
     fun onAssignmentEvent()
     fun onAssignmentEventFailure(exception: Exception)
+    fun onExposure()
+    fun onExposureFilter()
+    fun onExposureEvent()
+    fun onExposureEventFailure(exception: Exception)
     fun onFlagConfigFetch()
     fun onFlagConfigFetchFailure(exception: Exception)
     fun onFlagConfigFetchOriginFallback(exception: Exception)
