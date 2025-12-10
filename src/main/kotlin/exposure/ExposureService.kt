@@ -57,7 +57,9 @@ internal class AmplitudeExposureService constructor(
                 metric = metrics::onExposureEvent,
                 failure = metrics::onExposureEventFailure,
             ) {
-                exposure.toAmplitudeEvent().forEach { event -> amplitude.logEvent(event) }
+                for (event in exposure.toAmplitudeEvent()) {
+                    amplitude.logEvent(event)
+                }
             }
         } else {
             metrics.onExposureFilter()
