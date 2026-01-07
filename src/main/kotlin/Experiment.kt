@@ -3,7 +3,7 @@ package com.amplitude.experiment
 import com.amplitude.experiment.util.Logger
 import java.util.concurrent.Executors
 
-internal const val LIBRARY_VERSION = "1.7.0"
+internal const val LIBRARY_VERSION = "1.8.0"
 
 object Experiment {
 

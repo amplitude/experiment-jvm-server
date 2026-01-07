@@ -1,3 +1,11 @@
+# [1.8.0](https://github.com/amplitude/experiment-jvm-server/compare/1.7.0...1.8.0) (2026-01-07)
+
+
+### Features
+
+* add assignment and exposure options ([#44](https://github.com/amplitude/experiment-jvm-server/issues/44)) ([7be547b](https://github.com/amplitude/experiment-jvm-server/commit/7be547b985b0a59631f5cb6ee39cc3ef561e1835))
+* add exposure service ([#46](https://github.com/amplitude/experiment-jvm-server/issues/46)) ([366e58c](https://github.com/amplitude/experiment-jvm-server/commit/366e58c5ff9e82a72f783f8547a5a1bf38604921))
+
 # [1.7.0](https://github.com/amplitude/experiment-jvm-server/compare/1.6.3...1.7.0) (2025-10-27)
 
 
