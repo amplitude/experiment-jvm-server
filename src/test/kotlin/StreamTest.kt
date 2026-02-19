@@ -110,12 +110,19 @@ class StreamTest {
             })
 
             // Get flags from fetch api.
-            val fetchFlags = DynamicFlagConfigApi(
+            Thread.sleep(3000L)
+            val fetchApi = DynamicFlagConfigApi(
                 deploymentKey = DEPLOYMENT_KEY,
                 serverUrl = FLAGS_SERVER_URL.toHttpUrl(),
                 proxyUrl = null,
                 httpClient = OkHttpClient(),
-            ).getFlagConfigs()
+            )
+            // Fetch multiple times to make sure we have the latest flags regardless of intermediate caches.
+            fetchApi.getFlagConfigs()
+            Thread.sleep(200L)
+            fetchApi.getFlagConfigs()
+            Thread.sleep(200L)
+            val fetchFlags = fetchApi.getFlagConfigs()
 
             Thread.sleep(5000L)
 
