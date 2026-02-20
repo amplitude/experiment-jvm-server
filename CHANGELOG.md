@@ -1,3 +1,11 @@
+## [1.8.1](https://github.com/amplitude/experiment-jvm-server/compare/1.8.0...1.8.1) (2026-02-20)
+
+
+### Bug Fixes
+
+* release action test stage ([#47](https://github.com/amplitude/experiment-jvm-server/issues/47)) ([85984b6](https://github.com/amplitude/experiment-jvm-server/commit/85984b623f1a79fd3123b0a10e222c0cb50e8ebd))
+* stream test ([#40](https://github.com/amplitude/experiment-jvm-server/issues/40)) ([41ec24e](https://github.com/amplitude/experiment-jvm-server/commit/41ec24e3f29a9a8bf8bfbbdcd93b5d8173f10511))
+
 # [1.8.0](https://github.com/amplitude/experiment-jvm-server/compare/1.7.0...1.8.0) (2026-01-07)
 
 
