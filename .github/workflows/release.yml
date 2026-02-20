@@ -48,6 +48,8 @@ jobs:
 
       - name: Test
         run: ./gradlew test --info
+        env:
+          MANAGEMENT_API_KEY: ${{ secrets.MANAGEMENT_API_KEY }}
 
       - name: Semantic Release --dry-run
         if: ${{ github.event.inputs.dryRun == 'true'}}
