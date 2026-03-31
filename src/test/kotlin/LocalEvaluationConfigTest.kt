@@ -250,4 +250,3 @@ class LocalEvaluationConfigTest {
         assertEquals(5_000L, config.streamFlagConnTimeoutMillis)
     }
 }
-
