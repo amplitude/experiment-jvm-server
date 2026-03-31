@@ -265,6 +265,7 @@ class LocalEvaluationConfig internal constructor(
                 streamServerUrl = streamServerUrl,
                 streamFlagConnTimeoutMillis = streamFlagConnTimeoutMillis,
                 assignmentConfiguration = assignmentConfiguration,
+                exposureConfiguration = exposureConfiguration,
                 cohortSyncConfig = cohortSyncConfiguration,
                 evaluationProxyConfig = evaluationProxyConfiguration,
                 metrics = metrics,
