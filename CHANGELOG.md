@@ -1,3 +1,10 @@
+## [1.8.2](https://github.com/amplitude/experiment-jvm-server/compare/1.8.1...1.8.2) (2026-04-28)
+
+
+### Bug Fixes
+
+* update evaluation dependency for parity with remote assignment ([#51](https://github.com/amplitude/experiment-jvm-server/issues/51)) ([d59df98](https://github.com/amplitude/experiment-jvm-server/commit/d59df982f6141d9ab32b2f9ef68759392f9e4ccc))
+
 ## [1.8.1](https://github.com/amplitude/experiment-jvm-server/compare/1.8.0...1.8.1) (2026-02-20)
 
 
