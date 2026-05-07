@@ -27,11 +27,22 @@ class ExposureServiceTest {
                     "default" to true,
                 )
             ),
+            "with-experiment-key" to Variant(
+                key = "treatment",
+                value = "treatment",
+                metadata = mapOf(
+                    "segmentName" to "All Other Users",
+                    "flagType" to "experiment",
+                    "flagVersion" to 10,
+                    "default" to false,
+                    "experimentKey" to "exp-1",
+                )
+            ),
             "empty-variant" to Variant()
         )
         val exposure = Exposure(user, results)
         val events = exposure.toAmplitudeEvent()
-        Assert.assertEquals(2, events.size)
+        Assert.assertEquals(3, events.size)
         for (event in events) {
             Assert.assertEquals(user.userId, event.userId)
             Assert.assertEquals(user.deviceId, event.deviceId)
@@ -39,6 +50,12 @@ class ExposureServiceTest {
 
             val flagKey = event.eventProperties?.getString("[Experiment] Flag Key")
             Assert.assertEquals(results[flagKey]?.key, if (event.eventProperties.has("[Experiment] Variant")) event.eventProperties.getString("[Experiment] Variant") else null)
+
+            if (flagKey == "with-experiment-key") {
+                Assert.assertEquals("exp-1", event.eventProperties.getString("[Experiment] Experiment Key"))
+            } else {
+                Assert.assertFalse(event.eventProperties.has("[Experiment] Experiment Key"))
+            }
 
             val userProperties = event.userProperties
             Assert.assertEquals(2, userProperties.length())
@@ -54,7 +71,7 @@ class ExposureServiceTest {
             }
             Assert.assertEquals(0, userProperties.getJSONObject("\$unset").length())
 
-            val canonicalization = "user device empty-variant null flag-key-1 on flag-key-2 off "
+            val canonicalization = "user device empty-variant null flag-key-1 on flag-key-2 off with-experiment-key treatment "
             val expected = "user device ${("$flagKey $canonicalization").hashCode()} ${exposure.timestamp / DAY_MILLIS}"
             Assert.assertEquals(expected, event.insertId)
         }
