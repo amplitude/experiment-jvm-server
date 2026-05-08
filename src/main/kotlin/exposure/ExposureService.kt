@@ -96,6 +96,10 @@ internal fun Exposure.toAmplitudeEvent(): List<Event> {
             } else if (variant.value != null) {
                 put("[Experiment] Variant", variant.value)
             }
+            val experimentKey = variant.metadata?.get("experimentKey") as? String
+            if (experimentKey != null) {
+                put("[Experiment] Experiment Key", experimentKey)
+            }
             if (variant.metadata != null) {
                 put("metadata", JSONObject(variant.metadata.toMap()))
             }
