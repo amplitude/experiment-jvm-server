@@ -1,3 +1,10 @@
+## [1.8.3](https://github.com/amplitude/experiment-jvm-server/compare/1.8.2...1.8.3) (2026-05-08)
+
+
+### Bug Fixes
+
+* include experiment key on local-eval exposure events ([#53](https://github.com/amplitude/experiment-jvm-server/issues/53)) ([8bd7645](https://github.com/amplitude/experiment-jvm-server/commit/8bd7645f054611e97102cfc245ea3b9c65aa5718)), closes [amplitude/experiment-node-server#83](https://github.com/amplitude/experiment-node-server/issues/83)
+
 ## [1.8.2](https://github.com/amplitude/experiment-jvm-server/compare/1.8.1...1.8.2) (2026-04-28)
 
 
