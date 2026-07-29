@@ -8,6 +8,8 @@ import io.mockk.every
 import io.mockk.spyk
 import io.mockk.verify
 import okhttp3.OkHttpClient
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.junit.Assert
 import java.util.Date
 import java.util.concurrent.CancellationException
@@ -164,16 +166,12 @@ class RemoteEvaluationClientTest {
 
     @Test
     fun `test fetch with fetch options`() {
+        val httpClient = spyk(OkHttpClient())
         val client = RemoteEvaluationClient(
             API_KEY,
             RemoteEvaluationConfig(debug = true),
+            httpClient,
         )
-
-        // Use reflection to spy on private httpClient field
-        val httpClient = spyk(OkHttpClient())
-        val httpClientField = RemoteEvaluationClient::class.java.getDeclaredField("httpClient")
-        httpClientField.isAccessible = true
-        httpClientField.set(client, httpClient)
 
         val variants = client.fetch(
             testUser,
@@ -210,6 +208,26 @@ class RemoteEvaluationClientTest {
                     it.headers["X-Amp-Exp-Track"] == null && it.headers["X-Amp-Exp-Exposure-Track"] == null
                 }
             )
+        }
+    }
+
+    @Test
+    fun `test initialize remote with custom http client`() {
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse().setResponseCode(200).setBody("{}"))
+            val httpClient = spyk(OkHttpClient())
+            val config = RemoteEvaluationConfig.builder()
+                .serverUrl(server.url("/").toString())
+                .fetchRetries(0)
+                .build()
+            val client = Experiment.initializeRemote(
+                "custom-http-client-${System.nanoTime()}",
+                config,
+                httpClient,
+            )
+
+            Assert.assertTrue(client.fetch(testUser).get().isEmpty())
+            verify(exactly = 1) { httpClient.newCall(any()) }
         }
     }
 }

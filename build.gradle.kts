@@ -2,6 +2,7 @@ import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
 
 plugins {
+    `java-library`
     kotlin("jvm")
     kotlin("plugin.serialization") version Versions.serializationPlugin
     id("com.vanniktech.maven.publish") version Versions.vanniktechMavenPublish
@@ -32,7 +33,7 @@ dependencies {
     testImplementation("io.mockk:mockk:${Versions.mockk}")
     testImplementation("io.github.cdimascio:dotenv-kotlin:${Versions.dotenvKotlin}")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serializationRuntime}")
-    implementation("com.squareup.okhttp3:okhttp:${Versions.okhttp}")
+    api("com.squareup.okhttp3:okhttp:${Versions.okhttp}")
     implementation("com.squareup.okhttp3:okhttp-sse:${Versions.okhttpSse}")
     implementation("com.amplitude:evaluation-core:${Versions.evaluationCore}")
     implementation("com.amplitude:java-sdk:${Versions.amplitudeAnalytics}")

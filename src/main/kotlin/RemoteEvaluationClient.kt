@@ -22,10 +22,19 @@ import java.util.concurrent.TimeUnit
 
 class RemoteEvaluationClient internal constructor(
     private val apiKey: String,
-    private val config: RemoteEvaluationConfig = RemoteEvaluationConfig(),
+    private val config: RemoteEvaluationConfig,
+    private val httpClient: OkHttpClient,
 ) {
 
-    private val httpClient = OkHttpClient.Builder().proxy(config.httpProxy).build()
+    internal constructor(
+        apiKey: String,
+        config: RemoteEvaluationConfig = RemoteEvaluationConfig(),
+    ) : this(
+        apiKey,
+        config,
+        OkHttpClient.Builder().proxy(config.httpProxy).build(),
+    )
+
     private val retry: Boolean = config.fetchRetries > 0
     private val serverUrl: HttpUrl = getServerUrl(config)
     private val backoffConfig = BackoffConfig(
