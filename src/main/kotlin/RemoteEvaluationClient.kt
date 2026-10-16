@@ -19,6 +19,7 @@ import okio.IOException
 import java.io.InterruptedIOException
 import java.util.Base64
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -100,8 +101,9 @@ class RemoteEvaluationClient internal constructor(
             timeoutScheduler.schedule({
                 call.cancel()
                 // Completing a future can run application continuations synchronously.
-                // Keep those off the scheduler so they cannot delay other deadlines.
-                CompletableFuture.runAsync {
+                // Use an independent worker for each completion: blocked application
+                // continuations must not starve the scheduler or the shared common pool.
+                timeoutCompletions.execute {
                     future.completeExceptionally(InterruptedIOException("fetch timed out after ${timeoutMillis}ms"))
                 }
             }, timeoutMillis, TimeUnit.MILLISECONDS)
@@ -131,6 +133,9 @@ class RemoteEvaluationClient internal constructor(
     }
 
     private companion object {
+        val timeoutCompletions = Executors.newCachedThreadPool { runnable ->
+            Thread(runnable, "experiment-fetch-timeout-completion").apply { isDaemon = true }
+        }
         val timeoutScheduler = ScheduledThreadPoolExecutor(1) { runnable ->
             Thread(runnable, "experiment-fetch-timeout").apply { isDaemon = true }
         }.apply { removeOnCancelPolicy = true }

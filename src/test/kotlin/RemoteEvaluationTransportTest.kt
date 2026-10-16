@@ -21,6 +21,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
+import java.util.concurrent.ForkJoinPool
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.Test
@@ -93,7 +94,9 @@ class RemoteEvaluationTransportTest {
             server.start()
             val dispatcher = Dispatcher().apply { maxRequestsPerHost = 1 }
             val transport = OkHttpClient.Builder().dispatcher(dispatcher).readTimeout(0, TimeUnit.MILLISECONDS).build()
-            val continuationStarted = CountDownLatch(1)
+            // Exhaust the old common-pool completion path, not just one worker.
+            val continuationCount = maxOf(2, ForkJoinPool.getCommonPoolParallelism())
+            val continuationStarted = CountDownLatch(continuationCount)
             val releaseContinuation = CountDownLatch(1)
             try {
                 transport.newCall(Request.Builder().url(server.url("/block")).build()).enqueue(object : Callback {
@@ -105,12 +108,17 @@ class RemoteEvaluationTransportTest {
                 })
                 assertNotNull(server.takeRequest(2, TimeUnit.SECONDS))
                 val client = client(server, transport, timeoutMillis = 150)
-                client.fetch(user).whenComplete { _, _ ->
-                    continuationStarted.countDown()
-                    releaseContinuation.await(5, TimeUnit.SECONDS)
+                repeat(continuationCount) {
+                    client.fetch(user).whenComplete { _, _ ->
+                        continuationStarted.countDown()
+                        releaseContinuation.await(10, TimeUnit.SECONDS)
+                    }
                 }
                 assertTrue(continuationStarted.await(2, TimeUnit.SECONDS))
-                assertFailsWith<ExecutionException> { client.fetch(user).get(2, TimeUnit.SECONDS) }
+                val retryingClient = client(server, transport, timeoutMillis = 150, retries = 1)
+                assertFailsWith<ExecutionException> { retryingClient.fetch(user).get(2, TimeUnit.SECONDS) }
+                assertEquals(continuationCount + 2, dispatcher.queuedCallsCount())
+                assertTrue(dispatcher.queuedCalls().all { it.isCanceled() })
             } finally {
                 releaseContinuation.countDown()
                 close(transport)

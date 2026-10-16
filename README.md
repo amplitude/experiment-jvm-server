@@ -17,6 +17,11 @@ A request timeout alone cancels an HTTP/2 stream and may leave its connection re
 dispatcher and reading the response. The default is 500 ms; zero disables this
 timeout. Each retry has its own timeout, in addition to any configured backoff.
 
+Timeout completion uses SDK-owned daemon workers, separate from the deadline
+scheduler and Java's common pool. Blocking synchronous continuations can keep
+these workers occupied; use asynchronous continuations with your own executor
+for blocking application work.
+
 To customize the transport in Java (the same builder is available in Kotlin):
 
 ```java
