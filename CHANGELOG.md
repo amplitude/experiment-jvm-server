@@ -1,3 +1,10 @@
+## [1.8.4](https://github.com/amplitude/experiment-jvm-server/compare/1.8.3...1.8.4) (2026-10-19)
+
+
+### Bug Fixes
+
+* recover stalled remote evaluation HTTP/2 connections (STADXP-585) ([#56](https://github.com/amplitude/experiment-jvm-server/issues/56)) ([e341a8c](https://github.com/amplitude/experiment-jvm-server/commit/e341a8c60f6cb9dbc02b2ba92896107a43508e32))
+
 ## [1.8.3](https://github.com/amplitude/experiment-jvm-server/compare/1.8.2...1.8.3) (2026-05-08)
 
 
