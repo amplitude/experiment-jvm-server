@@ -3,6 +3,7 @@ package com.amplitude.experiment
 import com.amplitude.experiment.util.DefaultLogger
 import com.amplitude.experiment.util.LogLevel
 import com.amplitude.experiment.util.LoggerProvider
+import okhttp3.OkHttpClient
 import java.net.Proxy
 
 /**
@@ -38,6 +39,13 @@ class RemoteEvaluationConfig internal constructor(
     val fetchRetryBackoffScalar: Double = Defaults.FETCH_RETRY_BACKOFF_SCALAR,
     @JvmField
     val httpProxy: Proxy? = Defaults.HTTP_PROXY,
+    /**
+     * Optional shared HTTP client. The caller owns its dispatcher and connection pool.
+     * An explicit [httpProxy] overrides the client's proxy. Other transport settings,
+     * including HTTP/2 pings, are preserved; each fetch attempt uses [fetchTimeoutMillis].
+     */
+    @JvmField
+    val httpClient: OkHttpClient? = null,
 ) {
 
     /**
@@ -126,6 +134,7 @@ class RemoteEvaluationConfig internal constructor(
         private var fetchRetryBackoffMaxMillis = Defaults.FETCH_RETRY_BACKOFF_MAX_MILLIS
         private var fetchRetryBackoffScalar = Defaults.FETCH_RETRY_BACKOFF_SCALAR
         private var httpProxy = Defaults.HTTP_PROXY
+        private var httpClient: OkHttpClient? = null
 
         @Deprecated(
             message = "Use logLevel instead",
@@ -160,6 +169,10 @@ class RemoteEvaluationConfig internal constructor(
             this.serverZone = serverZone
         }
 
+        /**
+         * Timeout for each fetch attempt, including dispatcher waiting and response reading.
+         * Zero disables the timeout. Retries and their backoff have separate budgets.
+         */
         fun fetchTimeoutMillis(fetchTimeoutMillis: Long) = apply {
             this.fetchTimeoutMillis = fetchTimeoutMillis
         }
@@ -184,6 +197,14 @@ class RemoteEvaluationConfig internal constructor(
             this.httpProxy = httpProxy
         }
 
+        /**
+         * Use a caller-owned client to configure protocols, HTTP/2 pings, or dispatcher limits.
+         * Without one, the SDK enables HTTP/2 pings every 10 seconds.
+         */
+        fun httpClient(httpClient: OkHttpClient) = apply {
+            this.httpClient = httpClient
+        }
+
         fun build(): RemoteEvaluationConfig {
             return RemoteEvaluationConfig(
                 debug = debug,
@@ -196,7 +217,8 @@ class RemoteEvaluationConfig internal constructor(
                 fetchRetryBackoffMinMillis = fetchRetryBackoffMinMillis,
                 fetchRetryBackoffMaxMillis = fetchRetryBackoffMaxMillis,
                 fetchRetryBackoffScalar = fetchRetryBackoffScalar,
-                httpProxy = httpProxy
+                httpProxy = httpProxy,
+                httpClient = httpClient
             )
         }
     }

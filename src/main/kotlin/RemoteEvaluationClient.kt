@@ -16,8 +16,11 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okio.IOException
+import java.io.InterruptedIOException
 import java.util.Base64
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 class RemoteEvaluationClient internal constructor(
@@ -25,7 +28,12 @@ class RemoteEvaluationClient internal constructor(
     private val config: RemoteEvaluationConfig = RemoteEvaluationConfig(),
 ) {
 
-    private val httpClient = OkHttpClient.Builder().proxy(config.httpProxy).build()
+    private val httpClient = config.httpClient?.let { client ->
+        if (config.httpProxy != null) client.newBuilder().proxy(config.httpProxy).build() else client
+    } ?: OkHttpClient.Builder()
+        .proxy(config.httpProxy)
+        .pingInterval(10, TimeUnit.SECONDS)
+        .build()
     private val retry: Boolean = config.fetchRetries > 0
     private val serverUrl: HttpUrl = getServerUrl(config)
     private val backoffConfig = BackoffConfig(
@@ -87,20 +95,33 @@ class RemoteEvaluationClient internal constructor(
         val future = CompletableFuture<Map<String, Variant>>()
         val call = httpClient.newCall(request)
         call.timeout().timeout(timeoutMillis, TimeUnit.MILLISECONDS)
-        // Execute request and handle response
+        // OkHttp's call timeout starts only after dispatcher admission. This deadline
+        // also completes queued attempts and cancels their calls when the budget expires.
+        val timeoutTask = if (timeoutMillis > 0) {
+            timeoutScheduler.schedule({
+                call.cancel()
+                // Completing a future can run application continuations synchronously.
+                // Use an independent worker for each completion: blocked application
+                // continuations must not starve the scheduler or the shared common pool.
+                timeoutCompletions.execute {
+                    future.completeExceptionally(InterruptedIOException("fetch timed out after ${timeoutMillis}ms"))
+                }
+            }, timeoutMillis, TimeUnit.MILLISECONDS)
+        } else null
+        future.whenComplete { _, _ -> timeoutTask?.cancel(false) }
         call.enqueue(object : Callback {
             override fun onResponse(call: Call, response: Response) {
                 try {
-                    Logger.debug("Received fetch response: $response")
                     val variants = response.use {
+                        Logger.debug("Received fetch response: $response")
                         if (!response.isSuccessful) {
                             throw FetchException(response.code, "fetch error response: $response")
                         }
                         parseRemoteResponse(response.body?.string() ?: "")
                     }
                     future.complete(variants)
-                } catch (e: IOException) {
-                    onFailure(call, e)
+                } catch (e: Exception) {
+                    future.completeExceptionally(e)
                 }
             }
 
@@ -109,6 +130,15 @@ class RemoteEvaluationClient internal constructor(
             }
         })
         return future
+    }
+
+    private companion object {
+        val timeoutCompletions = Executors.newCachedThreadPool { runnable ->
+            Thread(runnable, "experiment-fetch-timeout-completion").apply { isDaemon = true }
+        }
+        val timeoutScheduler = ScheduledThreadPoolExecutor(1) { runnable ->
+            Thread(runnable, "experiment-fetch-timeout").apply { isDaemon = true }
+        }.apply { removeOnCancelPolicy = true }
     }
 }
 
